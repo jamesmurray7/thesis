@@ -94,3 +94,30 @@ ggsave('~/Downloads/app1fig.png', width = 140, height = 60, units = 'mm')
 tiff('~/Downloads/app1fig.tiff', width = 140, height = 60, units = 'mm', compression = 'lzw', res = 1e3)
 last_plot()
 dev.off()
+
+
+# Stacked columns for internal poster -------------------------------------
+pbc2 %>% filter(status2 == 1) %>% distinct(id) %>% nrow / 312 * 100
+
+pbc2 %>% 
+  filter(status2 == 1) %>% 
+  pivot_longer(cols=serBilir:albumin, names_to='biomarker') %>% 
+  mutate(biomarker = case_when(
+    biomarker == 'serBilir' ~ 'Serum bilirubin (mg/dL)',
+    biomarker == 'albumin' ~ 'Albumin (g/dL)',
+  )) %>% 
+  ggplot(aes(x=tt, y = value, group = id)) + 
+  geom_vline(xintercept = 0, colour = 'black', alpha = .25) + 
+  geom_line(alpha = .25, lwd = .33) + 
+  geom_smooth(aes(group=NULL), colour = 'black', method = 'loess', formula = y~x) + 
+  facet_wrap(~biomarker, scales = 'free', strip.position = 'left', nc = 1) + 
+  scale_y_continuous(breaks = scales::pretty_breaks(6)) +
+  scale_x_continuous(breaks = scales::pretty_breaks(6)) +
+  labs(y = NULL,
+       x = 'Time (years) from death (0: time of death)') + 
+  theme_csda() + 
+  theme(strip.placement = 'outside',
+        strip.text = element_text(vjust = 1),
+        axis.title = element_text(size=7))
+
+ggsave('~/Downloads/LOESSPBC.png', width = 1015.9156 / 47 * 2.85426, height = 1.618033988749895 * ( 1015.9156 / 47 * 2.85426), units = 'mm', dpi = 1e3)
