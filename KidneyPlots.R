@@ -62,7 +62,7 @@ prot %>%
   scale_color_manual(values = c('black', 'red')) + 
   theme_csda() + 
   labs(x = 'Time (years) from kidney graft failure (0: failure time)', 
-       y = 'ID', colour = 'Proterinuria') + 
+       y = 'ID', colour = 'Proteinuria') + 
   guides(colour = guide_legend(override.aes = list(size=2)))
 
 ggsave('./KidneyBinaryTrajectories.png', width = 140, height = 60, units = 'mm', dpi = 1e3)
