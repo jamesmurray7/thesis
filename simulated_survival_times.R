@@ -1,7 +1,10 @@
 rm(list=ls())
 setwd('~/Documents/thesis-plots/')
 source('theme_csda.R')
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
 library(joineRML)
 
 # Changing baseline hazard ONLY -------------------------------------------
@@ -30,8 +33,8 @@ survtimes <- lapply(sets, function(x){
 })
 
 step1 <- do.call(c, survtimes) %>% as.data.frame() %>% 
-  rownames_to_column('id') %>% 
-  mutate(id = str_extract(id, 'theta0\\s\\=\\s\\-\\d\\,\\stheta1\\s\\=\\s0\\.\\d')) 
+  tibble::rownames_to_column('id') %>% 
+  mutate(id = stringr::str_extract(id, 'theta0\\s\\=\\s\\-\\d\\,\\stheta1\\s\\=\\s0\\.\\d')) 
 
 names(step1) <- c('id', 'survtime')
 
@@ -73,25 +76,32 @@ source('theme_csda.R')
 theta0 <- -6; theta1 <- 0.001;
 gamma.eta <- expand.grid(
   gamma = c(-1.0, -0.5, 0.0, 0.5, 1.0),
-  eta1 = c(0.05),
+  eta1 = c(0.00),
   eta2 = c(-1.0, -0.3, 0.3, 1.0)
 )
 # D = diag(c(0.5^2, 0.25^2, 0.5^2, 0.25^2))
 
 sets <- list()
 for(i in 1:nrow(gamma.eta)){
-  gamma <- c(gamma.eta[i, 1], 0)
-  eta <- c(0.0, gamma.eta[i, 3])
+  row <- gamma.eta[i,,drop=F]
+  i.gamma <- c(row$gamma)
+  i.zeta <- c(0, row$eta2)
   sets[[i]] <- replicate(100,
-                         joineR::simjoint(n = 100, ntms = 10, b2 = eta, gamma = gamma.eta[i,1], theta0=-6,theta1=1e-2,truncation = T,trunctime=9.1)$survi,
-                       #  simData(ntms = 10, gamma.x = eta, gamma.y = gamma, theta0 = theta0, theta1 = theta1)$survdat,
+                         gmvjoint::simData(
+                           n = 100, ntms = 10, fup = 9, zeta = i.zeta, gamma = i.gamma,
+                           theta = c(-6, 1e-3),
+                           beta = t(c(1, 0.1, 0.33, -0.5)),
+                           sigma = c(.16),
+                           family = list('gaussian'),
+                           D = diag(rep(1,2)),
+                         )$sur,
                          simplify = F
   )
-  names(sets)[i] <- paste0('gamma == ', gamma.eta[i, 1], ', eta[2] == ', eta[2])
+  names(sets)[i] <- paste0('gamma == ',i.gamma, ', eta[2] == ', i.zeta[2])
 }
 
 survtimes <- lapply(sets, function(x){
-  do.call(c, lapply(x, function(y) sort(y[y$cens==1, 'survtime'])))
+  do.call(c, lapply(x, function(y) sort(y[y$stat==1, 'survtime'])))
 })
 
 step1 <- do.call(c, survtimes) %>% as.data.frame() 
@@ -104,18 +114,18 @@ step2 <- step1 %>%
   as_tibble %>% 
   separate(id, c('gamma', 'eta'), '\\,\\s') %>% 
   mutate(
-    temp.gamma = map(gamma, ~ strsplit(.x, '==')),
-    temp.eta = map(eta, ~ strsplit(.x, '==')),
+    temp.gamma = purrr::map(gamma, ~ strsplit(.x, '==')),
+    temp.eta = purrr::map(eta, ~ strsplit(.x, '==')),
   ) %>% 
   unnest(c(temp.gamma, temp.eta)) %>% 
-  mutate(g = map_chr(temp.gamma, el, 2),
-         e = map_chr(temp.eta, el, 2)) %>% 
+  mutate(g = purrr::map_chr(temp.gamma, el, 2),
+         e = purrr::map_chr(temp.eta, el, 2)) %>% 
   select(-temp.gamma, -temp.eta) %>% 
   mutate_at(vars(g, e), as.numeric) %>% 
   arrange(g, e) %>% 
   mutate(
-    gamma.lbl = fct_inorder(paste0('gamma == ', g)),
-    eta.lbl = fct_inorder(paste0('eta[2] == ', e))
+    gamma.lbl = forcats::fct_inorder(paste0('gamma == ', g)),
+    eta.lbl = forcats::fct_inorder(paste0('zeta[2] == ', e))
   )
 
 step2 %>% 
@@ -135,15 +145,15 @@ step2 %>%
   scale_x_continuous(breaks = scales::pretty_breaks(10)) + 
   labs(x = 'Simulated failure time', y = '')
 
-ggsave('gamma_eta_failure2.png', width = 140, height = 90, units = 'mm')
+ggsave('gamma_zeta_failure2.png', width = 140, height = 90, units = 'mm')
 
 
 # Altering magnitude of vech(D) -------------------------------------------
 rm(list=ls())
 source('theme_csda.R')
-theta0 <- -4; theta1 <- .25
+theta0 <- -5; theta1 <- 1e-3
 gamma <- c(0.5, 0)
-eta <- c(0.05, -0.3)
+eta <- c(0.0, 0.0)
 
 int.slope <- expand.grid(
   intercept = c(3, 1, .5, .5^2),
