@@ -1,0 +1,12 @@
+% MVJM =================================
+% Gaussian only responses ==============
+% ======================================
+
+1. Scaling with K, K = {1,3,5,10} or something.
+2. Scaling with n, n = {100, 250, 500, 1000}, maybe not 100.
+3. Performance with r and omega.
+4. Arbitrarily large/small fixed effects
+5. Arbitrarily large/small diag(D) components.
+
+% For each of the above, FIX everything 
+% else at the 'default' parameters
