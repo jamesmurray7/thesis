@@ -35,6 +35,7 @@ save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
 }
 
 source('stockSimfn.R')
+source('../theme_csda.R')
 
 .startmessage()
 
