@@ -19,10 +19,12 @@ gc()
 # K -----------------------------------------------------------------------
 out <- save.dir.file.path('K/data')
 filename <- function(x) save.dir.file.path(paste0("K", x, '.RData'), out)
-choices <- c(1,2,3,5,10)
+choices <- c(1,2,3,5,7)
 for(i in choices){
   cli::cli_alert_info("Creating data for K = {i}.")
-  fn <- create.simfn(arguments = list(theta = c(-3, 0.1)), K = i)
+  Ddiag <- rep(c(.25, .06), i)
+  fn <- create.simfn(arguments = list(theta = c(-2.7, 0.1), 
+                                      n = 500, D = diag(Ddiag, ncol = 2*i, nrow = 2*i)), K = i)
   sim.sets <- createNsims(fn, N)
   save(sim.sets, file = filename(i))
   cli::cli_alert_success("Done, saved in:\n{filename(i)}.")
