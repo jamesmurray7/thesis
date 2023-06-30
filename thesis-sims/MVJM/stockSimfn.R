@@ -157,7 +157,7 @@ extract.from.joint <- function(x){
   et <- x$elapsed.time
   
   return(list(
-    Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et[1] + et[2], total = et[3]
+    Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et[1] + et[2], total = et[3], iters = et[4]
   ))
 }
 
