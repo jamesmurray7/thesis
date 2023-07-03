@@ -1,9 +1,7 @@
 N <- 100
 # n -----------------------------------------------------------------------
-load.dir <- save.dir.file.path('n/fits')
-fits.file.names <- dir(load.dir)
-# Change order slightly
-fits.file.names <- fits.file.names[c(1,3,4,2)]  # 100, 250, 500, 1000.
+load.dir <- save.dir.file.path('omega/fits')
+fits.file.names <- dir(load.dir, pattern = "\\.RData")
 .loader <- function(filename){
   out <- assign('data', get(load(save.dir.file.path(filename, load.dir))))
   out
@@ -20,7 +18,8 @@ parsed <- setNames(lapply(seq_along(fits.file.names), function(i){
   ub <- sapply(this.parsed, function(y) y$ub)
   et <- unname(sapply(this.parsed, function(y) y$elapsed))
   tt <- unname(sapply(this.parsed, function(y) y$total))
-  list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt)
+  it <- unname(sapply(this.parsed, function(y) y$iter))
+  list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt, iter = it)
 }), gsub(".RData", '', fits.file.names))
 
 # Get the target matrix:
@@ -96,7 +95,7 @@ align <- paste0(align.lhs, align.rhs)
 library(xtable)
 xt <- xtable(to.xtab, caption = caption,
              align = align)
-nm <- gsub('n', 'n=', names(parsed))
+nm <- gsub('om', 'omega=', names(parsed))
 addtorow <- list()
 addtorow$pos <- list(-1)
 addtorow$command <- paste0("&", paste0("\\multicolumn{5}{c}{", nm, "}", collapse = '&'), '\\\\')
@@ -116,7 +115,7 @@ gam.zet <- do.call(rbind,lapply(seq_along(parsed), function(x){
   rn <- c(rn, max(rn)+1)
   df <- as.data.frame(t(ests[rn,]))
   df %>% tidyr::pivot_longer(everything()) %>% 
-    mutate(n = nm[x], param = case_when(
+    mutate(omega = paste0(nm[x],"%"), param = case_when(
       grepl("gamma", name) ~ paste0(gsub("_", '[', name),']'),
       name == "zeta_bin" ~ 'zeta'
     ),
@@ -128,19 +127,19 @@ gam.zet <- do.call(rbind,lapply(seq_along(parsed), function(x){
 }))
 
 gam.zet %>% 
-  mutate(nlab = forcats::fct_inorder(gsub("n=","",n))) %>% 
-  ggplot(aes(x = nlab, y = value, fill = nlab)) + 
+  mutate(olab = forcats::fct_inorder(gsub("omega=","",omega))) %>% 
+  ggplot(aes(x = olab, y = value, fill = olab)) + 
   geom_hline(aes(yintercept = target), lty=5, colour='grey3')+
   geom_boxplot(outlier.alpha = .33, lwd = 0.25, fatten = 2,
                outlier.size = .50) + 
   facet_wrap(~param, scales = 'free_y', labeller = label_parsed) +
   theme_csda() + 
-  labs(x = expression("Sample size "*n), y = "Estimate") + 
+  labs(x = expression("Failure rate, "*omega), y = "Estimate") + 
   scale_fill_brewer(palette = 'YlOrRd') + 
   scale_y_continuous(breaks = scales::pretty_breaks(6)) + 
   theme(
     legend.position = 'none'
   )
 
-ggsave(save.dir.file.path("n_gammazeta.png", load.dir),
+ggsave(save.dir.file.path("omega_gammazeta.png", load.dir),
        width = 148, height = 110, units = 'mm')

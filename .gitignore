@@ -2,3 +2,4 @@
 *.Rproj
 *.Rhistory
 output/
+.Rproj.user
