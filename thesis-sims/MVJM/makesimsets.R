@@ -79,3 +79,36 @@ for(i in choices){
   cli::rule(col = "tomato2")
   rm(sim.sets)  
 }
+
+
+
+# beta --------------------------------------------------------------------
+out <- save.dir.file.path('beta/data')
+filename <- function(x) save.dir.file.path(paste0("beta_", x ,".RData"), out)
+choices <- c(1L,2L) # Define the 
+for(i in choices){
+  cli::cli_alert_info("Creating data for beta option= {i}.")
+  if(i == 1L){
+    beta <- t(sapply(1:3, function(k) c(5, 1, 1, 1)))
+    sigma <- as.list(rep(2, 3))
+    theta.i <- c(-3, 0.1)
+  }else{
+    beta <- t(sapply(1:3, function(k) c(15, 2, 10, 5)))
+    sigma <- as.list(rep(5, 3))
+    theta.i <- c(-3, 0.1)
+  }
+  
+  cli::cli_inform("This corresponds to a beta_k = {beta[1,]};")
+  cli::cli_inform("and sigma^2_k = {sigma[[1]]}.")
+  fn <- create.simfn(arguments = list(n = 500, ntms = 10,
+                                      theta = theta.i,
+                                      beta = beta,
+                                      sigma = sigma))
+  sim.sets <- createNsims(fn, N)
+  save(sim.sets, file = filename(i))
+  cli::cli_alert_success("Done, saved in:\n{filename(i)}.")
+  DataSummary(sim.sets)
+  cli::rule(col = "tomato2")
+  rm(sim.sets)  
+}
+
