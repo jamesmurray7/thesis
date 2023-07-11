@@ -79,3 +79,36 @@ for(i in choices){
   cli::rule(col = "tomato2")
   rm(sim.sets)  
 }
+
+# vech(D) -----------------------------------------------------------------
+out <- save.dir.file.path('vechD/data')
+filename <- function(x) save.dir.file.path(paste0("vechD_", x, ".RData"), out)
+choices <- c("medium_prop", "large_prop", "medium_unprop", "large_unprop")
+background.mat <- matrix(1,6,6) - diag(rep(1,6))
+for(i in choices){
+  cli::cli_alert_info("Creating data for {i} vech(D).")
+  if(i == "medium_prop"){
+    D <- .makeD(3) * (diag(rep(3, 6)) + background.mat)
+  }else if(i == "large_prop"){
+    D <- .makeD(3) * (diag(rep(10, 6)) + background.mat)
+  }else if(i == "medium_unprop"){
+    D <- .makeD(3) * (diag(c(3,1.5,5,0.9,4,1.2)) + background.mat)
+  }else if(i == "large_unprop"){
+    D <- .makeD(3) * (diag(c(10,2,13,3,15,4)) + background.mat)
+  }else{
+    cli::cli_abort("{i} not matched!")
+  }
+  
+  if(gmvjoint:::is.not.SPD(D))
+    stop("Revise choice for ", i, "\n\n")
+  fn <- create.simfn(arguments = list(n = 500, ntms = 10,
+                                      D = D))
+  sim.sets <- createNsims(fn, N)
+  save(sim.sets, file = filename(i))
+  cli::cli_alert_success("Done, saved in:\n{filename(i)}.")
+  DataSummary(sim.sets)
+  cli::rule(col = "magenta3")
+  rm(sim.sets)
+  
+}
+
