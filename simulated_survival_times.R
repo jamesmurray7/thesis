@@ -46,7 +46,7 @@ step2 <- step1 %>%
     alpha = as.numeric(str_sub(theta1, -3))
   ) %>% 
   mutate(
-    nu.lbl = paste0('nu==', nu),
+    nu.lbl = paste0('log(nu)==', nu),
     alpha.lbl=paste0('alpha==', alpha)
   )
 
@@ -59,7 +59,7 @@ step2 %>%
   theme_csda() + 
   theme(
     strip.placement = 'outside',
-    strip.text = element_text(size = 9),
+    strip.text = element_text(size = 7),
     axis.text.x = element_text(size = 8),
     axis.ticks.y = element_blank(),
     axis.text.y = element_blank()
@@ -67,7 +67,7 @@ step2 %>%
   scale_x_continuous(breaks = scales::pretty_breaks(10)) + 
   labs(x = 'Simulated failure time', y = '')
 
-ggsave('alpha_nu_failure.png', width = 140, height = 90, units = 'mm')
+ggsave('output/alpha_nu_failure.png', width = 140, height = 90, units = 'mm')
 
 # Changing c(gamma, eta) --------------------------------------------------
 rm(list=ls())
