@@ -1,9 +1,9 @@
 N <- 100
 # n -----------------------------------------------------------------------
-load.dir <- save.dir.file.path('n/fits')
+load.dir <- save.dir.file.path('vechD/fits')
 fits.file.names <- dir(load.dir)
-# Change order slightly
-fits.file.names <- fits.file.names[c(1,3,4,2)]  # 100, 250, 500, 1000.
+# Change order slightly: prop: {med -> large}; unprop: {med -> large}
+fits.file.names <- fits.file.names[c(3,1,4,2)] 
 .loader <- function(filename){
   out <- assign('data', get(load(save.dir.file.path(filename, load.dir))))
   out
@@ -20,14 +20,34 @@ parsed <- setNames(lapply(seq_along(fits.file.names), function(i){
   ub <- sapply(this.parsed, function(y) y$ub)
   et <- unname(sapply(this.parsed, function(y) y$elapsed))
   tt <- unname(sapply(this.parsed, function(y) y$total))
-  list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt)
+  it <- unname(sapply(this.parsed, function(y) y$iter))
+  list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt, iter = it)
 }), gsub(".RData", '', fits.file.names))
 
 # Get the target matrix:
-target.mat <- t(create.targetmat())
+np <- names(parsed)
+background.mat <- matrix(1,6,6) - diag(rep(1,6))
+target.mat <- setNames(lapply(seq_along(parsed), function(i){
+  n <- np[i]
+  med <- grepl("medium", n); prop <- grepl("\\_prop$", n) 
+  if(med & prop){
+    return(create.targetmat(arguments = list(D = .makeD(3) * (diag(rep(3, 6)) + background.mat))))
+  }else if(med & !prop){
+    return(create.targetmat(arguments = list(D = .makeD(3) * (diag(c(3,1.5,5,0.9,4,1.2)) + background.mat))))
+  }else if(!med & prop){
+    return(create.targetmat(arguments = list(D = .makeD(3) * (diag(rep(10, 6)) + background.mat))))
+  }else if(!med & !prop){
+    return(create.targetmat(arguments = list(D = .makeD(3) * (diag(c(10,2,13,3,15,4)) + background.mat))))
+  }else{
+    message("Oops")
+  }
+}), np)
+
+target.mat <- lapply(target.mat, t)
 
 # Get the table components print out.
-tab.components <- lapply(parsed, function(x){
+tab.components <- lapply(seq_along(parsed), function(i){
+  x <- parsed[[i]]; target.mat <- target.mat[[i]]
   Omega <- x$Omega; SE <- x$SE; lb <- x$lb; ub <- x$ub
   rn <- row.names(Omega); rn2 <- row.names(target.mat)
   
@@ -62,6 +82,7 @@ to.xtab <- do.call(cbind, lapply(seq_along(tab.components), function(i){
   this <- tab.components[[i]]
   param <- paste0("$", names(this$Emp.Mean), ' = ', trimws(.f(this$targets)), "$")
   param <- gsub("\\]", "}", gsub("D\\[","D_{", param))
+  param <- ifelse(grepl("D\\_\\{", param), paste0(gsub("\\s\\=.*$", "", param),"$"), param)
   
   MSD <- paste0(.f(this$Emp.Mean), ' (', .f(this$Emp.SD), ')')
   SE <- .f(this$Avg.SE)
@@ -77,6 +98,12 @@ to.xtab <- do.call(cbind, lapply(seq_along(tab.components), function(i){
 }))
 
 # Caption with usual stuff + computation times.
+nm <- sapply(np, switch,  # Must be a better way to do this?
+             vechD_medium_unprop = "`Medium' $\\not\\propto$",
+             vechD_medium_prop = "`Medium' $\\propto$",
+             vechD_large_prop = "`Large' $\\propto$",
+             vechD_large_unprop = "`Large' $\\not\\propto$")
+
 caption <- paste(sapply(seq_along(parsed), function(x){
   y <- parsed[[x]]
   et <- y$elapsed; tot <- y$tot
@@ -86,7 +113,7 @@ caption <- paste(sapply(seq_along(parsed), function(x){
          " and standard error calculation for ", nm[x], " was ", sprintf("%.3f [%.3f, %.3f] seconds", qn.et[1], qn.et[2], qn.et[3]),
          " and total computation time was ", sprintf("%.3f [%.3f, %.3f] seconds", qn.tot[1], qn.tot[2], qn.tot[3]))
 }), collapse = '; ')
-caption <- paste("Parameter estimates for differing sample sizes $\\n\\in\\lbr100,250,500,1000\\rbr$. `Mean (SD)' denotes",
+caption <- paste("Parameter estimates for different variance covariance matrices $\\D$. `Mean (SD)' denotes",
                  "the average estimated value with standard deviation of the parameter estimate. `SE' denotes the",
                  "mean standard error calculated at each model fit. Coverage probabilities are calculated from",
                  "$\\hbO\\pm1.96\\mathrm{SE}(\\hbO)$", caption, '\\!.')
@@ -96,11 +123,15 @@ align <- paste0(align.lhs, align.rhs)
 library(xtable)
 xt <- xtable(to.xtab, caption = caption,
              align = align)
-nm <- gsub('n', 'n=', names(parsed))
 addtorow <- list()
-addtorow$pos <- list(-1)
-addtorow$command <- paste0("&", paste0("\\multicolumn{5}{c}{", nm, "}", collapse = '&'), '\\\\')
+addtorow$pos <- as.list(c(-1,0.5))
+addtorow$command <- as.vector(
+  c(paste0("&", paste0("\\multicolumn{10}{c}{", unique(stringr::str_extract(nm, "\\$.*\\$$")), "}", collapse = '&'), '\\\\'),
+    paste0("&", paste0("\\multicolumn{5}{c}{", stringr::str_extract(nm, "\\`.*\\'"), "}", collapse = '&'), '\\\\')
+  ))
+    
 
+# swap multicolumn and parameter line around manually!
 print(xt, sanitize.text.function = identity,
       add.to.row = addtorow,
       booktabs = FALSE,
@@ -116,7 +147,7 @@ gam.zet <- do.call(rbind,lapply(seq_along(parsed), function(x){
   rn <- c(rn, max(rn)+1)
   df <- as.data.frame(t(ests[rn,]))
   df %>% tidyr::pivot_longer(everything()) %>% 
-    mutate(n = nm[x], param = case_when(
+    mutate(group = nm[x], param = case_when(
       grepl("gamma", name) ~ paste0(gsub("_", '[', name),']'),
       name == "zeta_bin" ~ 'zeta'
     ),
@@ -124,23 +155,28 @@ gam.zet <- do.call(rbind,lapply(seq_along(parsed), function(x){
       name == 'gamma_1' | name == "gamma_3" ~ 0.5,
       name == 'gamma_2' ~ -0.5,
       name == 'zeta_bin' ~ -0.2
-    ))
+    )) %>% 
+    tidyr::separate(col = 'group', into = c("Magnitude", "Proportional"), sep = "\\'\\s") %>% 
+    mutate_at("Magnitude", ~ gsub("\\`", "", .x)) %>% 
+    mutate_at("Magnitude", ~ factor(.x, c("Medium", "Large"))) %>% 
+    mutate_at("Proportional", ~ ifelse(grepl("^\\$\\\\propto", .x),
+                                       "Proportional", "Not proportional")) %>% 
+    mutate_at("Proportional", ~ factor(.x, c("Proportional", "Not proportional")))
 }))
 
 gam.zet %>% 
-  mutate(nlab = forcats::fct_inorder(gsub("n=","",n))) %>% 
-  ggplot(aes(x = nlab, y = value, fill = nlab)) + 
+  ggplot(aes(x = Magnitude, y = value, fill = Proportional)) + 
   geom_hline(aes(yintercept = target), lty=5, colour='grey3')+
   geom_boxplot(outlier.alpha = .33, lwd = 0.25, fatten = 2,
                outlier.size = .50) + 
   facet_wrap(~param, scales = 'free_y', labeller = label_parsed) +
   theme_csda() + 
-  labs(x = expression("Sample size "*n), y = "Estimate") + 
+  labs(x = expression("Magnitude"), y = "Estimate", fill = "") + 
   scale_fill_brewer(palette = 'YlOrRd') + 
   scale_y_continuous(breaks = scales::pretty_breaks(6)) + 
   theme(
-    legend.position = 'none'
+    legend.position = 'bottom'
   )
 
-ggsave(save.dir.file.path("n_gammazeta.png", load.dir),
+ggsave(save.dir.file.path("vechD_gammazeta.png", load.dir),
        width = 148, height = 110, units = 'mm')
