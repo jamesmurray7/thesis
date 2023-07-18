@@ -1,9 +1,10 @@
 # Longitudinal fits for count data ----------------------------------------
 rm(list=ls())
 source('.Rprofile')
-log.dir <- save.dir.file.path("log")
+log.dir <- save.dir.file.path("log/not_truncated")
 library(glmmTMB)
 
+# adni <- adni[adni$time<=3,] # Truncate as necessary,
 # Establish responses
 nm.adni <- c("ADAS11", "ADAS13", "MMSE", "FAQ")
 

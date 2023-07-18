@@ -1,7 +1,9 @@
 # Dispersion models for count data ----------------------------------------
 rm(list=ls())
 source('.Rprofile')
-log.dir <- save.dir.file.path("log")
+truncated <- T
+log.dir <- if(truncated) save.dir.file.path("log/truncate_at_3") else save.dir.file.path("log/not_truncated")
+if(truncated) adni <- adni[adni$time <= 3, ]
 library(glmmTMB)
 
 # ##################
@@ -34,8 +36,6 @@ library(glmmTMB)
 # For means of comparison, what were model fit statistics of these "null" dispmodels?
 # (i.e. dispersion model of ~1).
 gp.fits <- dir(log.dir, pattern = 'genpois')
-test <- readLines(file.path(log.dir,gp.fits[1]))
-aictab <- el(strsplit(trimws(test[which(grepl("BIC",test))+1]),"\\s+"))
 ExtractFrom.log <- function(fn){ # one of gp.fits
   # Read it in line-by-line
   test <- readLines(file.path(log.dir, fn)) 
@@ -46,7 +46,7 @@ ExtractFrom.log <- function(fn){ # one of gp.fits
   return(aictab)
 }
 
-ints <- sapply(gp.fits, ExtractFrom.log)
+(ints <- sapply(gp.fits, ExtractFrom.log))
 
 
 # Copying across functions to fit glmmTMB (lazy) --------------------------
@@ -143,8 +143,11 @@ invisible(lapply(seq_along(refits), function(i){
   NULL
 }))
 
+# Truncated: Global dispersion best-fitting.
+# Non-truncated: See next part(s).
+
 # #####################
-# Summary for GENPOIS fits (checking Poisson after!)
+# Summary for GENPOIS fits (checking Poisson after!) // Hereafter is non-truncated!
 # ADAS11: 
 #   ts: ns --
 #    -> ~1 best.
