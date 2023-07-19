@@ -1,4 +1,4 @@
-# Dispersion models for count data ----------------------------------------
+# Joint models for count data ---------------------------------------------
 rm(list=ls())
 source('.Rprofile')
 truncated <- F
