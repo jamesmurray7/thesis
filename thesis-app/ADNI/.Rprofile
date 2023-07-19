@@ -6,7 +6,9 @@ options(
 	continue = "  "
 )
 
-save.dir <- '/data/c0061461/THESIS/ADNI'
+save.dir <- ifelse(grepl("macOS", sessionInfo()$running),
+                   '../macresults.nosync',
+                   '/data/c0061461/THESIS/ADNI')
 save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
 
 
