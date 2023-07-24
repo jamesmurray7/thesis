@@ -36,10 +36,16 @@ make.formulae <- function(resp, family, time.spec = NULL, extras = NULL,
   if(!is.null(surv.formula)) surv.formula <- surv.formula else surv.formula <- Surv(survtime, status) ~ APOE4
   if(!is.null(disp.formula)) disp.formula <- disp.formula else disp.formula <- ~1 
   if(family=="gaussianlog"){
-    flag <- T
+    flag <- 1
+    family <- "gaussian"
+  }else if(family == "gaussianscaled"){
+    flag <- 2
+    family <- "gaussian"
+  }else if(family == "gaussianraw"){
+    flag <- 3
     family <- "gaussian"
   }else{
-    flag <- F
+    family <- family; flag <- 99
   }
   family <- as.list(family)
   # Longitudinal part
@@ -49,8 +55,9 @@ make.formulae <- function(resp, family, time.spec = NULL, extras = NULL,
                  int = " APOE4 * time + (1|id)",
                  quad = " APOE4 * (time + I(time^2)) + (1 + time + I(time^2)|id)",
                  ns = " APOE4 * splines::ns(time, knots = c(0.5, 1.5)) + (1 + splines::ns(time, knots = c(0.5, 1.5))|id)")
-  resp <- if(family[[1]]=="gaussian" && !flag) paste0(resp, "_scaled") else resp
-  resp <- if(family[[1]]=="gaussian" && flag) paste0("log(", resp, ")") else resp
+  resp <- if(family[[1]]=="gaussian" && flag == 2) paste0(resp, "_scaled") else resp     # 2 -> scaled. (Gaussian only)
+  resp <- if(family[[1]]=="gaussian" && flag == 1) paste0("log(", resp, ")") else resp   # 1 -> logged. (Gaussian only)
+  
   long.formula <- paste0(resp, " ~ ", extras, ' +', time)
   long.formula <- as.formula(long.formula)
   environment(long.formula) <- pf
@@ -68,7 +75,7 @@ fit.univ.JM <- function(data, Flist, ...){
   return(joint(
     long.formulas = x$long, surv.formula = x$Surv,
     data = data, family = x$family, disp.formulas = x$disp,
-    control = list(tol.rel = 5e-3, ...)
+    control = list(...)
   ))
 }
 
@@ -97,13 +104,13 @@ boot.MSE <- function(resp, competing = list(), B = 50L){
     make.formulae(resp, x$family, .i(x$time.spec), .i(x$extras), .i(x$surv.formula), .i(x$disp.formula))
   })
   # Fit univariate models to the actual data...
-  mod1 <- fit.univ.JM(parent.data, Flists[[1]])
+  mod1 <- fit.univ.JM(parent.data, Flists[[1]], tol.rel = 5e-3)
   N <- unname(mod1$ModelInfo$nobs[1])
   MSE1 <- sum(resid(mod1)[[1]]^2)/N
   ll1 <- logLik(mod1)
   AICtab1 <- c("logLik" = c(ll1), "AIC" = attr(ll1, "AIC"), "BIC" = attr(ll1, "BIC"))
   cli::cli_alert_success("Model 1 ({Flists[[1]]$family}) fit done.")
-  mod2 <- fit.univ.JM(parent.data, Flists[[2]])
+  mod2 <- fit.univ.JM(parent.data, Flists[[2]], tol.rel = 5e-3)
   MSE2 <- sum(resid(mod2)[[1]]^2)/N
   ll2 <- logLik(mod2)
   AICtab2 <- c("logLik" = c(ll2), "AIC" = attr(ll2, "AIC"), "BIC" = attr(ll2, "BIC"))
@@ -121,14 +128,14 @@ boot.MSE <- function(resp, competing = list(), B = 50L){
   for(b in 1:B){
     boot.data <- resampledata(parent.data)
     # Model 1
-    mod1.b <- fit.univ.JM(boot.data, Flists[[1]])
+    mod1.b <- fit.univ.JM(boot.data, Flists[[1]], tol.rel = 1e-2)
     resid1.b <- resid(mod1.b, type = "pearson")[[1]]
     MSE1.b <- sum(resid1.b^2)/N
     ll1.b <- logLik(mod1.b)
     AICtabs.1[,b] <- c(c(ll1.b), attr(ll1.b, 'AIC'), attr(ll1.b, "BIC"))
     rm(mod1.b)
     # Model 2
-    mod2.b <- fit.univ.JM(boot.data, Flists[[2]])
+    mod2.b <- fit.univ.JM(boot.data, Flists[[2]], tol.rel = 1e-2)
     resid2.b <- resid(mod2.b, type = "pearson")[[1]]
     MSE2.b <- sum(resid2.b^2)/N
     ll2.b <- logLik(mod2.b)
@@ -139,38 +146,33 @@ boot.MSE <- function(resp, competing = list(), B = 50L){
   }
   close(pb)
   
-  return(list(
+  out <- list(
     resp = resp, B = B, mod1 = Flists[[1]], mod2 = Flists[[2]],
     MSE1 = MSE1, MSE2 = MSE2, AICtab1 = AICtab1, AICtab2 = AICtab2,
     MSEs = MSEs, AICtabs1 = AICtabs.1, AICtabs2 = AICtabs.2
-  ))
-  
+  )
+  class(out) <- "zxc"
+  return(out)
 }
 
-bb <- boot.MSE("FAQ", competing = list(mod1 = list(family = "gaussian"),
-                                          mod2 = list(family = "genpois")), B = 2L)
-b.list1 <- lapply(1:mod1$ModelInfo$n, function(i) mod1$REs[i,,drop=F])
-long.only1 <- mapply(function(b, X, W, Z, Y){
-  (-gmvjoint:::joint_density(
-    b = b, Y = Y, X = X, Z = Z, W = W, beta = mod1$coeffs$beta, D = mod1$coeffs$D,
-    sigma = mod1$coeffs$sigma,
-    family = mod1$ModelInfo$family, Delta = 0L, S = c(0), Fi = rep(0, length(b)), l0i = 1, SS = matrix(0,1,1),
-    Fu = matrix(0,1,length(b)), haz = c(0), gamma_rep = rep(0, length(b)), zeta = c(0), beta_inds = mod1$ModelInfo$inds$Cpp$beta,
-    b_inds = mod1$ModelInfo$inds$Cpp$b, K = mod1$ModelInfo$K
-  )) - mvtnorm::dmvnorm(b, sigma = mod1$coeffs$D, log = T)
-}, b = b.list1, X = mod1$dmats$long$X, W = mod1$dmats$long$W, Z = mod1$dmats$long$Z, Y = mod1$dmats$long$Y)
+bb <- boot.MSE(resp = "ADAS13", competing = list(
+  one = list(family = "gaussianraw"),
+  two = list(family = "poisson")
+), B = 50L)
 
-sum(long.only1)
-
-b.list2 <- lapply(1:mod2$ModelInfo$n, function(i) mod2$REs[i,,drop=F])
-long.only2 <- mapply(function(b, X, W, Z, Y){
-  (-gmvjoint:::joint_density(
-    b = b, Y = Y, X = X, Z = Z, W = W, beta = mod2$coeffs$beta, D = mod2$coeffs$D,
-    sigma = mod2$coeffs$sigma,
-    family = mod2$ModelInfo$family, Delta = 0L, S = c(0), Fi = rep(0, length(b)), l0i = 1, SS = matrix(0,1,1),
-    Fu = matrix(0,1,length(b)), haz = c(0), gamma_rep = rep(0, length(b)), zeta = c(0), beta_inds = mod2$ModelInfo$inds$Cpp$beta,
-    b_inds = mod2$ModelInfo$inds$Cpp$b, K = mod2$ModelInfo$K
-  )) - mvtnorm::dmvnorm(b, sigma = mod2$coeffs$D, log = T)
-}, b = b.list2, X = mod2$dmats$long$X, W = mod2$dmats$long$W, Z = mod2$dmats$long$Z, Y = mod2$dmats$long$Y)
-
-sum(long.only2)
+plot.zxc <- function(x, ...){
+  mod1 <- x$AICtabs1; mod2 <- x$AICtabs2
+  MSEs <- x$MSEs
+  par(mfrow=c(1,2))
+  plot(MSEs[2,] ~ MSEs[1,], pch = 20,
+       col = ifelse(MSEs[2,] < MSEs[1,], "lightgreen", "lightblue"),
+       ylim = c(min(MSEs), max(MSEs)), xlim = c(min(MSEs), max(MSEs)),
+       main = expression(bar("MSE")))
+  abline(0, 1)
+  plot(mod2[1,] ~ mod1[1,], pch = 20, main = "logLik",
+       col = ifelse(mod2[1,] > mod1[1,], "lightgreen", "lightblue"),
+       ylim = c(min(c(mod1[1,], mod2[1,])), max(c(mod1[1,], mod2[1,]))), 
+       xlim = c(min(c(mod1[1,], mod2[1,])), max(c(mod1[1,], mod2[1,]))))
+  abline(0, 1)
+  par(mfrow=c(1,1))
+}

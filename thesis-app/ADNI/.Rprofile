@@ -19,6 +19,7 @@ save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
   fs::dir_tree(save.dir)
   cat("\n")
   assign("out", get(load(save.dir.file.path("ADNI.RData"))))
+  out$MMSE2 <- 30 - out$MMSE
   adni <<- out
 }
 
