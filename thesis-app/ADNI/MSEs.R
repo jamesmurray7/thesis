@@ -163,16 +163,24 @@ bb <- boot.MSE(resp = "ADAS13", competing = list(
 plot.zxc <- function(x, ...){
   mod1 <- x$AICtabs1; mod2 <- x$AICtabs2
   MSEs <- x$MSEs
-  par(mfrow=c(1,2))
+  par(mfrow=c(1,3))
   plot(MSEs[2,] ~ MSEs[1,], pch = 20,
        col = ifelse(MSEs[2,] < MSEs[1,], "lightgreen", "lightblue"),
        ylim = c(min(MSEs), max(MSEs)), xlim = c(min(MSEs), max(MSEs)),
-       main = expression(bar("MSE")))
+       main = expression(bar("MSE")),
+       xlab = "Model 1", ylab = "Model 2")
   abline(0, 1)
   plot(mod2[1,] ~ mod1[1,], pch = 20, main = "logLik",
+       xlab = "Model 1", ylab = "Model 2",
        col = ifelse(mod2[1,] > mod1[1,], "lightgreen", "lightblue"),
        ylim = c(min(c(mod1[1,], mod2[1,])), max(c(mod1[1,], mod2[1,]))), 
        xlim = c(min(c(mod1[1,], mod2[1,])), max(c(mod1[1,], mod2[1,]))))
+  abline(0, 1)
+  plot(mod2[2,] ~ mod1[2,], pch = 20, main = "logLik",
+       xlab = "Model 1", ylab = "Model 2",
+       col = ifelse(mod2[2,] > mod1[2,], "lightgreen", "lightblue"),
+       ylim = c(min(c(mod1[2,], mod2[2,])), max(c(mod1[2,], mod2[2,]))), 
+       xlim = c(min(c(mod1[2,], mod2[2,])), max(c(mod1[2,], mod2[2,]))))
   abline(0, 1)
   par(mfrow=c(1,1))
 }
