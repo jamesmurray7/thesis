@@ -1,6 +1,6 @@
 rm(list=ls()); library(tidyverse)
 load("ADNI.RData")
-source("./theme_csda.R")
+source("../theme_csda.R")
 
 # Re-scale ----------------------------------------------------------------
 rescale <- function(x){

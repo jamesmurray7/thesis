@@ -1,5 +1,5 @@
 rm(list=ls());library(tidyverse)
-source('~/Documents/Bernhardt/theme_csda.R')
+source('..//theme_csda.R')
 kidneys <- joineRML::renal
 
 kidneys$surv %>% distinct(id, failure) %>% count(failure) %>% mutate(p=prop.table(n)*100) #41% failure

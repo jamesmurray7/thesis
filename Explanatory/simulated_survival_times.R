@@ -1,6 +1,5 @@
 rm(list=ls())
-setwd('~/Documents/thesis-plots/')
-source('theme_csda.R')
+source('../theme_csda.R')
 library(dplyr)
 library(tidyr)
 library(stringr)

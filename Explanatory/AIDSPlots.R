@@ -1,5 +1,5 @@
 rm(list=ls());library(tidyverse)
-source('~/Documents/Bernhardt/theme_csda.R')
+source('../theme_csda.R')
 aids <- joineR::aids
 
 # Those who failed only ---------------------------------------------------
