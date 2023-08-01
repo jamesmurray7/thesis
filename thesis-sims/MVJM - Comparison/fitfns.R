@@ -2,7 +2,7 @@ pf <- parent.frame()
 surv.formula <- Surv(survtime, status) ~ bin
 
 # Creating necessary formula objects --------------------------------------
-create.K.long.formulas <- function(method = c("gmvjoint","joineRML","JMbayes2"), K = 3){
+create.K.long.formulas <- function(method = c("gmvjoint", "joineRML", "JMbayes2"), K = 3){
   method <- match.arg(method)
   if(method == "JMbayes2"){
     # *: for some reason JMbayes2 runs my .Rprofile on initialisation, so temporarily move it?
@@ -93,7 +93,7 @@ fit.one <- function(data, method = c("gmvjoint", "joineRML", "JMbayes2"),
       formLongFixed = fLF, formLongRandom = fLR, formSurv = surv.formula,
       data = data, timeVar = "time", 
       control = list(
-        type = "sobol", tol.em = 1e-3, tol2 = 5e-3, convCrit = "sas"
+        type = "sobol", tol.em = 1e-2, tol2 = 5e-3, convCrit = "sas"
       )
     )), error = function(e) NULL)
     
@@ -122,7 +122,7 @@ fit.all <- function(X, # X list of data
   fits <- vector("list", N)
   formula.list <- create.K.long.formulas(method = method, K = K)
   for(j in 1:N){
-    fits[[j]] <- fit.one(X[[j]], formula.list, ...)
+    fits[[j]] <- fit.one(X[[j]], method, formula.list, ...)
     utils::setTxtProgressBar(pb, j)
   }
   close(pb)
