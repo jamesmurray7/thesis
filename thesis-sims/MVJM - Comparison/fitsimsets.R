@@ -3,7 +3,7 @@ source(".Rprofile")
 load.dir <- save.dir.file.path("data")
 save.dir <- save.dir.file.path("fits")
 N <- 100
-files <- dir(load.dir)[2:3] # change if needed
+files <- dir(load.dir)[3] # change if needed
 for(f in files){
   assign("sim.sets", get(load(file.path(load.dir, f))))
   K <- as.numeric(gsub("^K", "", gsub("\\.RData", "", f)))
