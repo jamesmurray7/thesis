@@ -1,4 +1,4 @@
-source('thesis-sims/theme_csda.R')
+source('../theme_csda.R')
 library(ggplot2)
 library(dplyr)
 library(gmvjoint)
@@ -26,8 +26,10 @@ theta <- c(-1, 0.0)
 
 # Obtain b.hat and Sigma.hat given observed data at TRUE parameter estimates.
 getSigma <- function(b, Y, X, Z, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds, D){
+  ln <- nrow(X[[1]])
   uu <- optim(b, gmvjoint:::joint_density, gmvjoint:::joint_density_ddb,
-              Y = Y, X = X, Z = Z, beta = c(2, -0.1, 0.1, -0.2), D = D, sigma = list(0.16),
+              Y = Y, X = X, Z = Z, W = matrix(1, nr = ln, nc = 1), 
+              beta = c(2, -0.1, 0.1, -0.2), D = D, sigma = list(0.16),
               family = as.list(family), Delta = Delta, S = S, Fi = Fi, l0i = l0i, SS = SS, Fu = Fu, haz = l0u,
               gamma_rep = rep(0.5, ncol(Z[[1]])), zeta = -0.2, beta_inds = list(0:3), b_inds = b.inds,
               K = 1L, method = 'BFGS', hessian = T)
@@ -96,7 +98,7 @@ Sample <- function(data, btrue, family, ids, D){
     cond.dens[[a]] <- setNames(vector("list", q), paste0("b", 0:(q-1)))
     norm.dens[[a]] <- setNames(vector("list", q), paste0("b", 0:(q-1)))
     # Walks
-    W <- gmvjoint:::metropolis(b[[a]], Omega, Y[[a]], X[[a]], Z[[a]], 
+    W <- gmvjoint:::metropolis(b[[a]], Omega, Y[[a]], X[[a]], Z[[a]], list(matrix(1, nr = nrow(X[[a]][[1]]), nc = 1)),
                     list(family), Delta[[a]], S[[a]], Fi[[a]], l0i[[a]], 
                     SS[[a]], Fu[[a]], l0u[[a]], gamma.rep,
                     list(0:3), b.inds, 1L, length(b.inds[[1]]), 1000, 10000, Sigma[[a]], tune)
@@ -146,8 +148,11 @@ getOUT <- function(n, family, D){ # Wrapper for simulation + Sampling
   OUT <- Sample(data, btrue, family, 1:n, D)
 }
 
-plotOut <- function(OUT, save.dir = '/data/c0061461/THESIS/Gaussian-Normal-Justification/'){
-  fn <- paste0(save.dir, OUT$family, "_RE_mi_breakdown.png")
+plotOut <- function(OUT, save.dir = '/data/c0061461/THESIS/Gaussian-Normal-Justification/', num.to.show = 5L, id = NULL){
+  fn <- paste0(save.dir, OUT$family, "_RE_mi_breakdown",id,".png")
+  pp <- quantile(OUT$Acc, probs = c(0.025, 0.500, 0.975))
+  cat(sprintf("Median [2.5%%, 97.5%%] acceptance rate for %s: %.2f [%.2f, %.2f]\n\n",
+              OUT$family, pp[2], pp[1], pp[3]))
   df <- OUT$df
   
   # Sort into groups / make labels
@@ -160,7 +165,7 @@ plotOut <- function(OUT, save.dir = '/data/c0061461/THESIS/Gaussian-Normal-Justi
   mi.tab <- table(mi)
   mi.lab <- paste0(names(mi.tab[mi]), "\n(n=", mi.tab[mi],')')
   grp.tab <- table(grp)
-  grp.lab <- paste0("atop(m[i] %in% ", names(grp.tab[grp]), ',"("*n==', grp.tab[grp],'*")")')
+  grp.lab <- paste0("m[i] %in% ", names(grp.tab[grp]))
   
   mini <- data.frame(m = mi, mi.grp = grp, mi.lab = mi.lab, mi.grp.lab = grp.lab)
   mini <- mini[!duplicated(mini),]
@@ -170,6 +175,10 @@ plotOut <- function(OUT, save.dir = '/data/c0061461/THESIS/Gaussian-Normal-Justi
   mini$mi.grp.lab <- forcats::fct_inorder(mini$mi.grp.lab)
   
   df <- left_join(df, mini, 'm')
+  random.ids.to.keep <- unlist(unname(
+    with(df, tapply(id, mi.grp.lab, function(x) sample(unique(x), size = num.to.show, replace = FALSE)))
+  ))
+  df <- df[df$id %in% random.ids.to.keep, ]
   
   # Plot (lots of) densities
   if(OUT$family != "binomial"){
@@ -177,47 +186,65 @@ plotOut <- function(OUT, save.dir = '/data/c0061461/THESIS/Gaussian-Normal-Justi
       ggplot(aes(x = condx, y = condy, group = id)) + 
       geom_line(lwd = .5) + 
       geom_line(aes(y = normy), lwd = .5, col = 'tomato', lty = 5) +
-      facet_grid(~mi.grp.lab, scales = 'free', labeller = label_parsed)+
-      labs(y = bquote(b[0]),x='') + 
-      theme_csda()
+      facet_wrap(~mi.grp.lab, scales = 'free', labeller = label_parsed, nrow = 3, ncol = 1,
+                 strip.position = 'left')+
+      labs(y = '', title = bquote(b[0]), x = '') +
+      theme_csda() + 
+      theme(
+        strip.placement = 'outside',
+        plot.title.position = 'panel',
+        plot.title = element_text(hjust = 0.5, face = 'plain', vjust = 0)
+      )
     b1plot <- df %>% filter(var=='b[1]') %>% 
       ggplot(aes(x = condx, y = condy, group = id)) + 
       geom_line(lwd = .5) + 
       geom_line(aes(y = normy), lwd = .5, col = 'tomato', lty = 5) +
-      facet_grid(~mi.grp.lab, scales = 'free', labeller = label_parsed) +
-      labs(y = bquote(b[1]), x = NULL) + 
+      facet_wrap(~mi.grp.lab, scales = 'free', labeller = label_parsed, nrow = 3, ncol = 1,
+                 strip.position = 'left')+
+      labs(y = '', x = '', title = bquote(b[1])) + 
       theme_csda()+
       theme(
-        strip.text = element_blank()
+        strip.text = element_blank(),
+        plot.title.position = 'panel',
+        plot.title = element_text(hjust = 0.5, face = 'plain', vjust = 0)
       )
     png(fn, width = 190, height = 120, units = 'mm', pointsize = 9, res = 1000)
-    gridExtra::grid.arrange(b0plot,b1plot, nrow=2,ncol=1)
+    gridExtra::grid.arrange(b0plot, b1plot, nrow=1, ncol=2)
     dev.off()
   }else{
     b0plot <- df %>% filter(var=='b[0]') %>% 
       ggplot(aes(x = condx, y = condy, group = id)) + 
       geom_line(lwd = .5) + 
       geom_line(aes(y = normy), lwd = .5, col = 'tomato', lty = 5) +
-      facet_grid(~mi.grp.lab, scales = 'free')+
-      labs(y = bquote(b[0]), x=OUT$family) + 
+      facet_wrap(~mi.grp.lab, scales = 'free', labeller = label_parsed, nrow = 3, ncol = 1)+
+      labs(y = bquote(b[0]), x = '') + 
       theme_csda()
     png(fn, width = 190, height = 120, units = 'mm', pointsize = 9, res = 1000)
     print(b0plot)
     dev.off()
   }
   
-  cat("Done for", OUT$family, ".\n")
+  cat("Done for", OUT$family, "showing", num.to.show, "posteriors,\n")
+  cat("saved in", fn, ".\n\n")
 }
 
-getPlot <- function(n, family, D = NULL){
+getPlot <- function(n, family, num.to.show = 5L, D = NULL, id = NULL){
   OUT <- getOUT(n, family, D)
-  plotOut(OUT)
+  plotOut(OUT, id = id)
   rm(OUT)
   on.exit(gc())
 }
 
-theta <- c(-1, 0.0)
-getPlot(60, "gaussian")
+
 getPlot(60, "poisson")
 theta <- c(-1, 0.1)
 getPlot(60, "binomial")
+
+
+# Gaussian ----------------------------------------------------------------
+theta <- c(-1, 0.0)
+# getPlot(60, "gaussian")
+getPlot(60, "gaussian", D = diag(c(.25*3, .09*3),2), id = "diagD3x")
+getPlot(100, "gaussian", D = diag(c(.25*10, .09*10),2), id = "diagD10x")
+getPlot(100, "gaussian", D = matrix(c(2.5, .125, .125, 0.9), 2, 2), id = "diagD10xCorr")
+getPlot(100, "gaussian", D = matrix(c(5, 0, 0, 1), 2, 2), id = "large")
