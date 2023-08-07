@@ -1,0 +1,18 @@
+% GMVJM ================================
+% Mixture of response distns ===========
+% ======================================
+
+Something like ...? -->
+
+-- Set K=3 {Gaussian/Poisson/Binomial} as the "default scenario".
+   since these are the "de facto" distributions to consider for continuous/
+   count/binary data respectively.
+-- Can then expand to case where there are lots of these types of data (
+   say straight to K=7).
+-- Then, make these models a little more complex, by introducing _global_ 
+   dispersion models (from any families).
+-- Then at final stages: Make these arbitrarily complex e.g. time-dependent
+   dispersion models;
+-- and increase K again.
+
+--> Should provide a reasonable `review' of GMVJM capabilities.
