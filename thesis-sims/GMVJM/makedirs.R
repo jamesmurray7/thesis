@@ -6,7 +6,7 @@ does.this.exist <- function(path){
   as.logical(fs::dir_exists(save.dir.file.path(path)))
 }
 
-names.of.dirs <- c("Triv", "UnivNB", "UnivGP", "UnivGa")
+names.of.dirs <- c("data", "fits")
 
 sapply(names.of.dirs, function(f){
   if(does.this.exist(f)){

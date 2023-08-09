@@ -20,7 +20,7 @@ save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
   Ds <- lapply(family, function(f){
     if(f == "gaussian"){
       return(diag(c(.25, .09)))
-    }else if(f == "gaussian"){
+    }else if(f == "Gamma"){
       return(diag(c(.20,.05)))
     }else if(f %in% c("poisson", "negbin", "genpois")){
       return(diag(c(.50, .09)))
@@ -52,12 +52,12 @@ save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
     }else if(f == "Gamma"){
       return(c(0, -0.1, 0.1, -0.2))
     }else if(f %in% c("poisson", "negbin", "genpois")){
-      return(c(2.5,.1,-.1,-.2))
+      return(c(2,-.1,.1,.2))
     }else{
       return(c(1,-1,1,-1))
     }
   })
-  do.call(c, betas)
+  do.call(rbind, betas)
 }
 
 .makesigma <- function(family){
