@@ -1,17 +1,19 @@
 # Create a function to simulate MVJM data.
-create.simfn <- function(arguments = list(), K = 3){
+create.simfn <- function(family = list("gaussian", "poisson", "binomial"),
+                         arguments = list()){
   # The arguments as default
   base.args <- as.list(args(simData))   # These are calls
   base.args <- lapply(base.args, eval)  # These are the actual simData() objects
   
   # By default simData is bivariate, so need to overwrite this with more apt defaults
   # for the trivariate scenario. Defining replacements below
-  beta <- .makebeta(K)
-  family <- as.list(rep("gaussian", K))
-  sigma <- as.list(rep(0.16, K))
+  K <- length(family)
+  # By default we output the trivariate scenario
+  beta <- .makebeta(family)
+  D <- .makeD(family)
+  sigma <- .makesigma(family)
   gamma <- .makegamma(K)
   zeta <- c(0, -0.2)
-  D <- .makeD(K)
   # and assigning...
   base.args$beta <- beta
   base.args$family <- family
@@ -74,19 +76,21 @@ DataSummary <- function(data){
 }
 
 # Create target matrix ----------------------------------------------------
-create.targetmat <- function(arguments = list(), K = 3, N = 100){
+create.targetmat <- function(family = list("gaussian", "poisson", "binomial"),
+                             arguments = list(), N = 100){
   # The arguments as default
   base.args <- as.list(args(simData))   # These are calls
   base.args <- lapply(base.args, eval)  # These are the actual simData() objects
   
   # By default simData is bivariate, so need to overwrite this with more apt defaults
   # for the trivariate scenario. Defining replacements below
-  beta <- .makebeta(K)
-  family <- as.list(rep("gaussian", K))
-  sigma <- as.list(rep(0.16, K))
+  K <- length(family)
+  # By default we output the trivariate scenario
+  beta <- .makebeta(family)
+  D <- .makeD(family)
+  sigma <- .makesigma(family)
   gamma <- .makegamma(K)
   zeta <- c(0, -0.2)
-  D <- .makeD(K)
   # and assigning...
   base.args$beta <- beta
   base.args$family <- family
