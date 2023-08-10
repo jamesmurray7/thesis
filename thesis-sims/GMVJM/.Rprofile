@@ -20,17 +20,17 @@ save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
   Ds <- lapply(family, function(f){
     if(f == "gaussian"){
       return(diag(c(.25, .09)))
-    }else if(f == "Gamma"){
-      return(diag(c(.20,.05)))
-    }else if(f %in% c("poisson", "negbin", "genpois")){
+    }else if(f == "Gamma" | f == "genpois"){
+      return(diag(c(.20, .05)))
+    }else if(f %in% c("poisson", "negbin")){
       return(diag(c(.50, .09)))
     }else{
-      return(matrix(2,1,1))
+      return(matrix(2, 1, 1))
     }
   })
   D <- gmvjoint:::bDiag(Ds)
   # Populate covariance between random intercepts.
-  off.inds <- which(D==.25|D==.2|D==.50|D==2, arr.ind = T)[,1]
+  off.inds <- which(D==.25|D==.20|D==.50|D==2, arr.ind = T)[,1]
   off.inds <- as.data.frame(expand.grid(off.inds, off.inds))
   off.inds <- off.inds[off.inds$Var1!=off.inds$Var2,]
   D[cbind(off.inds$Var1,off.inds$Var2)] <- .125
@@ -51,7 +51,9 @@ save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
       return(c(-2,.1,-.1,.2))
     }else if(f == "Gamma"){
       return(c(0, -0.1, 0.1, -0.2))
-    }else if(f %in% c("poisson", "negbin", "genpois")){
+    }else if(f == "genpois"){
+      return(c(.25, .05, -.1, .2))
+    }else if(f %in% c("poisson", "negbin")){
       return(c(2,-.1,.1,.2))
     }else{
       return(c(1,-1,1,-1))
@@ -73,7 +75,7 @@ save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
     else if(f == "negbin")
       return(1)
     else if(f == "genpois")
-      return(0.8)
+      return(-0.2)
     else if(f == "Gamma")
       return(2)
     else
