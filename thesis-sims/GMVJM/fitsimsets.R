@@ -75,7 +75,7 @@ fit.all <- function(X, key){
   return(fits)
 }
 
-for(f in files){
+for(f in files[-c(1:2)]){
   assign("sim.sets", get(load(save.dir.file.path(f, data.dir))))
   out.file <- save.dir.file.path(f, out.dir)
   key <- gsub("\\.RData|^Univ", "", f)
