@@ -1,0 +1,12 @@
+% MVJM =================================
+% Gaussian only responses ==============
+% ======================================
+
+This directory seeks only to compoare fitting capabilities against established methods:
+1) joineRML (Hickey et al 2018) -- This method is most comparable to the approximate EM; so
+   expect/hope parameter estimates line up.
+2) JMbayes2 (Rizopoulous 2021) -- MCMC method. Expect these to be *better* (?) since gold standard 
+   approach, but much slower than both joineRML and appx. EM.
+
+Only multivariate joint models will be cosnidered. To that end, other joint model packages 
+which are restricted to univariate case aren't considered (and would only bloat things anyway).
