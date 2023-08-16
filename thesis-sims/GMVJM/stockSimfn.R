@@ -123,7 +123,7 @@ create.targetmat <- function(family = list("gaussian", "poisson", "binomial"),
     if(base.args$family[[f]] == 'gaussian'){
       out <- setNames(base.args$sigma[[f]], paste0("\\sigma^2_", f))
     }else if(base.args$family[[f]]%in%c("genpois", "Gamma", "negbin")){
-      out <- setNames(base.args$sigma[[f]], paste0("\\sigma_{",k,(0:(length(base.args$sigma[[f]])-1)),'}'))
+      out <- setNames(base.args$sigma[[f]], paste0("\\sigma_{", f,(0:(length(base.args$sigma[[f]])-1)),'}'))
     }else{
       out <- NULL
     }

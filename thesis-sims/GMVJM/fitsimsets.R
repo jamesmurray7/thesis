@@ -24,9 +24,15 @@ make.long.formula <- function(key){
       f
     })
   }else{ # All others are univariate...
-    long.formulas <- list(
-      Y.1 ~ time + cont + bin + (1 + time|id)
-    )
+    if(key != "GP"){
+      long.formulas <- list(
+        Y.1 ~ time + cont + bin + (1 + time|id)
+      )
+    }else{
+      long.formulas <- list(
+        Y.1 ~ time + cont + bin + (1|id)
+      )
+    }
     disp.formulas <- lapply(1:1, function(f){
       f <- ~1
       environment(f) <- pf
@@ -75,7 +81,8 @@ fit.all <- function(X, key){
   return(fits)
 }
 
-for(f in files[-c(1:2)]){
+# >>hotfix 16/08/23 refitting safe GP1.
+for(f in files[3]){#files[-c(1:2)]){
   assign("sim.sets", get(load(save.dir.file.path(f, data.dir))))
   out.file <- save.dir.file.path(f, out.dir)
   key <- gsub("\\.RData|^Univ", "", f)
