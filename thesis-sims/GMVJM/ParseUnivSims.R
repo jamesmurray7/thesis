@@ -2,9 +2,11 @@ rm(list=ls())
 source(".Rprofile")
 
 in.dir <- save.dir.file.path("fits")
-(files <- dir(in.dir))
+(files <- dir(in.dir, pattern = "\\.RData"))
 univs <- files[which(grepl("Univ", files))]
-nms <- gsub("\\.RData$|^Univ", "", univs)
+# Hardcoding the three I want
+univs <- univs[c(2,3,5)]
+nms <- gsub("\\.RData$|^Univ|\\_Surgery", "", univs)
 # Load list of fitted joint objects
 .loader <- function(f){
   assign("out", get(load(save.dir.file.path(f, in.dir))))
@@ -29,12 +31,6 @@ parsed <- setNames(lapply(univs, function(x){
   out
 }), nms)
 
-# ####################################################################################
-# 16/08/23 -> Issue with GP1, trouble simulating data which is fit nicely.        ####
-#             Simply ignoring for now, and will return to it later                ####
-#             either by hotfix to gmvjoint, or with parameter values I know work! ####
-# ####################################################################################
-
 # Figure (3x gamma + zetaa) -----------------------------------------------
 library(dplyr)
 library(ggplot2)
@@ -55,7 +51,7 @@ gam.zet.sig <- do.call(rbind, lapply(parsed, function(x){
                     target = -0.2,
                     stringsAsFactors = F, row.names = NULL)
   sig <- data.frame(Parameter = "sigma", estimate = unname(gamzetsig[sig.shape.ind,,drop=T]),
-                    target = ifelse(mm == "Gamma", 2, ifelse(mm == "negbin", 1, -0.2)),
+                    target = ifelse(mm == "Gamma", 2, ifelse(mm == "negbin", 1, -0.3)),
                     stringsAsFactors = F, row.names = NULL)
   out <- rbind(gam,zet,sig)
   out$i <- i; out$model <- mm
@@ -135,7 +131,14 @@ tabs <- setNames(lapply(seq_along(parsed), function(i){
   x <- parsed[[i]]
   if(is.null(x)) return(NULL)
   mm <- x$model
-  target.mat <- t(create.targetmat(family = mm, N = N))
+  if(mm != "genpois")
+    target.mat <- t(create.targetmat(family = mm, N = N))
+  else
+    target.mat <- t(create.targetmat(family = mm, N = N,
+                                     arguments = list(
+                                       sigma = list(-0.3),
+                                       random.formulas = list(~1), D = matrix(.30,1,1))
+                                     ))
   Omega <- x$Omega; SE <- x$SE; lb <- x$lb; ub <- x$ub
   rn <- row.names(Omega); rn2 <- row.names(target.mat)
   

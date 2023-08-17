@@ -52,7 +52,7 @@ save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
     }else if(f == "Gamma"){
       return(c(0, -0.1, 0.1, -0.2))
     }else if(f == "genpois"){
-      return(c(.25, .05, -.1, .2))
+      return(c(1, .05, -.05, .1))
     }else if(f %in% c("poisson", "negbin")){
       return(c(2,-.1,.1,.2))
     }else{
