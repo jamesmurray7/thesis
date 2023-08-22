@@ -1,0 +1,12 @@
+% ================
+% Quadrature nodes
+% ================
+
+Experimenting with number of quadrature nodes as a closer to Ch. 4 in Thesis.
+
+Will take candidate number \varrho\in{2,3,5,7,9,15}, and fit to _all_ simulated
+sets. Taking say N=200(? to decide), this is 1200 joint model fits up front.
+
+On top of these, also considering something of a "heuristic" for the number. 
+This will be based on either 25%, 33% or 50% (? to decide). At most here another
+600 joint models fit to same data. 
