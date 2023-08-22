@@ -85,7 +85,8 @@ gam.zet.sig %>%
     legend.position = 'none', 
     axis.ticks.x = element_blank(),
     # axis.text.x = element_blank(),
-    strip.text = element_text(size = 10)
+    strip.text = element_text(size = 10),
+    axis.text.x = element_text(size = 5)
   )
 
 ggsave(save.dir.file.path("gamzet.png", in.dir),
@@ -228,3 +229,24 @@ invisible(
          booktabs = FALSE,
          include.rownames = FALSE, size = 'scriptsize')
 )
+
+
+# Elapsed time table ------------------------------------------------------
+make.qn <- function(y){
+  stopifnot(length(y)>1)
+  qn <- quantile(y, probs = c(.5,.25,.75), names = F)
+  qn <- .f(qn)
+  paste0(qn[1], " [", qn[2], ", ", qn[3], "]")
+}
+
+Ga.el <- make.qn(parsed$Ga$elapsed); Ga.tt <- make.qn(parsed$Ga$total)
+NB.el <- make.qn(parsed$NB$elapsed); NB.tt <- make.qn(parsed$NB$total)
+GP.el <- make.qn(parsed$GP$elapsed); GP.tt <- make.qn(parsed$GP$total)
+
+tab <- structure(rbind(
+  cbind(Ga.el, Ga.tt),
+  cbind(NB.el, NB.tt),
+  cbind(GP.el, GP.tt)
+), dimnames = list(c("Gamma", "Negative binomial", "Generalised Poisson"),
+                   c("EM algorithm", "Total computation time")))
+xtable(tab)
