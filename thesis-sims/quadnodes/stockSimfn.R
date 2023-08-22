@@ -167,11 +167,12 @@ create.targetmat <- function(family = list("gaussian", "poisson", "binomial"),
 #   * ub: 97.5%.
 extract.from.joint <- function(x){
   if(!inherits(x, 'joint')) stop("'x' needs to be a 'joint' object.")
+  if(is.null(x)) return(NULL)
   qz <- qnorm(.975)
   # Endeavour to "unpack" what the provided fit is.
   K <- x$ModelInfo$K
   family <- unlist(x$ModelInfo$family)
-  model <- ifelse(length(family) > 1, "Triv", family)
+  model <- ifelse(K > 1, "Triv", family)
   co <- x$coeffs
   Omega <- setNames(c(gmvjoint:::vech(co$D), co$beta, unlist(co$sigma)[unlist(co$sigma)!=0L],
                       co$gamma, co$zeta), names(x$SE))
@@ -183,7 +184,7 @@ extract.from.joint <- function(x){
   
   return(list(
     Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et[1] + et[2], total = et[3], iters = et[4],
-    family = family, model = model
+    family = family, model = model, gh.nodes = x$ModelInfo$control$gh.node
   ))
 }
 
