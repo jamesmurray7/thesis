@@ -196,7 +196,25 @@ make.all.logs <- function(X){
   objname <- deparse(substitute(X))
   cat(cli::rule(center = paste0("`", objname, "` done!"),
                 col = "white", background_col = "grey2", line = 2))
-  
 }
+
+# Albumin
+make.all.logs(albumingaussian)
+# Alkaline
+make.all.logs(alkalinepoisson)
+# Hepatomegaly
+make.all.logs(hepatomegalybinomial)
+# spiders
+make.all.logs(spidersbinomial)
+# SGOT/AST
+make.all.logs(SGOTgaussian)
+# platelets
+make.all.logs(plateletspoisson)
+# proth.
+make.all.logs(prothrombinGamma)
+# ser. bili
+make.all.logs(serBilirgaussian)
+# ser. alb.
+make.all.logs(albumingaussian)
 
 

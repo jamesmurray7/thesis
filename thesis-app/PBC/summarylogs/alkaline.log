@@ -1,0 +1,31 @@
+
+══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by AIC ═════════════════════════════════════════════════════════════════════
+                                             AIC      BIC   logLik deviance df.resid
+5Poisson_ns_Sex_Histologic.log          107771.2 107870.7 -53867.6 107735.2     1848
+4Poisson_quad_Age_Histologic.log        173051.4 173123.3 -86512.7 173025.4     1853
+5Poisson_quad_Sex_Age_Histologic.log    173052.7 173130.2 -86512.4 173024.7     1852
+7Poisson_quad_DI_Age_Histologic.log     173055.5 173144.0 -86511.7 173023.5     1850
+8Poisson_quad_DI_Sex_Age_Histologic.log 173056.8 173150.8 -86511.4 173022.8     1849
+4Poisson_quad_Sex_Age.log               173059.7 173120.6 -86518.9 173037.7     1855
+7Poisson_quad_DI_Sex_Age.log            173063.4 173140.8 -86517.7 173035.4     1852
+
+══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by BIC ═════════════════════════════════════════════════════════════════════
+                                          AIC      BIC   logLik deviance df.resid
+5Poisson_ns_Sex_Histologic.log       107771.2 107870.7 -53867.6 107735.2     1848
+4Poisson_quad_Sex_Age.log            173059.7 173120.6 -86518.9 173037.7     1855
+4Poisson_quad_Age_Histologic.log     173051.4 173123.3 -86512.7 173025.4     1853
+5Poisson_quad_Sex_Age_Histologic.log 173052.7 173130.2 -86512.4 173024.7     1852
+4Poisson_quad_Sex_Histologic.log     173066.5 173138.4 -86520.3 173040.5     1853
+7Poisson_quad_DI_Sex_Age.log         173063.4 173140.8 -86517.7 173035.4     1852
+7Poisson_quad_DI_Age_Histologic.log  173055.5 173144.0 -86511.7 173023.5     1850
+
+══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by logLik ══════════════════════════════════════════════════════════════════
+                                             AIC      BIC   logLik deviance df.resid
+5Poisson_ns_Sex_Histologic.log          107771.2 107870.7 -53867.6 107735.2     1848
+8Poisson_quad_DI_Sex_Age_Histologic.log 173056.8 173150.8 -86511.4 173022.8     1849
+7Poisson_quad_DI_Age_Histologic.log     173055.5 173144.0 -86511.7 173023.5     1850
+5Poisson_quad_Sex_Age_Histologic.log    173052.7 173130.2 -86512.4 173024.7     1852
+4Poisson_quad_Age_Histologic.log        173051.4 173123.3 -86512.7 173025.4     1853
+7Poisson_quad_DI_Sex_Age.log            173063.4 173140.8 -86517.7 173035.4     1852
+4Poisson_quad_Sex_Age.log               173059.7 173120.6 -86518.9 173037.7     1855
+

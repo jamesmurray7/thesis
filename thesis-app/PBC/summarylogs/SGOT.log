@@ -1,0 +1,31 @@
+
+══ /data/c0061461/THESIS/PBC/Longs/SGOT -- Ranked by AIC ═════════════════════════════════════════════════════════════════════════
+                                            AIC    BIC logLik deviance df.resid
+8Gaussian_quad_DI_Sex_Age_Histologic.log 1410.1 1509.7 -687.1   1374.1     1848
+7Gaussian_quad_DI_Age_Histologic.log     1410.9 1504.9 -688.4   1376.9     1849
+5Gaussian_quad_Sex_Age_Histologic.log    1412.1 1495.1 -691.0   1382.1     1851
+4Gaussian_quad_Age_Histologic.log        1412.7 1490.1 -692.3   1384.7     1852
+7Gaussian_quad_DI_Sex_Age.log            1430.4 1513.4 -700.2   1400.4     1851
+4Gaussian_quad_Sex_Age.log               1434.2 1500.6 -705.1   1410.2     1854
+7Gaussian_quad_DI_Sex_Histologic.log     1437.0 1531.1 -701.5   1403.0     1849
+
+══ /data/c0061461/THESIS/PBC/Longs/SGOT -- Ranked by BIC ═════════════════════════════════════════════════════════════════════════
+                                           AIC    BIC logLik deviance df.resid
+4Gaussian_quad_Age_Histologic.log       1412.7 1490.1 -692.3   1384.7     1852
+5Gaussian_quad_Sex_Age_Histologic.log   1412.1 1495.1 -691.0   1382.1     1851
+3Gaussian_linear_Age_Histologic.log     1441.2 1496.6 -710.6   1421.2     1856
+4Gaussian_linear_Sex_Age_Histologic.log 1439.1 1499.9 -708.5   1417.1     1855
+4Gaussian_quad_Sex_Age.log              1434.2 1500.6 -705.1   1410.2     1854
+7Gaussian_quad_DI_Age_Histologic.log    1410.9 1504.9 -688.4   1376.9     1849
+3Gaussian_linear_Sex_Age.log            1461.8 1506.1 -722.9   1445.8     1858
+
+══ /data/c0061461/THESIS/PBC/Longs/SGOT -- Ranked by logLik ══════════════════════════════════════════════════════════════════════
+                                            AIC    BIC logLik deviance df.resid
+8Gaussian_quad_DI_Sex_Age_Histologic.log 1410.1 1509.7 -687.1   1374.1     1848
+7Gaussian_quad_DI_Age_Histologic.log     1410.9 1504.9 -688.4   1376.9     1849
+5Gaussian_quad_Sex_Age_Histologic.log    1412.1 1495.1 -691.0   1382.1     1851
+4Gaussian_quad_Age_Histologic.log        1412.7 1490.1 -692.3   1384.7     1852
+7Gaussian_quad_DI_Sex_Age.log            1430.4 1513.4 -700.2   1400.4     1851
+7Gaussian_quad_DI_Sex_Histologic.log     1437.0 1531.1 -701.5   1403.0     1849
+4Gaussian_quad_Sex_Age.log               1434.2 1500.6 -705.1   1410.2     1854
+

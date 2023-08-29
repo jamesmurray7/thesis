@@ -1,0 +1,31 @@
+
+══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by AIC ════════════════════════════════════════════════════════════════════
+                                           AIC     BIC   logLik deviance df.resid
+9Poisson_ns_DI_Sex_Histologic.log      23904.9 24026.6 -11930.4  23860.9     1844
+9Poisson_ns_DI_Age_Histologic.log      23906.2 24027.9 -11931.1  23862.2     1844
+10Poisson_ns_DI_Sex_Age_Histologic.log 23906.3 24033.5 -11930.2  23860.3     1843
+5Poisson_ns_Sex_Histologic.log         23906.7 24006.3 -11935.4  23870.7     1848
+5Poisson_ns_Age_Histologic.log         23907.6 24007.2 -11935.8  23871.6     1848
+6Poisson_ns_Sex_Age_Histologic.log     23907.6 24012.7 -11934.8  23869.6     1847
+5Poisson_ns_Sex_Age.log                23936.7 24025.2 -11952.3  23904.7     1850
+
+══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by BIC ════════════════════════════════════════════════════════════════════
+                                           AIC     BIC   logLik deviance df.resid
+5Poisson_ns_Sex_Histologic.log         23906.7 24006.3 -11935.4  23870.7     1848
+5Poisson_ns_Age_Histologic.log         23907.6 24007.2 -11935.8  23871.6     1848
+6Poisson_ns_Sex_Age_Histologic.log     23907.6 24012.7 -11934.8  23869.6     1847
+5Poisson_ns_Sex_Age.log                23936.7 24025.2 -11952.3  23904.7     1850
+9Poisson_ns_DI_Sex_Histologic.log      23904.9 24026.6 -11930.4  23860.9     1844
+9Poisson_ns_DI_Age_Histologic.log      23906.2 24027.9 -11931.1  23862.2     1844
+10Poisson_ns_DI_Sex_Age_Histologic.log 23906.3 24033.5 -11930.2  23860.3     1843
+
+══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by logLik ═════════════════════════════════════════════════════════════════
+                                           AIC     BIC   logLik deviance df.resid
+10Poisson_ns_DI_Sex_Age_Histologic.log 23906.3 24033.5 -11930.2  23860.3     1843
+9Poisson_ns_DI_Sex_Histologic.log      23904.9 24026.6 -11930.4  23860.9     1844
+9Poisson_ns_DI_Age_Histologic.log      23906.2 24027.9 -11931.1  23862.2     1844
+6Poisson_ns_Sex_Age_Histologic.log     23907.6 24012.7 -11934.8  23869.6     1847
+5Poisson_ns_Sex_Histologic.log         23906.7 24006.3 -11935.4  23870.7     1848
+5Poisson_ns_Age_Histologic.log         23907.6 24007.2 -11935.8  23871.6     1848
+9Poisson_ns_DI_Sex_Age.log             23937.4 24048.0 -11948.7  23897.4     1846
+

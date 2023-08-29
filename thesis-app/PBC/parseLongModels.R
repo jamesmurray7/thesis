@@ -3,7 +3,7 @@ resp.dirs <- dir(log.dir)
 # Establish directories containing .log files
 dirs.to.parse <- sapply(resp.dirs, save.dir.file.path, log.dir)
 
-for(d in dirs.to.parse[1]){
+for(d in dirs.to.parse){
   d.files <- dir(d, pattern = "\\.log")
   # get response
   resp <- gsub(paste0(save.dir,"\\/Longs\\/"), "", d)
@@ -61,5 +61,9 @@ for(d in dirs.to.parse[1]){
   cat("\n")
   print(d.collect[order(-d.collect[,"logLik"]),][1:7,]);cat("\n")
   sink()
+  
+  fs::file_copy(save.dir.file.path(paste0(resp,".log"), log.dir),
+                paste0('./summarylogs/', resp, ".log"),
+                TRUE)
   
 }
