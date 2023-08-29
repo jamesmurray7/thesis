@@ -1,0 +1,16 @@
+# Albumin -> ==== 
+ anova(m3, m4) # i.e. m3 `best` ->> age+hist+quad time spec. 
+# serBilir -> ==== 
+ anova(m1, m4) # i.e. m1 `best` ->> sex + histologic + cubic ns time spec. 
+# SGOT -> ==== 
+               # i.e. m5 `best` ->> age + histologic + drug * time^2 
+# spiders -> ==== 
+ anova(m1, m4) # i.e. m1 `best` ->> age + histologic + quadratic time spec. 
+# hepatomegaly -> ==== 
+ anova(m4, m7) #i.e. m4 `best` ->> sex + histologic + quadratic time spec. 
+# prothrombin -> ==== 
+ anova(m1, m4) # i.e. m1 `best` ->> age + histologic + drug * time^2. 
+# platelets -> ==== 
+ anova(m4, m5) # i.e. m4 `best` ->> sex + histologic + drug * cubic splines 
+# alkaline -> ==== 
+ anova(m1, m5) # i.e. m1 `best` ->>  age + histologic + cubic splines 
