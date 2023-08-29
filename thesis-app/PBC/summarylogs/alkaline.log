@@ -1,31 +1,31 @@
 
 ══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by AIC ═════════════════════════════════════════════════════════════════════
-                                             AIC      BIC   logLik deviance df.resid
-5Poisson_ns_Sex_Histologic.log          107771.2 107870.7 -53867.6 107735.2     1848
-4Poisson_quad_Age_Histologic.log        173051.4 173123.3 -86512.7 173025.4     1853
-5Poisson_quad_Sex_Age_Histologic.log    173052.7 173130.2 -86512.4 173024.7     1852
-7Poisson_quad_DI_Age_Histologic.log     173055.5 173144.0 -86511.7 173023.5     1850
-8Poisson_quad_DI_Sex_Age_Histologic.log 173056.8 173150.8 -86511.4 173022.8     1849
-4Poisson_quad_Sex_Age.log               173059.7 173120.6 -86518.9 173037.7     1855
-7Poisson_quad_DI_Sex_Age.log            173063.4 173140.8 -86517.7 173035.4     1852
+                                          AIC     BIC   logLik deviance df.resid
+5Negbin_ns_Age_Histologic.log         28046.0 28151.1 -14004.0  28008.0     1847
+6Negbin_ns_Sex_Age_Histologic.log     28047.9 28158.6 -14004.0  28007.9     1846
+9Negbin_ns_DI_Age_Histologic.log      28050.7 28177.9 -14002.3  28004.7     1843
+10Negbin_ns_DI_Sex_Age_Histologic.log 28052.6 28185.4 -14002.3  28004.6     1842
+5Negbin_ns_Sex_Age.log                28058.1 28152.1 -14012.0  28024.1     1849
+9Negbin_ns_DI_Sex_Age.log             28061.7 28177.8 -14009.8  28019.7     1845
+5Negbin_ns_Sex_Histologic.log         28066.5 28171.6 -14014.2  28028.5     1847
 
 ══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by BIC ═════════════════════════════════════════════════════════════════════
-                                          AIC      BIC   logLik deviance df.resid
-5Poisson_ns_Sex_Histologic.log       107771.2 107870.7 -53867.6 107735.2     1848
-4Poisson_quad_Sex_Age.log            173059.7 173120.6 -86518.9 173037.7     1855
-4Poisson_quad_Age_Histologic.log     173051.4 173123.3 -86512.7 173025.4     1853
-5Poisson_quad_Sex_Age_Histologic.log 173052.7 173130.2 -86512.4 173024.7     1852
-4Poisson_quad_Sex_Histologic.log     173066.5 173138.4 -86520.3 173040.5     1853
-7Poisson_quad_DI_Sex_Age.log         173063.4 173140.8 -86517.7 173035.4     1852
-7Poisson_quad_DI_Age_Histologic.log  173055.5 173144.0 -86511.7 173023.5     1850
+                                          AIC     BIC   logLik deviance df.resid
+5Negbin_ns_Age_Histologic.log         28046.0 28151.1 -14004.0  28008.0     1847
+5Negbin_ns_Sex_Age.log                28058.1 28152.1 -14012.0  28024.1     1849
+6Negbin_ns_Sex_Age_Histologic.log     28047.9 28158.6 -14004.0  28007.9     1846
+5Negbin_ns_Sex_Histologic.log         28066.5 28171.6 -14014.2  28028.5     1847
+9Negbin_ns_DI_Sex_Age.log             28061.7 28177.8 -14009.8  28019.7     1845
+9Negbin_ns_DI_Age_Histologic.log      28050.7 28177.9 -14002.3  28004.7     1843
+10Negbin_ns_DI_Sex_Age_Histologic.log 28052.6 28185.4 -14002.3  28004.6     1842
 
 ══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by logLik ══════════════════════════════════════════════════════════════════
-                                             AIC      BIC   logLik deviance df.resid
-5Poisson_ns_Sex_Histologic.log          107771.2 107870.7 -53867.6 107735.2     1848
-8Poisson_quad_DI_Sex_Age_Histologic.log 173056.8 173150.8 -86511.4 173022.8     1849
-7Poisson_quad_DI_Age_Histologic.log     173055.5 173144.0 -86511.7 173023.5     1850
-5Poisson_quad_Sex_Age_Histologic.log    173052.7 173130.2 -86512.4 173024.7     1852
-4Poisson_quad_Age_Histologic.log        173051.4 173123.3 -86512.7 173025.4     1853
-7Poisson_quad_DI_Sex_Age.log            173063.4 173140.8 -86517.7 173035.4     1852
-4Poisson_quad_Sex_Age.log               173059.7 173120.6 -86518.9 173037.7     1855
+                                          AIC     BIC   logLik deviance df.resid
+10Negbin_ns_DI_Sex_Age_Histologic.log 28052.6 28185.4 -14002.3  28004.6     1842
+9Negbin_ns_DI_Age_Histologic.log      28050.7 28177.9 -14002.3  28004.7     1843
+5Negbin_ns_Age_Histologic.log         28046.0 28151.1 -14004.0  28008.0     1847
+6Negbin_ns_Sex_Age_Histologic.log     28047.9 28158.6 -14004.0  28007.9     1846
+9Negbin_ns_DI_Sex_Age.log             28061.7 28177.8 -14009.8  28019.7     1845
+5Negbin_ns_Sex_Age.log                28058.1 28152.1 -14012.0  28024.1     1849
+9Negbin_ns_DI_Sex_Histologic.log      28070.2 28197.5 -14012.1  28024.2     1843
 

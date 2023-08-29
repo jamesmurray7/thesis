@@ -152,7 +152,7 @@ for(r in resps){ # Probably a nicer way to do this but it doesn't matter.
       # Trivariate spec:
       mf3 <- make.fit.objects(r, s, extras, druginteract, xx)
       # Store
-      eval(parse(text = paste0(r, xx,'[["',s,key,'triv"]]<-mf3'))) # Largely a junk lookup since it won't get used.
+      eval(parse(text = paste0(r, xx,'[["',s,key,'triv"]]<-mf3'))) 
       # Bivariate extra items:
       mf2 <- apply(var2, 2, function(x) make.fit.objects(r,s,x,druginteract,xx))
       eval(parse(text = paste0(r, xx,'[["',s,key,'biv"]]<-mf2'))) 
@@ -202,6 +202,7 @@ make.all.logs <- function(X){
 make.all.logs(albumingaussian)
 # Alkaline
 make.all.logs(alkalinepoisson)
+make.all.logs(alkalinenegbin)  # This takes a little while since negbin
 # Hepatomegaly
 make.all.logs(hepatomegalybinomial)
 # spiders
@@ -210,8 +211,10 @@ make.all.logs(spidersbinomial)
 make.all.logs(SGOTgaussian)
 # platelets
 make.all.logs(plateletspoisson)
+make.all.logs(plateletsgenpois)
 # proth.
 make.all.logs(prothrombinGamma)
+make.all.logs(prothrombingaussian)
 # ser. bili
 make.all.logs(serBilirgaussian)
 # ser. alb.
