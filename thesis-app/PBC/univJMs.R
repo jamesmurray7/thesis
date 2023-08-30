@@ -51,6 +51,7 @@ sbil <- joint(
   control = list(tol.rel = 5e-3)
 )
 
+plot(resid(sbil))
 cc <- cond.ranefs(sbil); plot(cc) # Decent, though intercept is perhaps better suited by skew-normal?
 
 # SGOT -> ====
@@ -63,6 +64,7 @@ sgot <- joint(
   control = list(tol.rel = 5e-3)
 )
 
+plot(resid(sgot))
 cc <- cond.ranefs(sgot); plot(cc) # pretty good
 
 # Spiders -> ====
@@ -90,6 +92,7 @@ hepa <- joint(
   control = list(tol.rel = 5e-3, verbose = T)
 )
 
+plot(resid(hepa, type = 'pearson'))
 cc <- cond.ranefs(hepa); plot(cc) # Very good (again).
 
 # Prothrombin -> ====
@@ -102,6 +105,7 @@ proth <- joint(
   control = list(tol.rel = 5e-3, verbose = T)
 )
 
+plot(resid(proth, type = 'pearson'))
 cc <- cond.ranefs(proth); plot(cc) # Decent.
 
 # Platelets -> ====
@@ -114,7 +118,19 @@ plat <- joint(
   control = list(tol.rel = 5e-3, verbose = T)
 )
 
+plot(resid(plat, type = 'pearson')) # A little splayed at edges but acceptable.
 cc <- cond.ranefs(plat); plot(cc) # Decent.
 
 # Alkaline -> ====
+alka <- joint(
+  long.formulas = list(alkaline ~ age + histologic + ns(time, knots = c(1, 4)) + 
+                         (1 + ns(time, knots = c(1, 4))|id)),
+  surv.formula = Surv(survtime, status) ~ age + histologic,
+  disp.formulas = list(~time),
+  data = PBCredx,
+  family = list("negbin"),
+  control = list(tol.rel = 5e-3, verbose = T)
+)
 
+plot(resid(alka, type = 'pearson')) # A little splayed at edges but acceptable.
+cc <- cond.ranefs(alka); plot(cc) # Decent.
