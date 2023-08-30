@@ -100,6 +100,7 @@ proth <- joint(
   long.formulas = list(prothrombin ~ age + histologic + drug * (time + I(time^2)) + 
                          (1 + time + I(time^2)|id)),
   surv.formula = Surv(survtime, status) ~ age + histologic,
+  disp.formulas = list(~time+age+drug+sex+histologic),
   data = PBCredx,
   family = list("Gamma"),
   control = list(tol.rel = 5e-3, verbose = T)
@@ -113,6 +114,7 @@ plat <- joint(
   long.formulas = list(platelets ~ sex + histologic + drug * ns(time, knots = c(1, 4)) + 
                          (1 + ns(time, knots = c(1, 4))|id)),
   surv.formula = Surv(survtime, status) ~ age + histologic,
+  disp.formulas = list(~time + age + sex + histologic),
   data = PBCredx,
   family = list("genpois"),
   control = list(tol.rel = 5e-3, verbose = T)
@@ -126,11 +128,25 @@ alka <- joint(
   long.formulas = list(alkaline ~ age + histologic + ns(time, knots = c(1, 4)) + 
                          (1 + ns(time, knots = c(1, 4))|id)),
   surv.formula = Surv(survtime, status) ~ age + histologic,
-  disp.formulas = list(~time),
+  disp.formulas = list(~time+drug+age+histologic),
   data = PBCredx,
   family = list("negbin"),
   control = list(tol.rel = 5e-3, verbose = T)
 )
 
 plot(resid(alka, type = 'pearson')) # A little splayed at edges but acceptable.
-cc <- cond.ranefs(alka); plot(cc) # Decent.
+cc <- cond.ranefs(alka); plot(cc)   # A little off!
+
+# Loop over univariate joint models and print the surviva sub-model summaries.
+jms <- ls()[sapply(ls(), function(i) eval(parse(text=paste0("class(",i,")"))))=="joint"]
+
+# So all significant by themselves.
+for(j in jms){
+  cat(j, "\n")
+  print(eval(parse(text = paste0(
+    "summary(", j, ")$Surv"
+  ))))
+  cat(cli::rule())
+  cat("\n")
+}
+
