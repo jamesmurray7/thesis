@@ -1,11 +1,11 @@
 cat("\f")
-
 library(gmvjoint)
 data(PBC, package = "gmvjoint")
 PBC$id <- as.numeric(as.character(PBC$id))
 options(
 	prompt = glue::glue_col("{green PBC> }"),
-	continue = "  "
+	continue = "  ",
+	stringsAsFactors = FALSE
 )
 
 save.dir <- ifelse(grepl("macOS", utils::sessionInfo()$running),
