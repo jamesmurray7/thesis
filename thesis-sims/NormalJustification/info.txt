@@ -1,0 +1,19 @@
+% NormalJustification =========================
+% Seeking to empirically argue by simulation  =
+% that the normal approximation used through- =
+% -out is justified.                          = 
+% =============================================
+
+For each family considered in the thesis: 
+* Gaussian (already done?)
+* Poisson
+* Binomial
+* Generalised Poisson
+* Negative binomial
+
+--> show that the justification holds over different
+available lengths of follow-up and magnitude(s) of
+variance component(s) diag(\D).
+
+--> Try and illustrate `shape'/modal mass of some
+expectations of interest.
