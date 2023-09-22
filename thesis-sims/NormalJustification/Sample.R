@@ -14,9 +14,9 @@ getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.in
 # Main "Sample" function --------------------------------------------------
 # Function to sample given data, true random effects, known family and target ids.
 # `X` is an object of class `DataGen`
-Sample <- function(X_, TUNE = 1.){
+Sample <- function(X_, TUNE = 1., return.walks = FALSE){
   # Check
-  stopifnot(inherits(X_, "dataGenOut"))
+  stopifnot(inherits(X_, "dataGen"))
   
   # Get the data, survival data (maybe not used?) and true random effects ----
   data <- X_$data; surv.data <- X_$surv.data; btrue <- X_$btrue
@@ -87,6 +87,7 @@ Sample <- function(X_, TUNE = 1.){
   
   cli::cli_progress_bar(name = "Sampling...", total = length(ids))
   norm.dens <- cond.dens <- MVN.dens <- vector("list", length(ids))
+  if(return.walks) Walks <- norm.dens
   q <- ncol(D)
   Acc <- numeric(length(ids))
   for(a in 1:length(ids)){
@@ -104,6 +105,7 @@ Sample <- function(X_, TUNE = 1.){
                                    sd = sqrt(Sigma[[a]][j,j]))
     }
     MVN.dens[[a]] <- mvtnorm::dmvnorm(t(cond.sim$walks), mean = b.hat[[a]], sigma = Sigma[[a]])
+    if(return.walks) Walks[[a]] <- t(cond.sim$walks)
     rm(cond.sim)
     cli::cli_progress_update()
   }
@@ -132,7 +134,32 @@ Sample <- function(X_, TUNE = 1.){
   
   out <- do.call(rbind, dfs) # About 5MB at 10,000 iterations on 100 subjects.
   out$ApproxBias <- out$normy - out$condy
-  list(df = out, MVN.dens = MVN.dens, mi = unname(mi),
-       family = family,
-       Acc = Acc)
+  out <- list(df = out, MVN.dens = MVN.dens, mi = unname(mi),
+              family = family, Sigmas = Sigma, true.b = btrue,
+              Acc = Acc)
+  if(return.walks) out$Walks <- Walks
+  class(out) <- "Sample"
+  out
+}
+
+print.Sample <- function(x){
+  stopifnot(inherits(x, "Sample"))
+  qAcc <- quantile(x$Acc, probs = c(.5, .25, .75))
+  cat(sprintf("\nAcceptance: %.4f [%.4f, %.4f]\n", qAcc[1], qAcc[2], qAcc[3]))
+  print(head(x$df))
+  cat("\n")
+}
+
+trim.Walks <- function(x){
+  if(inherits(x, "Sample")){ # Either supply a `Sample` object...
+    stopifnot(!is.null(x$Walks))
+    W <- x$Walks
+    if(class)
+      out <- lapply(W, function(w){
+        w[!duplicated.matrix(w),]
+      })
+  }else{ # OR a standalone matrix of random effect walks...
+    out <- w[!duplicated.matrix(w),]
+  }
+  out
 }

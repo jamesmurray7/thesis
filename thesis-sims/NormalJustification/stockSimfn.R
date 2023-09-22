@@ -62,6 +62,22 @@ dataGen <- function(X){
               surv.data = surv.data,
               btrue = btrue, 
               args = X$args, ids = X$ids)
-  class(out) <- "dataGenOut"
+  class(out) <- "dataGen"
   out
+}
+
+# small S3 for dataGen; make it a bit more readable...
+print.dataGen <- function(x){
+  stopifnot(inherits(x, "dataGen"))
+  cat("\n----\n")
+  Del <- 100 * sum(x$surv.data$status)/nrow(x$surv.data)
+  cat("\nData preview ->\n")
+  print(x$data[sample(1:nrow(x$data), 10, FALSE), ])
+  cat(sprintf("\n---- %.2f%% failure rate ----\n\n", Del))
+  cat(sprintf("Family: %s\n", x$args$family))
+  cat(sprintf("Covariance matrix: \n"))
+  print(round(x$args$D, 2))
+  cat("\ntheta: \n")
+  print(x$args$theta)
+  cat("\n----\n\n")
 }
