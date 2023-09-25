@@ -14,7 +14,7 @@ getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.in
 # Main "Sample" function --------------------------------------------------
 # Function to sample given data, true random effects, known family and target ids.
 # `X` is an object of class `DataGen`
-Sample <- function(X_, TUNE = 1., return.walks = FALSE){
+Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE){
   # Check
   stopifnot(inherits(X_, "dataGen"))
   
@@ -36,10 +36,14 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE){
   for(i in seq_along(ids)){
     X[[i]] <- W[[i]] <- Y[[i]] <- Z[[i]] <- list() # This for ease of use with `gmvjoint`.
     X[[i]][[1]] <- model.matrix(~time+cont+bin, data[data$id==ids[i],,drop=F])
-    if(!family%in%c("binomial", "genpois"))
+    if(force.intslope){
       Z[[i]][[1]] <- model.matrix(~time, data[data$id==ids[i],,drop=F])
-    else
-      Z[[i]][[1]] <- model.matrix(~1, data[data$id==ids[i],,drop=F])
+    }else{
+      if(!family%in%c("binomial", "genpois"))
+        Z[[i]][[1]] <- model.matrix(~time, data[data$id==ids[i],,drop=F])
+      else
+        Z[[i]][[1]] <- model.matrix(~1, data[data$id==ids[i],,drop=F])
+    }
     Y[[i]][[1]] <- data[data$id==ids[i], 'Y.1']
     W[[i]][[1]] <- matrix(1, nrow = nrow(X[[i]][[1]]), ncol = 1)
   }
@@ -53,7 +57,7 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE){
   l0 <- exp(theta[1] + theta[2] * fts) # exp(log(nu)) * exp(alpha * t)
   # Hardcoding for genpois and binomial case, where only random intercept is
   # fitted/modelled.
-  if(family %in% c("genpois", "binomial")){
+  if(family %in% c("genpois", "binomial") && !force.intslope){
     sv <- gmvjoint:::surv.mod(surv, lapply(list(Y.1 ~ time + cont + bin + (1|id)), gmvjoint:::parseFormula), l0)
   }else{
     sv <- gmvjoint:::surv.mod(surv, lapply(list(Y.1 ~ time + cont + bin + (1 + time|id)), gmvjoint:::parseFormula), l0)  

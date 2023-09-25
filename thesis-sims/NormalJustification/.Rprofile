@@ -122,6 +122,8 @@ save.dir.file.path <- function(x, LHS = save.dir) gsub("\\/\\/","/",file.path(LH
 }
 
 source('stockSimfn.R')
+source("Createbivcontours.R")
+source("Sample.R")
 source('../theme_csda.R')
 
 .startmessage()
