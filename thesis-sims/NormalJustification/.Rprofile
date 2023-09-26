@@ -1,6 +1,9 @@
 cat("\f")
 
 library(gmvjoint)
+library(Rcpp)
+library(RcppArmadillo)
+library(RcppDist) # Don't know if I actually need to load this in?
 options(
 	prompt = glue::glue_col("{green NormalJustification> }"),
 	continue = "  "
@@ -125,6 +128,8 @@ source('stockSimfn.R')
 source("Createbivcontours.R")
 source("Sample.R")
 source('../theme_csda.R')
+cat("\nLoading c++ file...\n")
+sourceCpp("mh.cpp")
 
 .startmessage()
 

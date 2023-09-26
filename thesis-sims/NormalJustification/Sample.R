@@ -14,7 +14,8 @@ getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.in
 # Main "Sample" function --------------------------------------------------
 # Function to sample given data, true random effects, known family and target ids.
 # `X` is an object of class `DataGen`
-Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE){
+Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
+                   b.dist = "normal", df = 4){
   # Check
   stopifnot(inherits(X_, "dataGen"))
   
@@ -98,10 +99,16 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE){
     cond.dens[[a]] <- setNames(vector("list", q), paste0("b", 0:(q-1)))
     norm.dens[[a]] <- setNames(vector("list", q), paste0("b", 0:(q-1)))
     # Walks
-    cond.sim <- gmvjoint:::metropolis(b[[a]], Omega, Y[[a]], X[[a]], Z[[a]], W[[a]],
-                                  list(family), Delta[[a]], S[[a]], Fi[[a]], l0i[[a]], 
-                                  SS[[a]], Fu[[a]], l0u[[a]], Omega$gamma.rep,
-                                  list(0:3), b.inds.cpp, 1L, q, 1000, 10000, Sigma[[a]], tune)
+    # cond.sim <- gmvjoint:::metropolis(b[[a]], Omega, Y[[a]], X[[a]], Z[[a]], W[[a]],
+    #                               list(family), Delta[[a]], S[[a]], Fi[[a]], l0i[[a]], 
+    #                               SS[[a]], Fu[[a]], l0u[[a]], Omega$gamma.rep,
+    #                               list(0:3), b.inds.cpp, 1L, q, 1000, 10000, Sigma[[a]], tune)
+    # I think it should be MH scheme, not just Met; give _very_ similar results though.
+    cond.sim <- Metropolis_Hastings(b[[a]], Omega, Y[[a]], X[[a]], Z[[a]], W[[a]],
+                                    list(family), Delta[[a]], S[[a]], Fi[[a]], l0i[[a]], 
+                                    SS[[a]], Fu[[a]], l0u[[a]], Omega$gamma.rep,
+                                    list(0:3), b.inds.cpp, 1L, q, 1000, 10000, Sigma[[a]], 
+                                    b.dist, df, tune)
     Acc[a] <- cond.sim$AcceptanceRate
     for(j in 1:q){
       cond.dens[[a]][[j]] <- density(t(cond.sim$walks)[,j])
@@ -153,6 +160,16 @@ print.Sample <- function(x){
   print(head(x$df))
   cat("\n")
 }
+
+plot.Sample <- function(x){
+  stopifnot(inherits(x, "Sample"))
+  num.between <- 100 * sum(x$Acc > .2 & x$Acc < .25)/length(x$Acc) 
+  plot(x$Acc, pch = 19, main = sprintf("%.2f%% acceptance rate > 0.20 and < 0.25", num.between),
+       ylab = "Acceptance rate", xaxt = "n", xlab = "")
+  abline(h = c(0.20, 0.25), lty = 5, col = "red2")
+}
+
+
 
 trim.Walks <- function(x){
   if(inherits(x, "Sample")){ # Either supply a `Sample` object...
