@@ -36,18 +36,45 @@ create.biv.contour <- function(X, id = NULL, trimmed = FALSE, # strange results 
   
   # Make plot title (probably change in future)
   # tit <- bquote("id: "*.(id)*", "*m[i]==.(this.mi)*".")
-  tit <- bquote(m[i]==.(this.mi))
   
   # Simulate based on b.hat and Sigma.hat
   ran <- as.data.frame(mvtnorm::rmvnorm(N, this.b.hat, this.Sigma))
+  # test <- car::dataEllipse(ran[,1],ran[,2], draw = F, segments = 150)
+  # test <- test$`0.95`
+  
+  # Trying things...
+  # https://stackoverflow.com/questions/76175820/function-to-calculate-whether-a-point-is-within-ellipse-using-stat-ellipse
+  eig <- eigen(this.Sigma)
+  rx <- sqrt(eig$values[1] * qchisq(0.95, 2))
+  ry <- sqrt(eig$values[2] * qchisq(0.95, 2))
+  rx2 <- rx^2; ry2 <- ry^2
+  theta <- atan2(eig$vec[2,1], eig$vectors[1,1])
+  ct <- cos(theta); st <- sin(theta)
+  dx <- this.Walks[,1] - this.b.hat[1]
+  dy <- this.Walks[,2] - this.b.hat[2]
+  checks <- (ct * dx + st * dy)^2/rx2 + (st * dx - ct * dy)^2/ry2 <= 1
+  pc.checks <- round(sum(checks)/length(checks), 3)
+  tit <- bquote(m[i]==.(this.mi)*","~psi==.(pc.checks))
+  # Plot -->
+  # png("~/Downloads/temp.png", width = 140, height = 90, units = "mm", res = 1e3)
+  # plot(test[,2]~test[,1], type="l",
+  #      ylab = expression(b[1]), xlab = expression(b[0]),
+  #      ylim = range(this.Walks[,2]), xlim = range(this.Walks[,1]))
+  # # abline(v=this.b.hat[1],h=this.b.hat[2])
+  # points(this.Walks[checks,1], this.Walks[checks,2], pch = 19, col = 'mediumseagreen', cex = .25)
+  # points(this.Walks[!checks,1], this.Walks[!checks,2], pch = 19, col = 'red', cex = .25)
+  # points(this.b.hat[2] ~ this.b.hat[1], col = 'blue', pch = 4, cex = .5)
+  # legend("topright", bty = "n", legend = sprintf("%.2f%%", 100 * mean(checks)))
+  # dev.off()
+  
   names(this.Walks.df) <- names(ran)
   
   # Make the plot -->
   P <- ggplot(this.Walks.df, aes(x = b0, y = b1)) + 
     geom_point(alpha = 0.15, size = 0.01) + 
-    stat_ellipse(data = ran, type = "norm", colour = "#b3713c", level = 0.90, lwd = 0.25) + 
+    # stat_ellipse(data = ran, type = "norm", colour = "#b3713c", level = 0.90, lwd = 0.25) + 
+    # stat_ellipse(data = ran, type = "norm", colour = "#713cb3", level = 0.99, lwd = 0.25) + 
     stat_ellipse(data = ran, type = "norm", colour = "#3cb371", level = 0.95, lwd = 0.25) + 
-    stat_ellipse(data = ran, type = "norm", colour = "#713cb3", level = 0.99, lwd = 0.25) + 
     geom_point(data = as.data.frame(t(this.b.hat)), aes(x = b0, y = b1),
                colour = "#b33c7e", size = 0.3, pch = 18) + 
     labs(x = expression(b[0]), y = expression(b[1]), title = tit) + 
@@ -108,7 +135,7 @@ create.biv.contour <- function(X, id = NULL, trimmed = FALSE, # strange results 
 # text.Width      text.Height
 .w <- 221.99739; .h <- 149.99825 # This is in mm
 # Function to plot `staircase`-type plot
-plot.staircase <- function(X, num.to.plot = 30, num.per.row = 10, file.name = NULL){
+plot.staircase <- function(X, num.to.plot = 30, num.per.row = 10, file.name = NULL, N = 1e3){
   stopifnot(inherits(X, "Sample"))
   nrow <- num.to.plot%/%num.per.row
   ncol <- num.per.row # Slightly redundant, oh well.
@@ -124,7 +151,7 @@ plot.staircase <- function(X, num.to.plot = 30, num.per.row = 10, file.name = NU
   ids <- df2$id
   
   # List of plots
-  Ps <- lapply(ids, function(x) create.biv.contour(X, id = x))
+  Ps <- lapply(ids, function(x) create.biv.contour(X, id = x, N = N))
   file.name <- save.dir.file.path(file.name, 
                                   save.dir.file.path(family.dir.name(X$family)))
   
@@ -142,8 +169,9 @@ plot.staircase <- function(X, num.to.plot = 30, num.per.row = 10, file.name = NU
 
 
 # "Zoomed" plot for main.tex ----------------------------------------------
+# EDIT -> don't actually like these, so scrapping this!!
 # pseudo-version of plot.staircase, but only choosing six profiles.
-zoom.for.main <- function(X, file.name = NULL){
+zoom.for.main <- function(X, file.name = NULL, N = 1e4){
   stopifnot(inherits(X, "Sample"))
   if(is.null(file.name)) # Make a junk filename if none provided
     file.name <- paste0(paste(sample(LETTERS, 4), collapse = "", sep=""),
@@ -178,7 +206,7 @@ zoom.for.main <- function(X, file.name = NULL){
     ids[1] <- ids.with.one[1]
   
   # Generate list of plots ----
-  Ps <- lapply(ids, function(x) create.biv.contour(X, id = x, axes = "nonebiggertitle"))
+  Ps <- lapply(ids, function(x) create.biv.contour(X, id = x, axes = "nonebiggertitle", N = N))
   file.name <- save.dir.file.path(file.name, 
                                   save.dir.file.path(family.dir.name(X$family)))
     

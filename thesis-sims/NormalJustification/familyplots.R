@@ -29,6 +29,8 @@ plot(X)
 plot.staircase(X, 40, file.name = "default-gaussian.png")
 zoom.for.main(X, file.name = "default-gaussian-zoom.png")
 
+zoom.for.main(X, file.name = "test.png")
+
 # Poisson -----------------------------------------------------------------
 .r()
 # Under "stock" conditions
