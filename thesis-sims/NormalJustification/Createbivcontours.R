@@ -17,7 +17,8 @@ library(ggplot2)
 
 # Function to create _one_ plot for _one_ subject.
 create.biv.contour <- function(X, id = NULL, trimmed = FALSE, # strange results when trimmed - weird!
-                               axes = c("none", "left", "bottomleft", "bottom", "all", "nonebiggertitle"), N = 1e3){
+                               axes = c("none", "left", "bottomleft", "bottom", "all", "nonebiggertitle"), N = 1e3,
+                               level = 0.95, df = 2){
   stopifnot(inherits(X, "Sample"))
   if(is.null(id)){
     cat("\n--> id not supplied, choosing a random subject...\n\n")
@@ -30,7 +31,7 @@ create.biv.contour <- function(X, id = NULL, trimmed = FALSE, # strange results 
   this.Walks.df <- as.data.frame(this.Walks)
   this.Acc <- X$Acc[id]; this.mi <- X$mi[id]
   this.df <- X$df[X$df$id==id,]
-  this.b.hat <- c(b0 = this.df[this.df$var=="b[0]", "hatb"][1], b1 = this.df[this.df$var=="b[1]", "hatb"][2])
+  this.b.hat <- setNames(c(X$b.hats[[id]]), c("b0", "b1"))
   this.b.true <- X$true.b[id,]
   this.Sigma <- X$Sigmas[[id]]
   
@@ -44,17 +45,19 @@ create.biv.contour <- function(X, id = NULL, trimmed = FALSE, # strange results 
   
   # Trying things...
   # https://stackoverflow.com/questions/76175820/function-to-calculate-whether-a-point-is-within-ellipse-using-stat-ellipse
-  eig <- eigen(this.Sigma)
-  rx <- sqrt(eig$values[1] * qchisq(0.95, 2))
-  ry <- sqrt(eig$values[2] * qchisq(0.95, 2))
+  # eig <- eigen(this.Sigma)
+  eig <- eigen(cov(ran))
+  rx <- sqrt(eig$values[1] * qchisq(level, df))
+  ry <- sqrt(eig$values[2] * qchisq(level, df))
   rx2 <- rx^2; ry2 <- ry^2
   theta <- atan2(eig$vec[2,1], eig$vectors[1,1])
   ct <- cos(theta); st <- sin(theta)
-  dx <- this.Walks[,1] - this.b.hat[1]
-  dy <- this.Walks[,2] - this.b.hat[2]
+  cm <- colMeans(ran)
+  dx <- this.Walks[,1] - cm[1]
+  dy <- this.Walks[,2] - cm[2]
   checks <- (ct * dx + st * dy)^2/rx2 + (st * dx - ct * dy)^2/ry2 <= 1
   pc.checks <- round(sum(checks)/length(checks), 3)
-  tit <- bquote(m[i]==.(this.mi)*","~psi==.(pc.checks))
+  tit <- bquote(m[i]==.(this.mi)*","~psi[i]==.(pc.checks))
   # Plot -->
   # png("~/Downloads/temp.png", width = 140, height = 90, units = "mm", res = 1e3)
   # plot(test[,2]~test[,1], type="l",
@@ -135,7 +138,8 @@ create.biv.contour <- function(X, id = NULL, trimmed = FALSE, # strange results 
 # text.Width      text.Height
 .w <- 221.99739; .h <- 149.99825 # This is in mm
 # Function to plot `staircase`-type plot
-plot.staircase <- function(X, num.to.plot = 30, num.per.row = 10, file.name = NULL, N = 1e3){
+plot.staircase <- function(X, num.to.plot = 30, num.per.row = 10, file.name = NULL, 
+                           N = 1e3, level = 0.95, df = 2){
   stopifnot(inherits(X, "Sample"))
   nrow <- num.to.plot%/%num.per.row
   ncol <- num.per.row # Slightly redundant, oh well.

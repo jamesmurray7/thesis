@@ -1,6 +1,6 @@
 # Obtain b.hat and Sigma.hat given observed data at TRUE parameter estimates.
 getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds, Omega){
-  D <- Omega$D; beta <- Omega$beta; sigma <- Omega$sigma; gamma <- Omega$gamma; zeta <- Omega$zeta[Omega$zeta!=0L]
+  D <- Omega$D; beta <- Omega$beta; sigma <- Omega$sigma; gamma <- Omega$gamma; zeta <- Omega$zeta
   gamma.rep <- Omega$gamma.rep
   ln <- nrow(X[[1]])
   uu <- optim(b, gmvjoint:::joint_density, gmvjoint:::joint_density_ddb,
@@ -14,7 +14,7 @@ getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.in
 # Main "Sample" function --------------------------------------------------
 # Function to sample given data, true random effects, known family and target ids.
 # `X` is an object of class `DataGen`
-Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
+Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE, include.survival = TRUE,
                    b.dist = "normal", df = 4){
   # Check
   stopifnot(inherits(X_, "dataGen"))
@@ -63,11 +63,13 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
   }else{
     sv <- gmvjoint:::surv.mod(surv, lapply(list(Y.1 ~ time + cont + bin + (1 + time|id)), gmvjoint:::parseFormula), l0)  
     b.inds <- list(0:1)
-    gamma.rep <- c(0.5, 0.5)
+    gamma.rep <- rep(gamma, 2)
   }
   
   # Omega^{(TRUE)} ---->
+  if(!include.survival){gamma <- gamma * 0; gamma.rep <- gamma.rep * 0}
   Omega <- list(D = D, beta = beta, sigma = list(sigma), gamma = gamma, gamma.rep = gamma.rep, zeta = zeta[zeta!=0L])
+  if(!include.survival) Omega$zeta <- Omega$zeta * 0
   
   # Tuning parameters; aiming for about 22.5% acceptance across all subjects.
   tune <- TUNE
@@ -80,6 +82,13 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
   SS <- lapply(seq_along(ids), function(x) sv$SS[[ids[x]]])
   Fu <- lapply(seq_along(ids), function(x) sv$Fu[[ids[x]]])
   l0u <- lapply(seq_along(ids), function(x) sv$l0u[[ids[x]]])
+  
+  if(!include.survival){ # `Remove' RHS of complete data likelihood...
+    Delta <- lapply(Delta, `*`, 0)
+    l0u <- lapply(l0u, `*`, 0)
+    l0i <- lapply(l0i, `*`, 0)
+  }
+  
   
   # Get Sigma
   Sigma <- Map(function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u){
@@ -146,7 +155,8 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
   out <- do.call(rbind, dfs) # About 5MB at 10,000 iterations on 100 subjects.
   out$ApproxBias <- out$normy - out$condy
   out <- list(df = out, MVN.dens = MVN.dens, mi = unname(mi),
-              family = family, Sigmas = Sigma, true.b = btrue,
+              family = family, b.hats = b.hat, Sigmas = Sigma, true.b = btrue,
+              include.survival = include.survival,
               Acc = Acc)
   if(return.walks) out$Walks <- Walks
   class(out) <- "Sample"
