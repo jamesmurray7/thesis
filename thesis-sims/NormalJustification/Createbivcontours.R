@@ -170,8 +170,142 @@ plot.staircase <- function(X, num.to.plot = 30, num.per.row = 10, file.name = NU
   cat(sprintf("\nSaved in %s.\n", file.name))
 }
 
+compare.theor.distn <- function(X1, X2){
+  stopifnot(inherits(X1, "Sample") & inherits(X2, "Sample"))
+  if(sum(X1$include.survival, X2$include.survival) != 1)
+    stop("Need one Sample with include.survival = T, not zero/both!")
+  
+  b.hats1 <- X1$b.hats; b.hats2 <- X2$b.hats
+  Sigma.hats1 <- X1$Sigmas
+  eig.S1 <- lapply(Sigma.hats1, eigen)
+  theta.S1 <- sapply(eig.S1, function(x){
+    xx <- atan2(x$vec[2,1], x$vectors[1,1])
+    if(xx < 0) xx <- xx + 2 * pi
+    xx
+  })
+  semi.maj1 <- sapply(eig.S1, function(x) sqrt(x$values[1] * qchisq(0.95, 2)))
+  semi.min1 <- sapply(eig.S1, function(x) sqrt(x$values[2] * qchisq(0.95, 2)))
+  Sigma.hats2 <- X2$Sigmas
+  eig.S2 <- lapply(Sigma.hats2, eigen)
+  theta.S2 <- sapply(eig.S2, function(x){
+    xx <- atan2(x$vec[2,1], x$vectors[1,1])
+    if(xx < 0) xx <- xx + 2 * pi
+    xx
+  })
+  semi.maj2 <- sapply(eig.S2, function(x) sqrt(x$values[1] * qchisq(0.95, 2)))
+  semi.min2 <- sapply(eig.S2, function(x) sqrt(x$values[2] * qchisq(0.95, 2)))
+  # Keep monitoring acceptance probs!
+  A1 <- X1$Acc; A2 <- X2$Acc
+  
+  if(X2$include.survival){
+    loc.diff <- Map(function(b2,b1) b2 - b1, b2 = b.hats2, b1 = b.hats1)
+    ang.diff <- theta.S2 - theta.S1
+    maj.diff <- semi.maj2 - semi.maj1
+    min.diff <- semi.min2 - semi.min1
+    Acc.diff <- A2 - A1
+  }else{
+    loc.diff <- Map(function(b1,b2) b1 - b2, b1 = b.hats1, b2 = b.hats2)
+    ang.diff <- theta.S1 - theta.S2
+    maj.diff <- semi.maj1 - semi.maj2
+    min.diff <- semi.min1 - semi.min2
+    Acc.diff <- A1 - A2
+  }
+  
+  structure(list(loc.diff = loc.diff,
+                 ang.diff = ang.diff,
+                 maj.diff = maj.diff,
+                 min.diff = min.diff,
+                 Acc.diff = Acc.diff,
+                 Acc = rbind(A1, A2),
+                 mi = X1$mi,
+                 which.surv = if(X1$include.survival) "X1" else "X2"),
+            class = "dist.compare")
+}
+
+print.dist.compare <- function(x){
+  stopifnot(inherits(x, "dist.compare"))
+  # Strictly between 20-30%
+  acc <- apply(x$Acc,2,function(y){
+    y1 <- round(y[1],2); y2 <- round(y[2],2)
+    c1 <- y1 >= 0.20 & y1 <= 0.30
+    c2 <- y2 >= 0.20 & y2 <= 0.30
+    c1 & c2
+  })
+  cat(sprintf("\n----\n%s is the survival density\n----\n", x$which.surv))
+  cat(sprintf("\n%.2f%% instances with two usable samples\n", 100 * mean(acc)))
+  cat("\nSummary of b.hat differences:\n ")
+  print(summary(setNames(as.data.frame(do.call(rbind, x$loc.diff)), c("b0", "b1"))[acc,]))
+  cat("\nSummary of angle differences:\n")
+  print(summary(x$ang.diff[acc]))
+  cat("\nSummary of semi-major axes differences:\n")
+  print(summary(x$maj.diff[acc]))
+  cat("\nSummary of semi-minor axes differences:\n")
+  print(summary(x$min.diff[acc]))
+}
+
+plot.dist.compare <- function(x){
+  stopifnot(inherits(x, "dist.compare"))
+  acc <- apply(x$Acc, 2, function(y){
+    y1 <- round(y[1],2); y2 <- round(y[2],2)
+    c1 <- y1 >= 0.20 & y1 <= 0.30
+    c2 <- y2 >= 0.20 & y2 <= 0.30
+    c1 & c2
+  })
+  loc.df <- setNames(as.data.frame(do.call(rbind, x$loc.diff)), c("b0", "b1"))[acc,]
+  loc.df$mi <- x$mi[acc]
+  P1 <- ggplot(loc.df, aes(x = b0, y = b1, colour = mi)) + 
+    geom_point() + 
+    labs(x = expression(b[0]^{"S"}-b[0]^{"NS"}),
+         y = expression(b[1]^{"S"}-b[1]^{"NS"}),
+         colour = expression(m[i])) + 
+    scale_colour_gradient(low = .nice.orange, high = "red3",
+                          breaks = c(2,4,6,8,10)) + 
+    theme_csda()+
+    theme(legend.position = "none")
+  
+  r.df <- data.frame(mi = x$mi, ry = x$min.diff, rx = x$maj.diff)[acc,]
+  P2 <- ggplot(r.df, aes(x = rx, y = ry, colour = mi)) + 
+    geom_point() + 
+    labs(x = expression(r[x]^{"S"}-r[x]^{"NS"}),
+         y = expression(r[y]^{"S"}-r[y]^{"NS"}),
+         colour = expression(m[i])) + 
+    scale_color_gradient(low = .nice.orange, high = "red3",
+                         breaks = c(2,4,6,8,10)) + 
+    theme_csda()
+  
+  ang.df <- data.frame(mi = x$mi, theta = x$ang.diff)[acc,]
+  P3 <- ggplot(ang.df, aes(x = mi, y = theta, fill = mi, group = mi)) + 
+    geom_hline(yintercept = 0, lty = 5, alpha = 0.33) +
+    geom_boxplot() + 
+    labs(x = expression(m[i]),
+         y = expression(vartheta^{"S"}-vartheta^{"NS"})) + 
+    scale_fill_gradient(low = .nice.orange, high = "red3") + 
+    scale_x_continuous(breaks = 1:10) + 
+    theme_csda() + 
+    theme(legend.position = 'none')
+  
+  gridExtra::grid.arrange(P1, P2, P3,
+                          layout_matrix = rbind(
+                            c(1,1,2,2),
+                            c(1,1,2,2),
+                            c(3,3,3,3),
+                            c(3,3,3,3)
+                          ))
+}
 
 
+
+
+
+
+
+
+
+
+
+
+
+# OLD CODE ----------------------------------------------------------------
 # "Zoomed" plot for main.tex ----------------------------------------------
 # EDIT -> don't actually like these, so scrapping this!!
 # pseudo-version of plot.staircase, but only choosing six profiles.

@@ -2,14 +2,17 @@
 
 # Obtaining phi, the proportion "inside" the region bounded by ellipse.
 check.walks <- function(W, b.hat, Sigma){
-  eig <- eigen(Sigma)
+  ran <- mvtnorm::rmvnorm(10000, mean = b.hat, sigma = Sigma)
+  # Use these instead of 'true' b.hat Sig.hat.
+  cm <- colMeans(ran)
+  eig <- eigen(cov(ran))
   rx <- sqrt(eig$values[1] * qchisq(0.95, 2))
   ry <- sqrt(eig$values[2] * qchisq(0.95, 2))
   rx2 <- rx^2; ry2 <- ry^2
   theta <- atan2(eig$vec[2,1], eig$vec[1,1])
   ct <- cos(theta); st <- sin(theta)
-  dx <- W[,1] - b.hat[1]
-  dy <- W[,2] - b.hat[2]
+  dx <- W[,1] - cm[1]
+  dy <- W[,2] - cm[2]
   checks <- (ct * dx + st * dy)^2/rx2 + (st * dx - ct * dy)^2/ry2 <= 1
   # Return the proportion
   sum(checks)/length(checks)
