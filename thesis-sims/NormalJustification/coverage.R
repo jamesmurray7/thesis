@@ -28,7 +28,7 @@ prop.by.mi <- function(X, accept.min = 0.20, accept.max = 0.25){
     data.frame(Acc = X$Acc[i], mi = X$mi[i], psi = psi)
   }))
   df$surv <- as.numeric(X$include.survival)
-  to.keep <- df$Acc >= accept.min & df$Acc <= accept.max
+  to.keep <- round(df$Acc,2) >= accept.min & round(df$Acc,2) <= accept.max
   df <- df[to.keep,-1]
   df[order(df$mi),]
 }
@@ -64,7 +64,75 @@ quick.psi.plot <- function(psi1, psi2){
     labs(x = expression(m[i]), y = expression(psi[i])) + 
     expand_limits(y=c(1)) + 
     theme_csda()
-  
-    
-  
 }
+
+# Wrapper to sample.
+get.psi.mi <- function(family, tune = NULL, n = 300L, theta = c(-2, 0.4), gamma = 0.25,
+                       burnin = 1000, NMC = 5000, min.acc = 0.20, max.acc = 0.30, ...){
+  if(is.null(tune)){
+    tune.surv <- 3.75; tune.nosurv <- 5.25
+  }else{
+    tune.surv <- tune[1]; tune.nosurv <- tune[2]
+  }
+  
+  sim <- create.simfn(family = list(family), 
+                      arguments = list(n = n, theta = theta, gamma = gamma, ...))
+  
+  X_ <- dataGen(sim)
+  surv <- Sample(X_, tune.surv, TRUE, TRUE, TRUE, burnin = burnin, NMC = NMC)
+  cat("Survival done:\n")
+  print(surv); cat("\n")
+  no.surv <- Sample(X_, tune.nosurv, TRUE, TRUE, FALSE, burnin = burnin, NMC = NMC)
+  cat("No surv: \n")
+  print(no.surv)
+  cat("\n")
+  
+  psi.surv <- prop.by.mi(surv, min.acc, max.acc)
+  
+  psi.nosurv <- prop.by.mi(no.surv, min.acc, max.acc)
+  
+  psis <- rbind(psi.surv, psi.nosurv)
+  psis <- as.data.frame(psis)
+  psis$family <- family
+  psis
+}
+
+get.psi.mi2 <- function(family, tune = NULL, n = 1000L, 
+                        burnin = 1000, NMC = 10000, min.acc = 0.20, max.acc = 0.30, ...){
+  if(is.null(tune)){
+    tune.surv <- 5.75; tune.nosurv <- 5.75
+  }else{
+    tune.surv <- tune[1]; tune.nosurv <- tune[2]
+  }
+  
+  sim <- switch(family,
+                gaussian = {create.simfn(list("gaussian"), arguments = list(n = n, ...))},
+                poisson = {create.simfn(list("poisson"), arguments = list(n = n, ...))},
+                binomial = {create.simfn(list("binomial"), arguments = list(n = n, D = diag(c(2,.5)), ...))},
+                negbin = {create.simfn(list("negbin"), arguments = list(n = n, ...))},
+                Gamma = {create.simfn(list("Gamma"), arguments = list(n = n, ...))},
+                genpois = {create.simfn(list("genpois"), arguments = list(n = n, D = diag(c(0.3,.05)), ...))})
+  
+  X_ <- dataGen(sim)
+  surv <- Sample(X_, tune.surv, TRUE, TRUE, TRUE, burnin = burnin, NMC = NMC)
+  cat("Survival done:\n")
+  print(surv); cat("\n")
+  no.surv <- Sample(X_, tune.nosurv, TRUE, TRUE, FALSE, burnin = burnin, NMC = NMC)
+  cat("No surv: \n")
+  print(no.surv)
+  cat("\n")
+  
+  psi.surv <- prop.by.mi(surv, min.acc, max.acc)
+  psi.nosurv <- prop.by.mi(no.surv, min.acc, max.acc)
+  
+  psis <- rbind(psi.surv, psi.nosurv)
+  psis <- as.data.frame(psis)
+  psis$family <- family
+  
+  theors <- compare.theor.distn(surv, no.surv)
+  
+  out <- list(psi.mi = psis, theor.compare = theors)
+  save(out, file = paste0("/data/c0061461/THESIS/", family.dir.name(family), "/psimi.RData"))
+  return(out)
+}
+

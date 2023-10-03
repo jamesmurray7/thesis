@@ -15,7 +15,7 @@ getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.in
 # Function to sample given data, true random effects, known family and target ids.
 # `X` is an object of class `DataGen`
 Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE, include.survival = TRUE,
-                   b.dist = "normal", df = 4){
+                   b.dist = "normal", df = 4, burnin = 1000, NMC = 10000){
   # Check
   stopifnot(inherits(X_, "dataGen"))
   
@@ -116,7 +116,7 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE, 
     cond.sim <- Metropolis_Hastings(b[[a]], Omega, Y[[a]], X[[a]], Z[[a]], W[[a]],
                                     list(family), Delta[[a]], S[[a]], Fi[[a]], l0i[[a]], 
                                     SS[[a]], Fu[[a]], l0u[[a]], Omega$gamma.rep,
-                                    list(0:3), b.inds.cpp, 1L, q, 1000, 10000, Sigma[[a]], 
+                                    list(0:3), b.inds.cpp, 1L, q, burnin, NMC, Sigma[[a]], 
                                     b.dist, df, tune)
     Acc[a] <- cond.sim$AcceptanceRate
     for(j in 1:q){
@@ -171,16 +171,17 @@ print.Sample <- function(x){
   cat("\n")
 }
 
-plot.Sample <- function(x){
+plot.Sample <- function(x, min.acc = 0.20, max.acc = 0.25){
   stopifnot(inherits(x, "Sample"))
-  num.between <- 100 * sum(x$Acc > .2 & x$Acc < .25)/length(x$Acc) 
-  plot(x$Acc, pch = 19, main = sprintf("%.2f%% acceptance rate > 0.20 and < 0.25", num.between),
+  num.between <- 100 * sum(x$Acc >= min.acc & x$Acc <= max.acc)/length(x$Acc) 
+  plot(x$Acc, pch = 19, main = sprintf("%.2f%% acceptance rate >= %.2f and <= %.2f", 
+                                       num.between, min.acc, max.acc),
        ylab = "Acceptance rate", xaxt = "n", xlab = "")
   abline(h = c(0.20, 0.25), lty = 5, col = "red2")
 }
 
 
-
+# Not used -->
 trim.Walks <- function(x){
   if(inherits(x, "Sample")){ # Either supply a `Sample` object...
     stopifnot(!is.null(x$Walks))
