@@ -254,35 +254,47 @@ plot.dist.compare <- function(x){
   loc.df <- setNames(as.data.frame(do.call(rbind, x$loc.diff)), c("b0", "b1"))[acc,]
   loc.df$mi <- x$mi[acc]
   P1 <- ggplot(loc.df, aes(x = b0, y = b1, colour = mi)) + 
-    geom_point() + 
+    geom_point(size=.5) + 
     labs(x = expression(b[0]^{"S"}-b[0]^{"NS"}),
          y = expression(b[1]^{"S"}-b[1]^{"NS"}),
          colour = expression(m[i])) + 
     scale_colour_gradient(low = .nice.orange, high = "red3",
                           breaks = c(2,4,6,8,10)) + 
     theme_csda()+
-    theme(legend.position = "none")
+    theme(
+      legend.position = "none",
+      axis.text = element_text(size = 5)
+    )
   
   r.df <- data.frame(mi = x$mi, ry = x$min.diff, rx = x$maj.diff)[acc,]
   P2 <- ggplot(r.df, aes(x = rx, y = ry, colour = mi)) + 
-    geom_point() + 
+    geom_point(size=.5) + 
     labs(x = expression(r[x]^{"S"}-r[x]^{"NS"}),
          y = expression(r[y]^{"S"}-r[y]^{"NS"}),
          colour = expression(m[i])) + 
     scale_color_gradient(low = .nice.orange, high = "red3",
                          breaks = c(2,4,6,8,10)) + 
-    theme_csda()
+    theme_csda() + 
+    theme(
+      legend.key.width = unit(3, "mm"),
+      legend.title = element_text(size = 8),
+      legend.text = element_text(size = 5),
+      axis.text = element_text(size = 5)
+    )
   
   ang.df <- data.frame(mi = x$mi, theta = x$ang.diff)[acc,]
   P3 <- ggplot(ang.df, aes(x = mi, y = theta, fill = mi, group = mi)) + 
     geom_hline(yintercept = 0, lty = 5, alpha = 0.33) +
-    geom_boxplot() + 
+    geom_boxplot(outlier.alpha = 0.33, lwd = 0.25, 
+                 fatten = 2, outlier.size = 0.50) + 
     labs(x = expression(m[i]),
          y = expression(vartheta^{"S"}-vartheta^{"NS"})) + 
     scale_fill_gradient(low = .nice.orange, high = "red3") + 
     scale_x_continuous(breaks = 1:10) + 
     theme_csda() + 
-    theme(legend.position = 'none')
+    theme(
+      legend.position = 'none',
+    )
   
   gridExtra::grid.arrange(P1, P2, P3,
                           layout_matrix = rbind(
