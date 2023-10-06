@@ -1,8 +1,18 @@
 # Obtain b.hat and Sigma.hat given observed data at TRUE parameter estimates.
-getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds, Omega){
+getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds, Omega, include.survival){
   D <- Omega$D; beta <- Omega$beta; sigma <- Omega$sigma; gamma <- Omega$gamma; zeta <- Omega$zeta
   gamma.rep <- Omega$gamma.rep
   ln <- nrow(X[[1]])
+  
+  if(!include.survival){ # `Remove' RHS of complete data likelihood...
+    Delta <- Delta * 0   # i.e. find tilde{b}_i, tilde{Sigma}_i
+    l0u <- l0u * 0
+    l0i <- l0i * 0
+    zeta <- zeta * 0
+    gamma <- gamma * 0
+    gamma.rep <- gamma.rep * 0
+  }
+
   uu <- optim(b, gmvjoint:::joint_density, gmvjoint:::joint_density_ddb,
               Y = Y, X = X, Z = Z, W = W, beta = beta, D = D, sigma = sigma,
               family = as.list(family), Delta = Delta, S = S, Fi = Fi, l0i = l0i, SS = SS, Fu = Fu, haz = l0u,
@@ -67,9 +77,7 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE, 
   }
   
   # Omega^{(TRUE)} ---->
-  if(!include.survival){gamma <- gamma * 0; gamma.rep <- gamma.rep * 0}
   Omega <- list(D = D, beta = beta, sigma = list(sigma), gamma = gamma, gamma.rep = gamma.rep, zeta = zeta[zeta!=0L])
-  if(!include.survival) Omega$zeta <- Omega$zeta * 0
   
   # Tuning parameters; aiming for about 22.5% acceptance across all subjects.
   tune <- TUNE
@@ -83,18 +91,10 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE, 
   Fu <- lapply(seq_along(ids), function(x) sv$Fu[[ids[x]]])
   l0u <- lapply(seq_along(ids), function(x) sv$l0u[[ids[x]]])
   
-  if(!include.survival){ # `Remove' RHS of complete data likelihood...
-    Delta <- lapply(Delta, `*`, 0)
-    l0u <- lapply(l0u, `*`, 0)
-    l0i <- lapply(l0i, `*`, 0)
-  }
-  
-  
   # Get Sigma
   Sigma <- Map(function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u){
-    Sigma <- getSigma(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds.cpp, Omega)
-  }, b = b, Y = Y, X = X, Z = Z, W = W, Delta = Delta, S = S, Fi = Fi, l0i = l0i, SS = SS, 
-     Fu = Fu, l0u = l0u)
+    Sigma <- getSigma(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds.cpp, Omega, include.survival)
+  }, b = b, Y = Y, X = X, Z = Z, W = W, Delta = Delta, S = S, Fi = Fi, l0i = l0i, SS = SS, Fu = Fu, l0u = l0u)
   
   b.hat <- lapply(Sigma, el, 1)
   Sigma <- lapply(Sigma, el, 2)

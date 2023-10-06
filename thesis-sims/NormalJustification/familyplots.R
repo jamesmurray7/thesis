@@ -15,10 +15,11 @@
 sim <- create.simfn()
 X_ <- dataGen(sim)
 (X <- Sample(X_, 5.5, T))
-# (X2 <- Sample(X_, 5.5, T, include.survival = FALSE))
+(X2 <- Sample(X_, 5.5, T, include.survival = FALSE))
 .plot.both(X, X2)
 
-plot.staircase(X,  40, file.name = "gaussian.png", N = 10000)
+plot.staircase(X,  40, file.name = "gaussian2.png", N = 10000)
+plot.staircase(X,  40, file.name = "gaussian2NS.png", N = 10000)
 # plot.staircase(X2, 40, file.name = "default-gaussian-nosurv.png", N = 1e5)
 
 # Poisson -----------------------------------------------------------------

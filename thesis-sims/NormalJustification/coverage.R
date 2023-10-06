@@ -98,7 +98,8 @@ get.psi.mi <- function(family, tune = NULL, n = 300L, theta = c(-2, 0.4), gamma 
 }
 
 get.psi.mi2 <- function(family, tune = NULL, n = 1000L, 
-                        burnin = 1000, NMC = 10000, min.acc = 0.20, max.acc = 0.30, ...){
+                        burnin = 1000, NMC = 10000, min.acc = 0.20, max.acc = 0.30,
+                        file.name = NULL, ...){
   if(is.null(tune)){
     tune.surv <- 5.75; tune.nosurv <- 5.75
   }else{
@@ -132,7 +133,11 @@ get.psi.mi2 <- function(family, tune = NULL, n = 1000L,
   theors <- compare.theor.distn(surv, no.surv)
   
   out <- list(psi.mi = psis, theor.compare = theors)
-  save(out, file = paste0("/data/c0061461/THESIS/", family.dir.name(family), "/psimi.RData"))
+  if(is.null(file.name))
+    fn <- paste0("/data/c0061461/THESIS/", family.dir.name(family), "/psimi.RData")
+  else
+    fn <- file.name
+  save(out, file = fn)
   return(out)
 }
 
