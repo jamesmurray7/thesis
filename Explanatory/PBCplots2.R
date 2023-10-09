@@ -145,3 +145,34 @@ bin.long %>%
 png("./binheatmap.png", width = 140, height = 90, units = "mm", res = 1e3)
 last_plot()
 dev.off()
+
+
+# Kaplan-Meier curve ------------------------------------------------------
+survdata <- PBC[!duplicated(PBC$id),]
+S <- survfit(Surv(survtime, status) ~ 1, data = survdata)
+library(survminer)
+# P1 KM survival curve
+ggsurvplot(S,
+                 ggtheme = theme_csda(),
+                 xlab = "Follow-up time (years)",
+                 break.time.by = 1, censor.size = 1,
+           lwd = .25, censor.shape = "|",
+                 conf.int.style = "ribbon",
+                 palette = c("#e31836"),
+                 legend = "none")
+
+ggsave("./output/PBC-KM.png", width = 140, height = 60, units = "mm")
+           
+# P2 distribution of failure times
+survdata %>% 
+  mutate(ff = ifelse(status == 1, "Died", "Survived")) %>% 
+  ggplot(aes(x = survtime)) + 
+  # geom_density() + 
+  geom_line(stat = "density") + 
+  # geom_histogram(bins = 24) + 
+  facet_wrap(~ff, ncol = 1L) + 
+  labs(x = "Follow-up time (years)",
+       y = "Density") + 
+  scale_x_continuous(breaks = seq(0,15,1)) + 
+  theme_csda() -> P2
+
