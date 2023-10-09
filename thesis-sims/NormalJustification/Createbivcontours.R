@@ -255,8 +255,11 @@ plot.dist.compare <- function(x){
   loc.df$mi <- x$mi[acc]
   P1 <- ggplot(loc.df, aes(x = b0, y = b1, colour = mi)) + 
     geom_point(size=.5) + 
-    labs(x = expression(b[0]^{"S"}-b[0]^{"NS"}),
-         y = expression(b[1]^{"S"}-b[1]^{"NS"}),
+    # labs(x = expression(b[0]^{"S"}-b[0]^{"NS"}),
+    #      y = expression(b[1]^{"S"}-b[1]^{"NS"}),
+    #      colour = expression(m[i])) + 
+    labs(x = expression(hat(b)[0]-tilde(b)[0]),
+         y = expression(hat(b)[1]-tilde(b)[1]),
          colour = expression(m[i])) + 
     scale_colour_gradient(low = .nice.orange, high = "red3",
                           breaks = c(2,4,6,8,10)) + 

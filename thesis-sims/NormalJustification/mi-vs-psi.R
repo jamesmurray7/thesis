@@ -3,11 +3,11 @@
 
 # mi vs psi ---------------------------------------------------------------
 .r()
-gauss2 <- get.psi.mi2("gaussian")
-poiss <- get.psi.mi2("poisson")
-negbin <- get.psi.mi2("negbin")
-Gammas <- get.psi.mi2("Gamma")
-bin <- get.psi.mi2("binomial", tune = c(3.25, 5.00))
+gauss <- get.psi.mi2("gaussian",file.name = "test.RData")
+poiss <- get.psi.mi2("poisson", file.name = "test.RData")
+negbin <- get.psi.mi2("negbin", file.name = "test.RData")
+Gammas <- get.psi.mi2("Gamma", file.name = "test.RData")
+bin <- get.psi.mi2("binomial", file.name = "test.RData", tune = c(2.0,3.0))
 
 e <- T
 while(e){
@@ -16,7 +16,7 @@ while(e){
 }
 
 
-fams <- as.data.frame(rbind(gauss2[[1]], poiss[[1]], negbin[[1]], Gammas[[1]], bin[[1]], genp[[1]]))
+fams <- as.data.frame(rbind(gauss[[1]], poiss[[1]], negbin[[1]], Gammas[[1]], bin[[1]])) #, genp[[1]]))
 library(dplyr)
 library(ggplot2)
 fams2 <- fams %>% 
@@ -35,7 +35,7 @@ ggplot(fams2, aes(x = as.factor(mi), y = med, colour = family)) +
 ggplot(fams, aes(x = as.factor(mi), y = psi, colour = family, group = family)) + 
   geom_smooth(aes()) + 
   facet_wrap(~surv, scales='free_y')
-  
+
 
 ggplot(fams, aes(x = as.factor(mi), y = psi, colour = family)) + 
   geom_boxplot()
@@ -48,16 +48,16 @@ fams %>%
   mutate_at("famname2", ~gsub("isedpoi", "ised Poi", .x)) %>% 
   mutate_at("famname2", ~gsub("ivebin", "ive bin", .x)) %>% 
   ggplot(aes(x = as.factor(mi), y = psi, fill = as.factor(surv))) + 
-    geom_boxplot(outlier.alpha = 0.33, lwd = 0.25, 
-                 fatten = 2, outlier.size = 0.50) + 
-    facet_wrap(~famname2, scales = 'free_y') + 
-    scale_fill_manual(values = c("#FFEDA0", "#F03B20")) + 
-    labs(x = expression(m[i]), y = expression(psi["  "*i])) + 
-    theme_csda() + 
-    theme(
-      legend.position = "none",
-      strip.text = element_text(vjust = 1)
-    )
+  geom_boxplot(outlier.alpha = 0.33, lwd = 0.25, 
+               fatten = 2, outlier.size = 0.50) + 
+  facet_wrap(~famname2, scales = 'free_y') + 
+  scale_fill_manual(values = c("#FFEDA0", "#F03B20")) + 
+  labs(x = expression(m[i]), y = expression(psi["  "*i])) + 
+  theme_csda() + 
+  theme(
+    legend.position = "none",
+    strip.text = element_text(vjust = 1)
+  )
 # Save...
 ggsave(save.dir.file.path("psi-mi-families.png"), width = 140, height = 90, units = "mm")
 
