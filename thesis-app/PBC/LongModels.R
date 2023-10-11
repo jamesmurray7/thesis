@@ -4,6 +4,7 @@ source('.Rprofile')
 library(glmmTMB)
 log.dir <- save.dir.file.path("Longs")
 pf <- parent.frame()
+PBCredx$histologic2 <- ifelse(PBCredx$histologic %in% c("3", "4"), 1, 0)
 
 # Make a sub-directory for each response ----------------------------------
 # (or else significant flooding will occur!)
@@ -42,7 +43,7 @@ file.name <- function(drugint, time.spec, extras, family, cc){
 
 make.fit.objects <- function(response = 'serBilir', 
                              time.spec = 'linear', 
-                             extras = c("sex", "age", "histologic"),
+                             extras = c("sex", "age", "histologic2"),
                              drugint = TRUE,  # This will be a LINEAR combination only.
                              family = "gaussian"){ 
   # Checking for typos/improper specs.
@@ -133,7 +134,7 @@ fit.glmmTMB <- function(longformula, family){
 
 # Sorting out all models --------------------------------------------------
 resps
-extras <- c("sex", "age", "histologic")
+extras <- c("sex", "age", "histologic2")
 var2 <- combn(extras, 2) # Bivariate combos;
 var1 <- combn(extras, 1) # univariates
 time.specs <- c("int", "linear", "quad", "ns")
@@ -201,7 +202,7 @@ make.all.logs <- function(X){
 # Albumin
 make.all.logs(albumingaussian)
 # Alkaline
-make.all.logs(alkalinepoisson)
+# make.all.logs(alkalinepoisson)
 make.all.logs(alkalinenegbin)  # This takes a little while since negbin
 # Hepatomegaly
 make.all.logs(hepatomegalybinomial)
@@ -210,11 +211,11 @@ make.all.logs(spidersbinomial)
 # SGOT/AST
 make.all.logs(SGOTgaussian)
 # platelets
-make.all.logs(plateletspoisson)
+# make.all.logs(plateletspoisson)
 make.all.logs(plateletsgenpois)
 # proth.
 make.all.logs(prothrombinGamma)
-make.all.logs(prothrombingaussian)
+# make.all.logs(prothrombingaussian)
 # ser. bili
 make.all.logs(serBilirgaussian)
 # ser. alb.

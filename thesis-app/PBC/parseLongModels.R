@@ -2,7 +2,7 @@ log.dir <- save.dir.file.path("Longs")
 resp.dirs <- dir(log.dir)
 # Establish directories containing .log files
 dirs.to.parse <- sapply(resp.dirs, save.dir.file.path, log.dir)
-dirs.to.parse <- dirs.to.parse[!grepl("\\.log", dirs.to.parse)]
+dirs.to.parse <- dirs.to.parse[!grepl("\\.log|OLD", dirs.to.parse)]
 
 
 # Create .log dumps -------------------------------------------------------

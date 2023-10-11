@@ -1,31 +1,31 @@
 
-══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by AIC ════════════════════════════════════════════════════════════════════
-                                           AIC     BIC   logLik deviance df.resid
-9Genpois_ns_DI_Sex_Histologic.log      20339.0 20466.2 -10146.5  20293.0     1843
-5Genpois_ns_Sex_Histologic.log         20340.6 20445.7 -10151.3  20302.6     1847
-10Genpois_ns_DI_Sex_Age_Histologic.log 20340.7 20473.5 -10146.4  20292.7     1842
-9Genpois_ns_DI_Age_Histologic.log      20341.3 20468.5 -10147.7  20295.3     1843
-6Genpois_ns_Sex_Age_Histologic.log     20342.0 20452.6 -10151.0  20302.0     1846
-5Genpois_ns_Age_Histologic.log         20342.7 20447.8 -10152.4  20304.7     1847
-5Genpois_ns_Sex_Age.log                20376.2 20470.3 -10171.1  20342.2     1849
+══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by AIC ══════════════════════════════════════════════════════════════════════════════
+                                            AIC     BIC   logLik deviance df.resid
+9Genpois_ns_DI_Sex_Histologic2.log      20355.7 20471.9 -10156.9  20313.7     1845
+10Genpois_ns_DI_Sex_Age_Histologic2.log 20355.9 20477.6 -10155.9  20311.9     1844
+9Genpois_ns_DI_Age_Histologic2.log      20356.2 20472.3 -10157.1  20314.2     1845
+6Genpois_ns_Sex_Age_Histologic2.log     20356.9 20456.4 -10160.4  20320.9     1848
+5Genpois_ns_Age_Histologic2.log         20357.4 20451.4 -10161.7  20323.4     1849
+5Genpois_ns_Sex_Histologic2.log         20357.4 20451.5 -10161.7  20323.4     1849
+5Genpois_ns_Sex_Age.log                 20376.2 20470.3 -10171.1  20342.2     1849
 
-══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by BIC ════════════════════════════════════════════════════════════════════
-                                       AIC     BIC   logLik deviance df.resid
-5Genpois_ns_Sex_Histologic.log     20340.6 20445.7 -10151.3  20302.6     1847
-5Genpois_ns_Age_Histologic.log     20342.7 20447.8 -10152.4  20304.7     1847
-6Genpois_ns_Sex_Age_Histologic.log 20342.0 20452.6 -10151.0  20302.0     1846
-4Genpois_quad_Sex_Histologic.log   20384.6 20462.0 -10178.3  20356.6     1852
-4Genpois_quad_Age_Histologic.log   20386.2 20463.7 -10179.1  20358.2     1852
-9Genpois_ns_DI_Sex_Histologic.log  20339.0 20466.2 -10146.5  20293.0     1843
-9Genpois_ns_DI_Age_Histologic.log  20341.3 20468.5 -10147.7  20295.3     1843
+══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by BIC ══════════════════════════════════════════════════════════════════════════════
+                                        AIC     BIC   logLik deviance df.resid
+5Genpois_ns_Age_Histologic2.log     20357.4 20451.4 -10161.7  20323.4     1849
+5Genpois_ns_Sex_Histologic2.log     20357.4 20451.5 -10161.7  20323.4     1849
+6Genpois_ns_Sex_Age_Histologic2.log 20356.9 20456.4 -10160.4  20320.9     1848
+4Genpois_quad_Age_Histologic2.log   20401.1 20467.5 -10188.6  20377.1     1854
+4Genpois_quad_Sex_Histologic2.log   20401.9 20468.2 -10188.9  20377.9     1854
+5Genpois_ns_Sex_Age.log             20376.2 20470.3 -10171.1  20342.2     1849
+9Genpois_ns_DI_Sex_Histologic2.log  20355.7 20471.9 -10156.9  20313.7     1845
 
-══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by logLik ═════════════════════════════════════════════════════════════════
-                                           AIC     BIC   logLik deviance df.resid
-10Genpois_ns_DI_Sex_Age_Histologic.log 20340.7 20473.5 -10146.4  20292.7     1842
-9Genpois_ns_DI_Sex_Histologic.log      20339.0 20466.2 -10146.5  20293.0     1843
-9Genpois_ns_DI_Age_Histologic.log      20341.3 20468.5 -10147.7  20295.3     1843
-6Genpois_ns_Sex_Age_Histologic.log     20342.0 20452.6 -10151.0  20302.0     1846
-5Genpois_ns_Sex_Histologic.log         20340.6 20445.7 -10151.3  20302.6     1847
-5Genpois_ns_Age_Histologic.log         20342.7 20447.8 -10152.4  20304.7     1847
-9Genpois_ns_DI_Sex_Age.log             20376.9 20493.1 -10167.5  20334.9     1845
+══ /data/c0061461/THESIS/PBC/Longs/platelets -- Ranked by logLik ═══════════════════════════════════════════════════════════════════════════
+                                            AIC     BIC   logLik deviance df.resid
+10Genpois_ns_DI_Sex_Age_Histologic2.log 20355.9 20477.6 -10155.9  20311.9     1844
+9Genpois_ns_DI_Sex_Histologic2.log      20355.7 20471.9 -10156.9  20313.7     1845
+9Genpois_ns_DI_Age_Histologic2.log      20356.2 20472.3 -10157.1  20314.2     1845
+6Genpois_ns_Sex_Age_Histologic2.log     20356.9 20456.4 -10160.4  20320.9     1848
+5Genpois_ns_Age_Histologic2.log         20357.4 20451.4 -10161.7  20323.4     1849
+5Genpois_ns_Sex_Histologic2.log         20357.4 20451.5 -10161.7  20323.4     1849
+9Genpois_ns_DI_Sex_Age.log              20376.9 20493.1 -10167.5  20334.9     1845
 

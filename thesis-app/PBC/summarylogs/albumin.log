@@ -1,31 +1,31 @@
 
-══ /data/c0061461/THESIS/PBC/Longs/albumin -- Ranked by AIC ══════════════════════════════════════════════════════════════════════
-                                           AIC    BIC logLik deviance df.resid
-4Gaussian_quad_Age_Histologic.log       1653.5 1731.0 -812.8   1625.5     1852
-5Gaussian_quad_Sex_Age_Histologic.log   1654.6 1737.6 -812.3   1624.6     1851
-3Gaussian_linear_Age_Histologic.log     1656.2 1711.5 -818.1   1636.2     1856
-4Gaussian_linear_Sex_Age_Histologic.log 1656.9 1717.8 -817.5   1634.9     1855
-4Gaussian_quad_Sex_Histologic.log       1659.3 1736.7 -815.6   1631.3     1852
-3Gaussian_linear_Sex_Histologic.log     1660.0 1715.3 -820.0   1640.0     1856
-5Gaussian_linear_DI_Age_Histologic.log  1660.1 1726.5 -818.1   1636.1     1854
+══ /data/c0061461/THESIS/PBC/Longs/albumin -- Ranked by AIC ════════════════════════════════════════════════════════════════════════════════
+                                               AIC    BIC logLik deviance df.resid
+3Gaussian_linear_Age_Histologic2.log        1705.2 1749.4 -844.6   1689.2     1858
+4Gaussian_linear_Sex_Age_Histologic2.log    1705.9 1755.7 -844.0   1687.9     1857
+5Gaussian_linear_DI_Age_Histologic2.log     1709.1 1764.4 -844.6   1689.1     1856
+4Gaussian_quad_Age_Histologic2.log          1709.3 1775.7 -842.6   1685.3     1854
+6Gaussian_linear_DI_Sex_Age_Histologic2.log 1709.9 1770.7 -843.9   1687.9     1855
+5Gaussian_quad_Sex_Age_Histologic2.log      1710.1 1782.0 -842.0   1684.1     1853
+3Gaussian_linear_Sex_Histologic2.log        1715.6 1759.8 -849.8   1699.6     1858
 
-══ /data/c0061461/THESIS/PBC/Longs/albumin -- Ranked by BIC ══════════════════════════════════════════════════════════════════════
-                                              AIC    BIC logLik deviance df.resid
-3Gaussian_linear_Age_Histologic.log        1656.2 1711.5 -818.1   1636.2     1856
-3Gaussian_linear_Sex_Histologic.log        1660.0 1715.3 -820.0   1640.0     1856
-4Gaussian_linear_Sex_Age_Histologic.log    1656.9 1717.8 -817.5   1634.9     1855
-5Gaussian_linear_DI_Age_Histologic.log     1660.1 1726.5 -818.1   1636.1     1854
-5Gaussian_linear_DI_Sex_Histologic.log     1663.8 1730.1 -819.9   1639.8     1854
-4Gaussian_quad_Age_Histologic.log          1653.5 1731.0 -812.8   1625.5     1852
-6Gaussian_linear_DI_Sex_Age_Histologic.log 1660.9 1732.8 -817.4   1634.9     1853
+══ /data/c0061461/THESIS/PBC/Longs/albumin -- Ranked by BIC ════════════════════════════════════════════════════════════════════════════════
+                                               AIC    BIC logLik deviance df.resid
+3Gaussian_linear_Age_Histologic2.log        1705.2 1749.4 -844.6   1689.2     1858
+4Gaussian_linear_Sex_Age_Histologic2.log    1705.9 1755.7 -844.0   1687.9     1857
+3Gaussian_linear_Sex_Histologic2.log        1715.6 1759.8 -849.8   1699.6     1858
+5Gaussian_linear_DI_Age_Histologic2.log     1709.1 1764.4 -844.6   1689.1     1856
+6Gaussian_linear_DI_Sex_Age_Histologic2.log 1709.9 1770.7 -843.9   1687.9     1855
+3Gaussian_linear_Sex_Age.log                1729.5 1773.8 -856.8   1713.5     1858
+5Gaussian_linear_DI_Sex_Histologic2.log     1719.4 1774.7 -849.7   1699.4     1856
 
-══ /data/c0061461/THESIS/PBC/Longs/albumin -- Ranked by logLik ═══════════════════════════════════════════════════════════════════
-                                              AIC    BIC logLik deviance df.resid
-5Gaussian_quad_Sex_Age_Histologic.log      1654.6 1737.6 -812.3   1624.6     1851
-4Gaussian_quad_Age_Histologic.log          1653.5 1731.0 -812.8   1625.5     1852
-4Gaussian_quad_Sex_Histologic.log          1659.3 1736.7 -815.6   1631.3     1852
-6Gaussian_linear_DI_Sex_Age_Histologic.log 1660.9 1732.8 -817.4   1634.9     1853
-4Gaussian_linear_Sex_Age_Histologic.log    1656.9 1717.8 -817.5   1634.9     1855
-3Gaussian_linear_Age_Histologic.log        1656.2 1711.5 -818.1   1636.2     1856
-5Gaussian_linear_DI_Age_Histologic.log     1660.1 1726.5 -818.1   1636.1     1854
+══ /data/c0061461/THESIS/PBC/Longs/albumin -- Ranked by logLik ═════════════════════════════════════════════════════════════════════════════
+                                               AIC    BIC logLik deviance df.resid
+5Gaussian_quad_Sex_Age_Histologic2.log      1710.1 1782.0 -842.0   1684.1     1853
+4Gaussian_quad_Age_Histologic2.log          1709.3 1775.7 -842.6   1685.3     1854
+6Gaussian_linear_DI_Sex_Age_Histologic2.log 1709.9 1770.7 -843.9   1687.9     1855
+4Gaussian_linear_Sex_Age_Histologic2.log    1705.9 1755.7 -844.0   1687.9     1857
+3Gaussian_linear_Age_Histologic2.log        1705.2 1749.4 -844.6   1689.2     1858
+5Gaussian_linear_DI_Age_Histologic2.log     1709.1 1764.4 -844.6   1689.1     1856
+7Gaussian_quad_DI_Sex_Histologic2.log       1727.2 1810.2 -848.6   1697.2     1851
 
