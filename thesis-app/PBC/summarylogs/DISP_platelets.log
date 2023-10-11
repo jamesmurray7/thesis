@@ -1,31 +1,25 @@
 
-══ /data/c0061461/THESIS/PBC/Disps/platelets -- Ranked by AIC ════════════════════════════════════════════════════════════════════
-                                       AIC     BIC   logLik deviance df.resid
-4_Time_Age_Histologic_Sex.log      20311.9 20472.4 -10127.0  20253.9     1837
-5_Time_Drug_Age_Histologic_Sex.log 20313.8 20479.8 -10126.9  20253.8     1836
-3_Time_Age_Histologic.log          20314.5 20469.4 -10129.2  20258.5     1838
-3_Time_Age_Sex.log                 20315.3 20459.2 -10131.7  20263.3     1840
-4_Time_Drug_Age_Histologic.log     20316.5 20476.9 -10129.2  20258.5     1837
-4_Time_Drug_Age_Sex.log            20317.3 20466.7 -10131.7  20263.3     1839
-2_Time_Age.log                     20318.0 20456.3 -10134.0  20268.0     1841
+══ /data/c0061461/THESIS/PBC/Disps/platelets -- Ranked by AIC ══════════════════════════════════════════════════════════════════════════════
+                      AIC     BIC   logLik deviance df.resid
+1_Time.log        20341.4 20441.0 -10152.7  20305.4     1848
+1_Sex.log         20353.1 20452.6 -10158.5  20317.1     1848
+1_Age.log         20353.4 20453.0 -10158.7  20317.4     1848
+1_Histologic2.log 20354.8 20454.3 -10159.4  20318.8     1848
+1_Drug.log        20359.2 20458.8 -10161.6  20323.2     1848
 
-══ /data/c0061461/THESIS/PBC/Disps/platelets -- Ranked by BIC ════════════════════════════════════════════════════════════════════
-                        AIC     BIC   logLik deviance df.resid
-1_Time.log          20323.5 20456.2 -10137.7  20275.5     1842
-2_Time_Age.log      20318.0 20456.3 -10134.0  20268.0     1841
-2_Time_Sex.log      20319.6 20457.9 -10134.8  20269.6     1841
-3_Time_Age_Sex.log  20315.3 20459.2 -10131.7  20263.3     1840
-2_Time_Drug.log     20325.4 20463.7 -10137.7  20275.4     1841
-3_Time_Drug_Age.log 20320.0 20463.8 -10134.0  20268.0     1840
-3_Time_Drug_Sex.log 20321.6 20465.4 -10134.8  20269.6     1840
+══ /data/c0061461/THESIS/PBC/Disps/platelets -- Ranked by BIC ══════════════════════════════════════════════════════════════════════════════
+                      AIC     BIC   logLik deviance df.resid
+1_Time.log        20341.4 20441.0 -10152.7  20305.4     1848
+1_Sex.log         20353.1 20452.6 -10158.5  20317.1     1848
+1_Age.log         20353.4 20453.0 -10158.7  20317.4     1848
+1_Histologic2.log 20354.8 20454.3 -10159.4  20318.8     1848
+1_Drug.log        20359.2 20458.8 -10161.6  20323.2     1848
 
-══ /data/c0061461/THESIS/PBC/Disps/platelets -- Ranked by logLik ═════════════════════════════════════════════════════════════════
-                                       AIC     BIC   logLik deviance df.resid
-5_Time_Drug_Age_Histologic_Sex.log 20313.8 20479.8 -10126.9  20253.8     1836
-4_Time_Age_Histologic_Sex.log      20311.9 20472.4 -10127.0  20253.9     1837
-3_Time_Age_Histologic.log          20314.5 20469.4 -10129.2  20258.5     1838
-4_Time_Drug_Age_Histologic.log     20316.5 20476.9 -10129.2  20258.5     1837
-4_Time_Drug_Histologic_Sex.log     20320.1 20480.5 -10131.0  20262.1     1837
-3_Time_Histologic_Sex.log          20318.1 20473.0 -10131.1  20262.1     1838
-3_Time_Age_Sex.log                 20315.3 20459.2 -10131.7  20263.3     1840
+══ /data/c0061461/THESIS/PBC/Disps/platelets -- Ranked by logLik ═══════════════════════════════════════════════════════════════════════════
+                      AIC     BIC   logLik deviance df.resid
+1_Drug.log        20359.2 20458.8 -10161.6  20323.2     1848
+1_Histologic2.log 20354.8 20454.3 -10159.4  20318.8     1848
+1_Age.log         20353.4 20453.0 -10158.7  20317.4     1848
+1_Sex.log         20353.1 20452.6 -10158.5  20317.1     1848
+1_Time.log        20341.4 20441.0 -10152.7  20305.4     1848
 

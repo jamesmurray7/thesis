@@ -19,7 +19,7 @@ pf <- parent.frame()
 get.long.stuff <- function(resp){
   form <- switch(resp,
                    prothrombin = as.formula(
-                     "prothrombin ~ histologic2 + sex + (time + I(time^2)) + (1 + time + I(time^2)|id)",
+                     "prothrombin ~ histologic2 + sex + time + (1 + time|id)",
                      pf
                    ),
                    platelets = as.formula(

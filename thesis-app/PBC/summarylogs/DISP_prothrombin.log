@@ -1,31 +1,25 @@
 
-══ /data/c0061461/THESIS/PBC/Disps/prothrombin -- Ranked by AIC ══════════════════════════════════════════════════════════════════
-                                      AIC    BIC  logLik deviance df.resid
-5_Time_Drug_Age_Histologic_Sex.log 4606.6 4739.4 -2279.3   4558.6     1842
-4_Time_Age_Histologic_Sex.log      4639.6 4766.9 -2296.8   4593.6     1843
-4_Time_Drug_Age_Histologic.log     4685.5 4812.7 -2319.7   4639.5     1843
-4_Drug_Age_Histologic_Sex.log      4688.3 4815.5 -2321.1   4642.3     1843
-3_Time_Histologic_Sex.log          4697.2 4818.9 -2326.6   4653.2     1844
-3_Time_Drug_Histologic.log         4711.3 4833.0 -2333.7   4667.3     1844
-3_Age_Histologic_Sex.log           4722.6 4844.3 -2339.3   4678.6     1844
+══ /data/c0061461/THESIS/PBC/Disps/prothrombin -- Ranked by AIC ════════════════════════════════════════════════════════════════════════════
+                     AIC    BIC  logLik deviance df.resid
+1_Time.log        5035.9 5085.7 -2509.0   5017.9     1857
+1_Age.log         5065.8 5115.6 -2523.9   5047.8     1857
+1_Histologic2.log 5071.6 5121.3 -2526.8   5053.6     1857
+1_Drug.log        5075.7 5125.5 -2528.9   5057.7     1857
+1_Sex.log         5087.6 5137.4 -2534.8   5069.6     1857
 
-══ /data/c0061461/THESIS/PBC/Disps/prothrombin -- Ranked by BIC ══════════════════════════════════════════════════════════════════
-                                      AIC    BIC  logLik deviance df.resid
-5_Time_Drug_Age_Histologic_Sex.log 4606.6 4739.4 -2279.3   4558.6     1842
-4_Time_Age_Histologic_Sex.log      4639.6 4766.9 -2296.8   4593.6     1843
-4_Time_Drug_Age_Histologic.log     4685.5 4812.7 -2319.7   4639.5     1843
-4_Drug_Age_Histologic_Sex.log      4688.3 4815.5 -2321.1   4642.3     1843
-3_Time_Histologic_Sex.log          4697.2 4818.9 -2326.6   4653.2     1844
-3_Time_Drug_Histologic.log         4711.3 4833.0 -2333.7   4667.3     1844
-3_Age_Histologic_Sex.log           4722.6 4844.3 -2339.3   4678.6     1844
+══ /data/c0061461/THESIS/PBC/Disps/prothrombin -- Ranked by BIC ════════════════════════════════════════════════════════════════════════════
+                     AIC    BIC  logLik deviance df.resid
+1_Time.log        5035.9 5085.7 -2509.0   5017.9     1857
+1_Age.log         5065.8 5115.6 -2523.9   5047.8     1857
+1_Histologic2.log 5071.6 5121.3 -2526.8   5053.6     1857
+1_Drug.log        5075.7 5125.5 -2528.9   5057.7     1857
+1_Sex.log         5087.6 5137.4 -2534.8   5069.6     1857
 
-══ /data/c0061461/THESIS/PBC/Disps/prothrombin -- Ranked by logLik ═══════════════════════════════════════════════════════════════
-                                      AIC    BIC  logLik deviance df.resid
-5_Time_Drug_Age_Histologic_Sex.log 4606.6 4739.4 -2279.3   4558.6     1842
-4_Time_Age_Histologic_Sex.log      4639.6 4766.9 -2296.8   4593.6     1843
-4_Time_Drug_Age_Histologic.log     4685.5 4812.7 -2319.7   4639.5     1843
-4_Drug_Age_Histologic_Sex.log      4688.3 4815.5 -2321.1   4642.3     1843
-3_Time_Histologic_Sex.log          4697.2 4818.9 -2326.6   4653.2     1844
-3_Time_Drug_Histologic.log         4711.3 4833.0 -2333.7   4667.3     1844
-3_Age_Histologic_Sex.log           4722.6 4844.3 -2339.3   4678.6     1844
+══ /data/c0061461/THESIS/PBC/Disps/prothrombin -- Ranked by logLik ═════════════════════════════════════════════════════════════════════════
+                     AIC    BIC  logLik deviance df.resid
+1_Sex.log         5087.6 5137.4 -2534.8   5069.6     1857
+1_Drug.log        5075.7 5125.5 -2528.9   5057.7     1857
+1_Histologic2.log 5071.6 5121.3 -2526.8   5053.6     1857
+1_Age.log         5065.8 5115.6 -2523.9   5047.8     1857
+1_Time.log        5035.9 5085.7 -2509.0   5017.9     1857
 
