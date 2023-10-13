@@ -1,3 +1,4 @@
+source(".Rprofile")
 log.dir <- save.dir.file.path("Longs")
 resp.dirs <- dir(log.dir)
 # Establish directories containing .log files
@@ -78,7 +79,7 @@ out.all <- do.call(rbind, lapply(seq_along(out), function(i){
 }))
 
 library(ggplot2)
-out.all$response <- ifelse(out.all$response == "serBilir", "Serum bilirubin", toSentence(out.all$response))
+out.all$response <- ifelse(out.all$response == "serBilir", "Serum bilirubin", tools::toTitleCase(out.all$response))
 out.all$response <- ifelse(out.all$response == "SGOT", "AST", out.all$response)
 
 out.all$time <- sapply(out.all$time, switch,
@@ -95,7 +96,7 @@ bics <- out.all[out.all$criterion=="BIC", ]
 bics$min.bic <- ifelse(bics$value %in% tapply(bics$value, bics$response, min), bics$value, NA)
 
 
-ggplot(bics, 
+ggplot(bics[bics$response!="Spiders",], 
        aes(x = covariates, y = value, colour = as.factor(time),
            shape = drugInt)) + 
   # Draw ring around smallest
