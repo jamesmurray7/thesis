@@ -84,7 +84,7 @@ out.all <- do.call(rbind, out)
 out.all %>% 
   ggplot(aes(x = fitted, y = pr)) + 
   geom_hline(aes(yintercept = 0), lty = 5, col = 'red', lwd = 0.25) + 
-  geom_point(size=.005, alpha = .2) + 
+  geom_point(size=.00005, alpha = .2) + 
   facet_wrap(~ response, nrow = 2, scales = 'free') + 
   labs(y = "Pearson residuals", x = "Fitted") + 
   theme_csda()+ 
@@ -99,7 +99,6 @@ ggsave("UnivPearsonResiduals.png", width = 140, height = 60, units = "mm")
 
 
 # Survival residuals ------------------------------------------------------
-
 for(f in alpha.names){
   resp <- ifelse(f == "serBilir", "Serum bilirubin", tools::toTitleCase(f))
   resp <- ifelse(resp == "SGOT", "AST", resp)
@@ -110,8 +109,24 @@ for(f in alpha.names){
   legend("topright", legend = resp, bty = "n")
 }
 
-
-
+# These all look quite boring, so just take one good one bad...
+png("UnivCoxSnellExamples.png", width = 140, height = 90, units = "mm", res = 5e2)
+par(mfrow=c(1,2))
+for(f in c("serBilir", "albumin")){
+  resp <- ifelse(f == "serBilir", "Serum bilirubin", tools::toTitleCase(f))
+  resp <- ifelse(resp == "SGOT", "AST", resp)
+  
+  # Need to plot/fit ourselves since plot.residuals.joint resets par I think(... oops).
+  x <- residuals(joints[[f]], "s")
+  sf <- survfit(Surv(x, unlist(joints[[f]]$dmats$ph$Delta)) ~ 1)
+  plot(sf, mark.time = F, 
+       xlab = "Cox-Snell residuals", ylab = "Survival probability",
+       # main = "Survival function of Cox-Snell residuals")
+       main = resp)
+  # legend("topright", legend = resp, bty = "n")
+  curve(exp(-x), from = 0, to = max(sf$time), add = T, lwd = 2, col = 'steelblue')
+}
+dev.off()
 
 
 
