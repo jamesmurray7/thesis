@@ -194,3 +194,56 @@ joint.health <- joint(
 )
 
 save(joint.health, file = save.dir.file.path("health.RData", out.dir))
+
+
+# Next model stage --------------------------------------------------------
+triv <- c("prothrombin", "serBilir", "albumin")
+triv <- lapply(triv, get.formulae)
+long.formulas.triv <- sapply(triv, function(x){
+  x$long.formula
+})
+disp.formulas.triv <- sapply(triv, function(x){
+  x$disp
+})
+family.triv <- sapply(triv, '[[', 2)
+
+joint.triv <- joint(
+  long.formulas = long.formulas.triv, surv.formula = surv.formula,
+  data = PBCredx, disp.formulas = disp.formulas.triv,
+  family = family.triv, control = list(tol.rel = 5e-3)
+)
+
+save(joint.triv, file = save.dir.file.path("triv.RData", out.dir))
+
+
+# Next (dropping proth) ---------------------------------------------------
+biv <- c("serBilir", "albumin")
+biv <- lapply(biv, get.formulae)
+long.formulas.biv <- sapply(biv, function(x){
+  x$long.formula
+})
+disp.formulas.biv <- sapply(biv, function(x){
+  x$disp
+})
+family.biv <- sapply(biv, '[[', 2)
+
+joint.biv <- joint(
+  long.formulas = long.formulas.biv, surv.formula = surv.formula,
+  data = PBCredx, disp.formulas = disp.formulas.biv,
+  family = family.biv, control = list(tol.rel = 5e-3)
+)
+
+save(joint.biv, file = save.dir.file.path("biv.RData", out.dir))
+
+# Dropping zeta_sex (this is the final model) -----------------------------
+joint.biv2 <- joint(
+  long.formulas = long.formulas.biv, 
+  surv.formula = Surv(survtime, status) ~ age + histologic2,
+  data = PBCredx, disp.formulas = disp.formulas.biv,
+  family = family.biv, control = list(tol.rel = 5e-3)
+)
+
+save(joint.biv2, file = save.dir.file.path("biv2.RData", out.dir))
+
+
+
