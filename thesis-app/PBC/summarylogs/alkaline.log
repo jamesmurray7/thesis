@@ -1,31 +1,31 @@
 
-══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by AIC ═════════════════════════════════════════════════════════════════════
-                                          AIC     BIC   logLik deviance df.resid
-5Negbin_ns_Age_Histologic.log         28046.0 28151.1 -14004.0  28008.0     1847
-6Negbin_ns_Sex_Age_Histologic.log     28047.9 28158.6 -14004.0  28007.9     1846
-9Negbin_ns_DI_Age_Histologic.log      28050.7 28177.9 -14002.3  28004.7     1843
-10Negbin_ns_DI_Sex_Age_Histologic.log 28052.6 28185.4 -14002.3  28004.6     1842
-5Negbin_ns_Sex_Age.log                28058.1 28152.1 -14012.0  28024.1     1849
-9Negbin_ns_DI_Sex_Age.log             28061.7 28177.8 -14009.8  28019.7     1845
-5Negbin_ns_Sex_Histologic.log         28066.5 28171.6 -14014.2  28028.5     1847
+══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by AIC ═══════════════════════════════════════════════════════════════════════════════
+                                           AIC     BIC   logLik deviance df.resid
+5Negbin_ns_Age_Histologic2.log         28054.1 28148.1 -14010.0  28020.1     1849
+6Negbin_ns_Sex_Age_Histologic2.log     28056.1 28155.6 -14010.0  28020.1     1848
+5Negbin_ns_Sex_Age.log                 28058.1 28152.1 -14012.0  28024.1     1849
+9Negbin_ns_DI_Age_Histologic2.log      28058.1 28174.3 -14008.0  28016.1     1845
+10Negbin_ns_DI_Sex_Age_Histologic2.log 28060.1 28181.8 -14008.0  28016.1     1844
+9Negbin_ns_DI_Sex_Age.log              28061.7 28177.8 -14009.8  28019.7     1845
+5Negbin_ns_Sex_Histologic2.log         28070.8 28164.9 -14018.4  28036.8     1849
 
-══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by BIC ═════════════════════════════════════════════════════════════════════
-                                          AIC     BIC   logLik deviance df.resid
-5Negbin_ns_Age_Histologic.log         28046.0 28151.1 -14004.0  28008.0     1847
-5Negbin_ns_Sex_Age.log                28058.1 28152.1 -14012.0  28024.1     1849
-6Negbin_ns_Sex_Age_Histologic.log     28047.9 28158.6 -14004.0  28007.9     1846
-5Negbin_ns_Sex_Histologic.log         28066.5 28171.6 -14014.2  28028.5     1847
-9Negbin_ns_DI_Sex_Age.log             28061.7 28177.8 -14009.8  28019.7     1845
-9Negbin_ns_DI_Age_Histologic.log      28050.7 28177.9 -14002.3  28004.7     1843
-10Negbin_ns_DI_Sex_Age_Histologic.log 28052.6 28185.4 -14002.3  28004.6     1842
+══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by BIC ═══════════════════════════════════════════════════════════════════════════════
+                                           AIC     BIC   logLik deviance df.resid
+5Negbin_ns_Age_Histologic2.log         28054.1 28148.1 -14010.0  28020.1     1849
+5Negbin_ns_Sex_Age.log                 28058.1 28152.1 -14012.0  28024.1     1849
+6Negbin_ns_Sex_Age_Histologic2.log     28056.1 28155.6 -14010.0  28020.1     1848
+5Negbin_ns_Sex_Histologic2.log         28070.8 28164.9 -14018.4  28036.8     1849
+9Negbin_ns_DI_Age_Histologic2.log      28058.1 28174.3 -14008.0  28016.1     1845
+9Negbin_ns_DI_Sex_Age.log              28061.7 28177.8 -14009.8  28019.7     1845
+10Negbin_ns_DI_Sex_Age_Histologic2.log 28060.1 28181.8 -14008.0  28016.1     1844
 
-══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by logLik ══════════════════════════════════════════════════════════════════
-                                          AIC     BIC   logLik deviance df.resid
-10Negbin_ns_DI_Sex_Age_Histologic.log 28052.6 28185.4 -14002.3  28004.6     1842
-9Negbin_ns_DI_Age_Histologic.log      28050.7 28177.9 -14002.3  28004.7     1843
-5Negbin_ns_Age_Histologic.log         28046.0 28151.1 -14004.0  28008.0     1847
-6Negbin_ns_Sex_Age_Histologic.log     28047.9 28158.6 -14004.0  28007.9     1846
-9Negbin_ns_DI_Sex_Age.log             28061.7 28177.8 -14009.8  28019.7     1845
-5Negbin_ns_Sex_Age.log                28058.1 28152.1 -14012.0  28024.1     1849
-9Negbin_ns_DI_Sex_Histologic.log      28070.2 28197.5 -14012.1  28024.2     1843
+══ /data/c0061461/THESIS/PBC/Longs/alkaline -- Ranked by logLik ════════════════════════════════════════════════════════════════════════════
+                                           AIC     BIC   logLik deviance df.resid
+10Negbin_ns_DI_Sex_Age_Histologic2.log 28060.1 28181.8 -14008.0  28016.1     1844
+9Negbin_ns_DI_Age_Histologic2.log      28058.1 28174.3 -14008.0  28016.1     1845
+9Negbin_ns_DI_Sex_Age.log              28061.7 28177.8 -14009.8  28019.7     1845
+5Negbin_ns_Age_Histologic2.log         28054.1 28148.1 -14010.0  28020.1     1849
+6Negbin_ns_Sex_Age_Histologic2.log     28056.1 28155.6 -14010.0  28020.1     1848
+5Negbin_ns_Sex_Age.log                 28058.1 28152.1 -14012.0  28024.1     1849
+9Negbin_ns_DI_Sex_Histologic2.log      28073.9 28190.0 -14015.9  28031.9     1845
 

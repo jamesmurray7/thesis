@@ -112,6 +112,14 @@ save.dir.file.path <- function(x, LHS = save.dir) gsub("\\/\\/","/",file.path(LH
   return(a)
 }
 
+.plot.both <- function(X,Y){
+  stopifnot(inherits(X, "Sample") & inherits(Y, "Sample"))
+  par(mfrow=c(1,2))
+  plot(X)
+  plot(Y)
+  par(mfrow=c(1,1))
+}
+
 .startmessage <- function(){
   cat("\f")
   message("Normal justification - Thesis plots")
@@ -128,6 +136,7 @@ source('stockSimfn.R')
 source("Createbivcontours.R")
 source("Sample.R")
 source('../theme_csda.R')
+source("coverage.R")
 cat("\nLoading c++ file...\n")
 sourceCpp("mh.cpp")
 

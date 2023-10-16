@@ -1,31 +1,31 @@
 
-══ /data/c0061461/THESIS/PBC/Longs/prothrombin -- Ranked by AIC ══════════════════════════════════════════════════════════════════
-                                           AIC    BIC  logLik deviance df.resid
-7Gamma_quad_DI_Age_Histologic.log       4986.4 5080.4 -2476.2   4952.4     1849
-3Gamma_linear_Sex_Histologic.log        5046.9 5102.3 -2513.5   5026.9     1856
-4Gamma_linear_Sex_Age_Histologic.log    5048.8 5109.7 -2513.4   5026.8     1855
-5Gamma_linear_DI_Sex_Histologic.log     5050.3 5116.6 -2513.1   5026.3     1854
-3Gamma_linear_Age_Histologic.log        5051.2 5106.5 -2515.6   5031.2     1856
-6Gamma_linear_DI_Sex_Age_Histologic.log 5052.1 5124.0 -2513.0   5026.1     1853
-5Gamma_linear_DI_Age_Histologic.log     5054.5 5120.9 -2515.3   5030.5     1854
+══ /data/c0061461/THESIS/PBC/Longs/prothrombin -- Ranked by AIC ════════════════════════════════════════════════════════════════════════════
+                                            AIC    BIC  logLik deviance df.resid
+4Gamma_linear_Sex_Age_Histologic2.log    5099.3 5149.1 -2540.6   5081.3     1857
+3Gamma_linear_Sex_Histologic2.log        5099.6 5143.8 -2541.8   5083.6     1858
+3Gamma_linear_Age_Histologic2.log        5101.5 5145.7 -2542.7   5085.5     1858
+6Gamma_linear_DI_Sex_Age_Histologic2.log 5102.6 5163.5 -2540.3   5080.6     1855
+5Gamma_linear_DI_Sex_Histologic2.log     5103.2 5158.5 -2541.6   5083.2     1856
+5Gamma_linear_DI_Age_Histologic2.log     5104.9 5160.2 -2542.4   5084.9     1856
+3Gamma_linear_Sex_Age.log                5118.0 5162.2 -2551.0   5102.0     1858
 
-══ /data/c0061461/THESIS/PBC/Longs/prothrombin -- Ranked by BIC ══════════════════════════════════════════════════════════════════
-                                           AIC    BIC  logLik deviance df.resid
-7Gamma_quad_DI_Age_Histologic.log       4986.4 5080.4 -2476.2   4952.4     1849
-3Gamma_linear_Sex_Histologic.log        5046.9 5102.3 -2513.5   5026.9     1856
-3Gamma_linear_Age_Histologic.log        5051.2 5106.5 -2515.6   5031.2     1856
-4Gamma_linear_Sex_Age_Histologic.log    5048.8 5109.7 -2513.4   5026.8     1855
-5Gamma_linear_DI_Sex_Histologic.log     5050.3 5116.6 -2513.1   5026.3     1854
-5Gamma_linear_DI_Age_Histologic.log     5054.5 5120.9 -2515.3   5030.5     1854
-6Gamma_linear_DI_Sex_Age_Histologic.log 5052.1 5124.0 -2513.0   5026.1     1853
+══ /data/c0061461/THESIS/PBC/Longs/prothrombin -- Ranked by BIC ════════════════════════════════════════════════════════════════════════════
+                                            AIC    BIC  logLik deviance df.resid
+3Gamma_linear_Sex_Histologic2.log        5099.6 5143.8 -2541.8   5083.6     1858
+3Gamma_linear_Age_Histologic2.log        5101.5 5145.7 -2542.7   5085.5     1858
+4Gamma_linear_Sex_Age_Histologic2.log    5099.3 5149.1 -2540.6   5081.3     1857
+5Gamma_linear_DI_Sex_Histologic2.log     5103.2 5158.5 -2541.6   5083.2     1856
+5Gamma_linear_DI_Age_Histologic2.log     5104.9 5160.2 -2542.4   5084.9     1856
+3Gamma_linear_Sex_Age.log                5118.0 5162.2 -2551.0   5102.0     1858
+6Gamma_linear_DI_Sex_Age_Histologic2.log 5102.6 5163.5 -2540.3   5080.6     1855
 
-══ /data/c0061461/THESIS/PBC/Longs/prothrombin -- Ranked by logLik ═══════════════════════════════════════════════════════════════
-                                           AIC    BIC  logLik deviance df.resid
-7Gamma_quad_DI_Age_Histologic.log       4986.4 5080.4 -2476.2   4952.4     1849
-6Gamma_linear_DI_Sex_Age_Histologic.log 5052.1 5124.0 -2513.0   5026.1     1853
-5Gamma_linear_DI_Sex_Histologic.log     5050.3 5116.6 -2513.1   5026.3     1854
-4Gamma_linear_Sex_Age_Histologic.log    5048.8 5109.7 -2513.4   5026.8     1855
-3Gamma_linear_Sex_Histologic.log        5046.9 5102.3 -2513.5   5026.9     1856
-5Gamma_linear_DI_Age_Histologic.log     5054.5 5120.9 -2515.3   5030.5     1854
-3Gamma_linear_Age_Histologic.log        5051.2 5106.5 -2515.6   5031.2     1856
+══ /data/c0061461/THESIS/PBC/Longs/prothrombin -- Ranked by logLik ═════════════════════════════════════════════════════════════════════════
+                                            AIC    BIC  logLik deviance df.resid
+6Gamma_linear_DI_Sex_Age_Histologic2.log 5102.6 5163.5 -2540.3   5080.6     1855
+4Gamma_linear_Sex_Age_Histologic2.log    5099.3 5149.1 -2540.6   5081.3     1857
+5Gamma_linear_DI_Sex_Histologic2.log     5103.2 5158.5 -2541.6   5083.2     1856
+3Gamma_linear_Sex_Histologic2.log        5099.6 5143.8 -2541.8   5083.6     1858
+5Gamma_linear_DI_Age_Histologic2.log     5104.9 5160.2 -2542.4   5084.9     1856
+3Gamma_linear_Age_Histologic2.log        5101.5 5145.7 -2542.7   5085.5     1858
+5Gamma_linear_DI_Sex_Age.log             5120.5 5175.8 -2550.2   5100.5     1856
 

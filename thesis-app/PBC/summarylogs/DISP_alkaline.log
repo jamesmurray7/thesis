@@ -1,31 +1,25 @@
 
-══ /data/c0061461/THESIS/PBC/Disps/alkaline -- Ranked by AIC ═════════════════════════════════════════════════════════════════════
-                                       AIC     BIC   logLik deviance df.resid
-4_Time_Drug_Age_Histologic.log     27882.4 28020.7 -13916.2  27832.4     1841
-5_Time_Drug_Age_Histologic_Sex.log 27884.2 28028.0 -13916.1  27832.2     1840
-3_Time_Drug_Histologic.log         27885.2 28018.0 -13918.6  27837.2     1842
-4_Time_Drug_Histologic_Sex.log     27887.1 28025.4 -13918.5  27837.1     1841
-3_Time_Age_Histologic.log          27888.8 28021.6 -13920.4  27840.8     1842
-4_Time_Age_Histologic_Sex.log      27890.2 28028.5 -13920.1  27840.2     1841
-2_Time_Histologic.log              27890.3 28017.5 -13922.1  27844.3     1843
+══ /data/c0061461/THESIS/PBC/Disps/alkaline -- Ranked by AIC ═══════════════════════════════════════════════════════════════════════════════
+                      AIC     BIC   logLik deviance df.resid
+1_Histologic2.log 28014.8 28114.3 -13989.4  27978.8     1848
+1_Time.log        28015.5 28115.0 -13989.7  27979.5     1848
+1_Drug.log        28038.2 28137.8 -14001.1  28002.2     1848
+1_Age.log         28052.4 28151.9 -14008.2  28016.4     1848
+1_Sex.log         28055.7 28155.3 -14009.8  28019.7     1848
 
-══ /data/c0061461/THESIS/PBC/Disps/alkaline -- Ranked by BIC ═════════════════════════════════════════════════════════════════════
-                                       AIC     BIC   logLik deviance df.resid
-2_Time_Histologic.log              27890.3 28017.5 -13922.1  27844.3     1843
-3_Time_Drug_Histologic.log         27885.2 28018.0 -13918.6  27837.2     1842
-4_Time_Drug_Age_Histologic.log     27882.4 28020.7 -13916.2  27832.4     1841
-3_Time_Age_Histologic.log          27888.8 28021.6 -13920.4  27840.8     1842
-3_Time_Histologic_Sex.log          27891.8 28024.6 -13921.9  27843.8     1842
-4_Time_Drug_Histologic_Sex.log     27887.1 28025.4 -13918.5  27837.1     1841
-5_Time_Drug_Age_Histologic_Sex.log 27884.2 28028.0 -13916.1  27832.2     1840
+══ /data/c0061461/THESIS/PBC/Disps/alkaline -- Ranked by BIC ═══════════════════════════════════════════════════════════════════════════════
+                      AIC     BIC   logLik deviance df.resid
+1_Histologic2.log 28014.8 28114.3 -13989.4  27978.8     1848
+1_Time.log        28015.5 28115.0 -13989.7  27979.5     1848
+1_Drug.log        28038.2 28137.8 -14001.1  28002.2     1848
+1_Age.log         28052.4 28151.9 -14008.2  28016.4     1848
+1_Sex.log         28055.7 28155.3 -14009.8  28019.7     1848
 
-══ /data/c0061461/THESIS/PBC/Disps/alkaline -- Ranked by logLik ══════════════════════════════════════════════════════════════════
-                                       AIC     BIC   logLik deviance df.resid
-5_Time_Drug_Age_Histologic_Sex.log 27884.2 28028.0 -13916.1  27832.2     1840
-4_Time_Drug_Age_Histologic.log     27882.4 28020.7 -13916.2  27832.4     1841
-4_Time_Drug_Histologic_Sex.log     27887.1 28025.4 -13918.5  27837.1     1841
-3_Time_Drug_Histologic.log         27885.2 28018.0 -13918.6  27837.2     1842
-4_Time_Age_Histologic_Sex.log      27890.2 28028.5 -13920.1  27840.2     1841
-3_Time_Age_Histologic.log          27888.8 28021.6 -13920.4  27840.8     1842
-3_Time_Histologic_Sex.log          27891.8 28024.6 -13921.9  27843.8     1842
+══ /data/c0061461/THESIS/PBC/Disps/alkaline -- Ranked by logLik ════════════════════════════════════════════════════════════════════════════
+                      AIC     BIC   logLik deviance df.resid
+1_Sex.log         28055.7 28155.3 -14009.8  28019.7     1848
+1_Age.log         28052.4 28151.9 -14008.2  28016.4     1848
+1_Drug.log        28038.2 28137.8 -14001.1  28002.2     1848
+1_Time.log        28015.5 28115.0 -13989.7  27979.5     1848
+1_Histologic2.log 28014.8 28114.3 -13989.4  27978.8     1848
 

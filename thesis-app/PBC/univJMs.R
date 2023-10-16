@@ -1,152 +1,101 @@
+# UPDATED 12/10/23
 rm(list=ls())
 source('.Rprofile')
-
-# Getting best models from parseLongModels --------------------------------
-ff <- readLines("./parseLongModels.R")
-header.inds <- grep("->\\s+\\=+", ff)
-model.inds <- grep("->>", ff)
-
-# Get into nice readable output format -->
-invisible(unname(sapply(diag(outer(header.inds, model.inds, FUN = function(x,y) paste(x,y))), function(x){
-  header <- as.numeric(stringr::str_extract(x,"\\d?\\d?\\d?\\s"))
-  model <- as.numeric(stringr::str_extract(x,"\\s\\d?\\d?\\d?")  )
-  c(header, model)
-  cat(ff[header], "\n", ff[model], "\n")
-})))
-
-# capture this locally (by rerunning).
-capture.output(invisible(unname(sapply(diag(outer(header.inds, model.inds, FUN = function(x,y) paste(x,y))), function(x){
-  header <- as.numeric(stringr::str_extract(x,"\\d?\\d?\\d?\\s"))
-  model <- as.numeric(stringr::str_extract(x,"\\s\\d?\\d?\\d?")  )
-  c(header, model)
-  cat(ff[header], "\n", ff[model], "\n")
-}))), file = "./printout.txt")
-
-
-# Fitting with gmvjoint ---------------------------------------------------
-head(PBCredx)
-library(gmvjoint)
 library(splines)
+log.dir <- save.dir.file.path("Joint/Univs")
+head(PBCredx)
+pf <- parent.frame()
+PBCredx$histologic2 <- ifelse(PBCredx$histologic %in% c("3", "4"), 1, 0)
 
-# albumin -> ====
-alb <- joint(
-  long.formulas = list(albumin ~ age + histologic + time + I(time^2) + 
-                         (1 + time + I(time^2)|id)),
-  surv.formula = Surv(survtime, status) ~ age + histologic,
-  data = PBCredx,
-  family = list("gaussian"),
-  control = list(tol.rel = 5e-3)
-)
+(resps <- names(PBCredx)[8:15])
+resps <- resps[resps!="spiders"]
 
-plot(resid(alb))
-cc <- cond.ranefs(alb); plot(cc) # Very well-fitting (NB as we expect)
+# Function to fit all based on best model
+surv.formula <- Surv(survtime, status) ~ age + sex + histologic2
 
-# serBilir -> ====
-sbil <- joint(
-  long.formulas = list(serBilir ~ sex + histologic + ns(time, knots = c(1, 4)) + 
-                         (1 + ns(time, knots = c(1, 4))|id)),
-  surv.formula = Surv(survtime, status) ~ age + histologic,
-  data = PBCredx,
-  family = list("gaussian"),
-  control = list(tol.rel = 5e-3)
-)
-
-plot(resid(sbil))
-cc <- cond.ranefs(sbil); plot(cc) # Decent, though intercept is perhaps better suited by skew-normal?
-
-# SGOT -> ====
-sgot <- joint(
-  long.formulas = list(SGOT ~ age + histologic + drug * (time + I(time^2)) + 
-                         (1 + time + I(time^2)|id)),
-  surv.formula = Surv(survtime, status) ~ age + histologic,
-  data = PBCredx,
-  family = list("gaussian"),
-  control = list(tol.rel = 5e-3)
-)
-
-plot(resid(sgot))
-cc <- cond.ranefs(sgot); plot(cc) # pretty good
-
-# Spiders -> ====
-# Seems unstable? :/
-# Proceed with just an intercept-only one.
-# Might be due to low prevalence at later follow-up times maybe.
-spiders <- joint(
-  long.formulas = list(spiders ~ age + histologic + time + 
-                         (1|id)),
-  surv.formula = Surv(survtime, status) ~ age + histologic,
-  data = PBCredx,
-  family = list("binomial"),
-  control = list(tol.rel = 5e-3, verbose = T)
-)
-
-cc <- cond.ranefs(spiders); plot(cc) # slightly left skew but passable; large variance.
-
-# Hepatomegaly -> ====
-hepa <- joint(
-  long.formulas = list(hepatomegaly ~ sex + histologic + time + I(time^2) +  
-                         (1 + time + I(time^2)|id)),
-  surv.formula = Surv(survtime, status) ~ age + histologic,
-  data = PBCredx,
-  family = list("binomial"),
-  control = list(tol.rel = 5e-3, verbose = T)
-)
-
-plot(resid(hepa, type = 'pearson'))
-cc <- cond.ranefs(hepa); plot(cc) # Very good (again).
-
-# Prothrombin -> ====
-proth <- joint(
-  long.formulas = list(prothrombin ~ age + histologic + drug * (time + I(time^2)) + 
-                         (1 + time + I(time^2)|id)),
-  surv.formula = Surv(survtime, status) ~ age + histologic,
-  disp.formulas = list(~time+age+drug+sex+histologic),
-  data = PBCredx,
-  family = list("Gamma"),
-  control = list(tol.rel = 5e-3, verbose = T)
-)
-
-plot(resid(proth, type = 'pearson'))
-cc <- cond.ranefs(proth); plot(cc) # Decent.
-
-# Platelets -> ====
-plat <- joint(
-  long.formulas = list(platelets ~ sex + histologic + drug * ns(time, knots = c(1, 4)) + 
-                         (1 + ns(time, knots = c(1, 4))|id)),
-  surv.formula = Surv(survtime, status) ~ age + histologic,
-  disp.formulas = list(~time + age + sex + histologic),
-  data = PBCredx,
-  family = list("genpois"),
-  control = list(tol.rel = 5e-3, verbose = T)
-)
-
-plot(resid(plat, type = 'pearson')) # A little splayed at edges but acceptable.
-cc <- cond.ranefs(plat); plot(cc) # Decent.
-
-# Alkaline -> ====
-alka <- joint(
-  long.formulas = list(alkaline ~ age + histologic + ns(time, knots = c(1, 4)) + 
-                         (1 + ns(time, knots = c(1, 4))|id)),
-  surv.formula = Surv(survtime, status) ~ age + histologic,
-  disp.formulas = list(~time+drug+age+histologic),
-  data = PBCredx,
-  family = list("negbin"),
-  control = list(tol.rel = 5e-3, verbose = T)
-)
-
-plot(resid(alka, type = 'pearson')) # A little splayed at edges but acceptable.
-cc <- cond.ranefs(alka); plot(cc)   # A little off!
-
-# Loop over univariate joint models and print the surviva sub-model summaries.
-jms <- ls()[sapply(ls(), function(i) eval(parse(text=paste0("class(",i,")"))))=="joint"]
-
-# So all significant by themselves.
-for(j in jms){
-  cat(j, "\n")
-  print(eval(parse(text = paste0(
-    "summary(", j, ")$Surv"
-  ))))
-  cat(cli::rule())
-  cat("\n")
+# Best-fitting longitudinal formula ---------------------------------------
+get.formulae <- function(resp){
+  stopifnot(resp%in%resps)
+  out <- switch(resp,
+                albumin = list(
+                  long.formula = list(albumin ~ time + age + histologic2 + (1 + time|id)),
+                  family = list("gaussian")
+                ),
+                alkaline = list(
+                  long.formula = list(alkaline ~ ns(time, knots = c(1,4)) + age + histologic2 + (1 + ns(time, knots = c(1,4))|id)),
+                  family = list("negbin"),
+                  disp.formula = list(~histologic2)
+                ),
+                SGOT = list(
+                  long.formula = list(SGOT ~ time + I(time^2) + age + histologic2 + (1 + time + I(time^2)|id)),
+                  family = list("gaussian")
+                ),
+                hepatomegaly = list(
+                  long.formula = list(hepatomegaly ~ time + histologic2 + sex + (1 + time|id)),
+                  family = list("binomial")
+                ),
+                platelets = list(
+                  long.formula = list(platelets ~ ns(time, knots = c(1,4)) + age + histologic2 + (1 + ns(time, knots = c(1,4))|id)),
+                  family = list("genpois"),
+                  disp.formula = list(~time)
+                ),
+                prothrombin = list(
+                  long.formula = list(prothrombin ~ time + histologic2 + sex + (1 + time|id)),
+                  family = list("Gamma"),
+                  disp.formula = list(~time)
+                ),
+                serBilir = list(
+                  long.formula = list(serBilir ~ ns(time, knots = c(1,4)) + histologic2 + sex + (1 + ns(time, knots = c(1,4))|id)),
+                  family = list("gaussian")
+                ))
+  environment(out$long.formula[[1]]) <- pf
+  if(!is.null(out$disp.formula)) environment(out$disp.formula[[1]]) <- pf
+  out
 }
+
+
+# Fit the joint model -----------------------------------------------------
+fit.joint <- function(resp){
+  formulae <- get.formulae(resp)
+  cat(sprintf("Fitting %s\n", resp))
+  if(!is.null(formulae$disp.formula)){
+    out <- joint(long.formulas = formulae$long.formula,
+                 surv.formula = surv.formula,
+                 data = PBCredx,
+                 family = formulae$family,
+                 disp.formulas = formulae$disp.formula,
+                 control = list(tol.rel = 5e-3))
+  }else{
+    out <- joint(long.formulas = formulae$long.formula,
+                 surv.formula = surv.formula,
+                 data = PBCredx,
+                 family = formulae$family,
+                 control = list(tol.rel = 5e-3))
+  }
+  return(out)
+}
+
+resp.list <- setNames(as.list(resps), resps)
+joints <- lapply(resp.list, fit.joint)
+
+# save(joints, file = save.dir.file.path("AllUnivs.RData", log.dir))
+
+# Get some stuffs
+(et <- sapply(joints, '[[', "elapsed.time"))
+(survs <- lapply(joints, function(x) summary(x)$Sur))
+
+
+# 
+# # Loop over univariate joint models and print the survival sub-model summaries.
+# jms <- ls()[sapply(ls(), function(i) eval(parse(text=paste0("class(",i,")"))))=="joint"]
+# 
+# # So all significant by themselves.
+# for(j in jms){
+#   cat(j, "\n")
+#   print(eval(parse(text = paste0(
+#     "summary(", j, ")$Surv"
+#   ))))
+#   cat(cli::rule())
+#   cat("\n")
+# }
 

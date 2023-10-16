@@ -1,8 +1,18 @@
 # Obtain b.hat and Sigma.hat given observed data at TRUE parameter estimates.
-getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds, Omega){
-  D <- Omega$D; beta <- Omega$beta; sigma <- Omega$sigma; gamma <- Omega$gamma; zeta <- Omega$zeta[Omega$zeta!=0L]
+getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds, Omega, include.survival){
+  D <- Omega$D; beta <- Omega$beta; sigma <- Omega$sigma; gamma <- Omega$gamma; zeta <- Omega$zeta
   gamma.rep <- Omega$gamma.rep
   ln <- nrow(X[[1]])
+  
+  if(!include.survival){ # `Remove' RHS of complete data likelihood...
+    Delta <- Delta * 0   # i.e. find tilde{b}_i, tilde{Sigma}_i
+    l0u <- l0u * 0
+    l0i <- l0i * 0
+    zeta <- zeta * 0
+    gamma <- gamma * 0
+    gamma.rep <- gamma.rep * 0
+  }
+
   uu <- optim(b, gmvjoint:::joint_density, gmvjoint:::joint_density_ddb,
               Y = Y, X = X, Z = Z, W = W, beta = beta, D = D, sigma = sigma,
               family = as.list(family), Delta = Delta, S = S, Fi = Fi, l0i = l0i, SS = SS, Fu = Fu, haz = l0u,
@@ -14,8 +24,8 @@ getSigma <- function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.in
 # Main "Sample" function --------------------------------------------------
 # Function to sample given data, true random effects, known family and target ids.
 # `X` is an object of class `DataGen`
-Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
-                   b.dist = "normal", df = 4){
+Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE, include.survival = TRUE,
+                   b.dist = "normal", df = 4, burnin = 1000, NMC = 10000){
   # Check
   stopifnot(inherits(X_, "dataGen"))
   
@@ -63,7 +73,7 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
   }else{
     sv <- gmvjoint:::surv.mod(surv, lapply(list(Y.1 ~ time + cont + bin + (1 + time|id)), gmvjoint:::parseFormula), l0)  
     b.inds <- list(0:1)
-    gamma.rep <- c(0.5, 0.5)
+    gamma.rep <- rep(gamma, 2)
   }
   
   # Omega^{(TRUE)} ---->
@@ -83,9 +93,8 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
   
   # Get Sigma
   Sigma <- Map(function(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u){
-    Sigma <- getSigma(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds.cpp, Omega)
-  }, b = b, Y = Y, X = X, Z = Z, W = W, Delta = Delta, S = S, Fi = Fi, l0i = l0i, SS = SS, 
-     Fu = Fu, l0u = l0u)
+    Sigma <- getSigma(b, Y, X, Z, W, Delta, S, Fi, l0i, SS, Fu, l0u, family, b.inds.cpp, Omega, include.survival)
+  }, b = b, Y = Y, X = X, Z = Z, W = W, Delta = Delta, S = S, Fi = Fi, l0i = l0i, SS = SS, Fu = Fu, l0u = l0u)
   
   b.hat <- lapply(Sigma, el, 1)
   Sigma <- lapply(Sigma, el, 2)
@@ -107,7 +116,7 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
     cond.sim <- Metropolis_Hastings(b[[a]], Omega, Y[[a]], X[[a]], Z[[a]], W[[a]],
                                     list(family), Delta[[a]], S[[a]], Fi[[a]], l0i[[a]], 
                                     SS[[a]], Fu[[a]], l0u[[a]], Omega$gamma.rep,
-                                    list(0:3), b.inds.cpp, 1L, q, 1000, 10000, Sigma[[a]], 
+                                    list(0:3), b.inds.cpp, 1L, q, burnin, NMC, Sigma[[a]], 
                                     b.dist, df, tune)
     Acc[a] <- cond.sim$AcceptanceRate
     for(j in 1:q){
@@ -146,7 +155,8 @@ Sample <- function(X_, TUNE = 1., return.walks = FALSE, force.intslope = FALSE,
   out <- do.call(rbind, dfs) # About 5MB at 10,000 iterations on 100 subjects.
   out$ApproxBias <- out$normy - out$condy
   out <- list(df = out, MVN.dens = MVN.dens, mi = unname(mi),
-              family = family, Sigmas = Sigma, true.b = btrue,
+              family = family, b.hats = b.hat, Sigmas = Sigma, true.b = btrue,
+              include.survival = include.survival,
               Acc = Acc)
   if(return.walks) out$Walks <- Walks
   class(out) <- "Sample"
@@ -161,16 +171,17 @@ print.Sample <- function(x){
   cat("\n")
 }
 
-plot.Sample <- function(x){
+plot.Sample <- function(x, min.acc = 0.20, max.acc = 0.25){
   stopifnot(inherits(x, "Sample"))
-  num.between <- 100 * sum(x$Acc > .2 & x$Acc < .25)/length(x$Acc) 
-  plot(x$Acc, pch = 19, main = sprintf("%.2f%% acceptance rate > 0.20 and < 0.25", num.between),
+  num.between <- 100 * sum(x$Acc >= min.acc & x$Acc <= max.acc)/length(x$Acc) 
+  plot(x$Acc, pch = 19, main = sprintf("%.2f%% acceptance rate >= %.2f and <= %.2f", 
+                                       num.between, min.acc, max.acc),
        ylab = "Acceptance rate", xaxt = "n", xlab = "")
   abline(h = c(0.20, 0.25), lty = 5, col = "red2")
 }
 
 
-
+# Not used -->
 trim.Walks <- function(x){
   if(inherits(x, "Sample")){ # Either supply a `Sample` object...
     stopifnot(!is.null(x$Walks))
