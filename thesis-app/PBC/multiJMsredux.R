@@ -235,6 +235,27 @@ joint.biv <- joint(
 
 save(joint.biv, file = save.dir.file.path("biv.RData", out.dir))
 
+# Fit additionally using joineRML (since all Gaussian)
+library(joineRML)
+joint.biv.joineRML <- mjoint(
+  formLongFixed = list(
+    "serBilir" = serBilir ~ ns(time, knots = c(1,4)) + histologic2 + sex,
+    "albumin" = albumin ~ time + age + histologic2
+  ),
+  formLongRandom = list(
+    "serBilir" = ~ 1 + ns(time, knots = c(1,4))|id,
+    "albumin" = ~time|id
+  ),
+  data = PBCredx,
+  formSurv = surv.formula,
+  timeVar = 'time', 
+  control = list(
+    type = 'sobol', tol.em = 1e-2, tol2 = 5e-3, convCrit = "sas"
+  )
+)
+
+save(joint.biv.joineRML, file = save.dir.file.path("bivjML.RData", out.dir))
+
 # Dropping zeta_sex (this is the final model) -----------------------------
 joint.biv2 <- joint(
   long.formulas = long.formulas.biv, 
@@ -245,5 +266,24 @@ joint.biv2 <- joint(
 
 save(joint.biv2, file = save.dir.file.path("biv2.RData", out.dir))
 
+# And once more fit this with joineRML
+joint.biv2.joineRML <- mjoint(
+  formLongFixed = list(
+    "serBilir" = serBilir ~ ns(time, knots = c(1,4)) + histologic2 + sex,
+    "albumin" = albumin ~ time + age + histologic2
+  ),
+  formLongRandom = list(
+    "serBilir" = ~ 1 + ns(time, knots = c(1,4))|id,
+    "albumin" = ~time|id
+  ),
+  data = PBCredx,
+  formSurv = Surv(survtime, status) ~ age + histologic2,
+  timeVar = 'time', 
+  control = list(
+    type = 'sobol', tol.em = 1e-2, tol2 = 5e-3, convCrit = "sas"
+  )
+)
+
+save(joint.biv.joineRML, file = save.dir.file.path("biv2jML.RData", out.dir))
 
 
