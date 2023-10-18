@@ -5,7 +5,8 @@ PBC$id <- as.numeric(as.character(PBC$id))
 options(
 	prompt = glue::glue_col("{green PBC> }"),
 	continue = "  ",
-	stringsAsFactors = FALSE
+	stringsAsFactors = FALSE,
+	rstudio.help.showDataPreview = FALSE
 )
 
 save.dir <- ifelse(grepl("macOS", utils::sessionInfo()$running),
