@@ -7,7 +7,7 @@ gauss <- get.psi.mi2("gaussian",file.name = "test.RData")
 poiss <- get.psi.mi2("poisson", file.name = "test.RData")
 negbin <- get.psi.mi2("negbin", file.name = "test.RData")
 Gammas <- get.psi.mi2("Gamma", file.name = "test.RData")
-bin <- get.psi.mi2("binomial", file.name = "test.RData", tune = c(2.0,3.0))
+bin <- get.psi.mi2("binomial", file.name = "test.RData", tune = c(2.0,2.0))
 
 e <- T
 while(e){

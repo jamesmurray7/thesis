@@ -109,7 +109,7 @@ get.psi.mi2 <- function(family, tune = NULL, n = 1000L,
   sim <- switch(family,
                 gaussian = {create.simfn(list("gaussian"), arguments = list(n = n, ...))},
                 poisson = {create.simfn(list("poisson"), arguments = list(n = n, ...))},
-                binomial = {create.simfn(list("binomial"), arguments = list(n = n, D = diag(c(2,.5)), ...))},
+                binomial = {create.simfn(list("binomial"), arguments = list(n = n, D = diag(c(1,.25)), ...))},
                 negbin = {create.simfn(list("negbin"), arguments = list(n = n, ...))},
                 Gamma = {create.simfn(list("Gamma"), arguments = list(n = n, ...))},
                 genpois = {create.simfn(list("genpois"), arguments = list(n = n, D = diag(c(0.3,.05)), ...))})
