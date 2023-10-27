@@ -156,23 +156,62 @@ ggsurvplot(S,
                  ggtheme = theme_csda(),
                  xlab = "Follow-up time (years)",
                  break.time.by = 1, censor.size = 1,
-           lwd = .25, censor.shape = "|",
+                 lwd = .25, censor.shape = "|",
                  conf.int.style = "ribbon",
-                 palette = c("#e31836"),
+                 palette = .nice.orange,
+                 #palette = c("#e31836"),
                  legend = "none")
+#ggsave("./output/PBC-KM.png", width = 140, height = 60, units = "mm")
 
-ggsave("./output/PBC-KM.png", width = 140, height = 60, units = "mm")
-           
+SS <- summary(S)
+Sdf <- data.frame(u = SS$time, surv = SS$surv, lower = SS$lower, upper = SS$upper)
+
+# Add-in censor times
+Cs <- PBC %>% filter(status==0L) %>% select(id, survtime) %>% distinct() %>% pull(survtime) %>% sort
+Csdf <- as.data.frame(t(sapply(Cs, function(x){
+  w <- which.min(abs(Sdf$u-x))
+  c(u = x, surv = Sdf[w,'surv'], lower = Sdf[w, 'lower'], upper = Sdf[w, 'upper'])
+})))
+
+Csdf$censor <- 1
+Sdf$censor <- 0
+
+Sdf2 <- rbind(Sdf,Csdf)
+
+# P1 - KM estimate
+P1 <- ggplot(Sdf2, aes(x = u, y = surv)) + 
+  geom_ribbon(aes(ymin=lower,ymax=upper), fill = .nice.orange, alpha = .22, colour = 'grey90', lwd = .25)+
+  geom_step(colour = .nice.orange, lwd=.15) + 
+  geom_point(data = Sdf2 %>% filter(censor == 1), pch = '|', colour = .nice.orange, size = .5) + 
+  expand_limits(y=0:1, x = 0:15.5) +
+  scale_x_continuous("Follow-up time (years)", breaks=0:15) +
+  labs(y = "Survival probability") + 
+  theme_csda() + 
+  theme(
+    axis.text = element_text(size=5.5),
+    axis.title = element_text(size=7),
+    axis.ticks.length.x =  unit(.5,'mm')
+  )
+
 # P2 distribution of failure times
-survdata %>% 
-  mutate(ff = ifelse(status == 1, "Died", "Survived")) %>% 
+P2 <- survdata %>% 
+  filter(status == 1L) %>% 
+  select(id, survtime) %>% distinct %>% 
   ggplot(aes(x = survtime)) + 
   # geom_density() + 
-  geom_line(stat = "density") + 
-  # geom_histogram(bins = 24) + 
-  facet_wrap(~ff, ncol = 1L) + 
-  labs(x = "Follow-up time (years)",
+  # geom_line(stat = "density") + 
+  geom_histogram(bins = 15, fill = "grey90", colour = .nice.orange,lwd=.25) +
+  # geom_freqpoly() + 
+  labs(x = "Failure time",
        y = "Density") + 
   scale_x_continuous(breaks = seq(0,15,1)) + 
-  theme_csda() -> P2
+  theme_csda()+ 
+  theme(
+    axis.text = element_text(size=5.5),
+    axis.title = element_text(size=7),
+    axis.ticks.length.x =  unit(.5,'mm')
+  )
+
+ggpubr::ggarrange(P1,P2,nrow=1)
+ggsave("./output/PBC-KM2.png", width = 140, height=60, units = "mm")
 
