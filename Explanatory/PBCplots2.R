@@ -181,8 +181,8 @@ Sdf2 <- rbind(Sdf,Csdf)
 # P1 - KM estimate
 P1 <- ggplot(Sdf2, aes(x = u, y = surv)) + 
   geom_ribbon(aes(ymin=lower,ymax=upper), fill = .nice.orange, alpha = .22, colour = 'grey90', lwd = .25)+
-  geom_step(colour = .nice.orange, lwd=.15) + 
-  geom_point(data = Sdf2 %>% filter(censor == 1), pch = '|', colour = .nice.orange, size = .5) + 
+  geom_step(colour = 'black', lwd=.15) + 
+  geom_point(data = Sdf2 %>% filter(censor == 1), pch = '|', colour = 'black', size = .33) + 
   expand_limits(y=0:1, x = 0:15.5) +
   scale_x_continuous("Follow-up time (years)", breaks=0:15) +
   labs(y = "Survival probability") + 
