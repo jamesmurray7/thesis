@@ -1,6 +1,6 @@
 cat("\f")
 library(gmvjoint)
-data(PBC, package = "gmvjoint")
+utils::data(PBC, package = "gmvjoint")
 PBC$id <- as.numeric(as.character(PBC$id))
 options(
 	prompt = glue::glue_col("{green PBC> }"),
@@ -15,7 +15,7 @@ save.dir <- ifelse(grepl("macOS", utils::sessionInfo()$running),
 save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
 
 # Create some extra datasets
-PBCredx <- na.omit(PBC[,c("id", "survtime", "status", "drug", "sex",
+PBCredx <- stats::na.omit(PBC[,c("id", "survtime", "status", "drug", "sex",
                           "age", "histologic", "time", "hepatomegaly", "spiders",
                           "alkaline", "SGOT", "platelets", "prothrombin", 
                           "serBilir", "albumin")])
@@ -36,7 +36,7 @@ rm(BL)
   cat("Current existing directories:\n")
   fs::dir_tree(save.dir, recurse = FALSE)
   cat("\nData preview:\n")
-  print(head(PBCredx))
+  print(utils::head(PBCredx))
   cat("\n(Exploratory plots previously created in ../../Explanatory).\n")
 }
 
