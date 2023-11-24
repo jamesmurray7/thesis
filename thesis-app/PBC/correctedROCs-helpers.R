@@ -268,18 +268,20 @@ print.corrected.joint <- function(x, ...){
     auc <- auc[which(auc < 1)]
     pe <- pe[which(auc < 1)]
   }
-  qn.auc <- quantile(auc, c(.25,.5,.75))
-  qn.pe <- quantile(pe, c(.25,.5,.75))
+  qn.auc <- quantile(auc, c(.25,.5,.75, .025, .975))
+  qn.pe <- quantile(pe, c(.25,.5,.75, .025, .975))
   
   cat(aa, '\n')
   cat(bb, '\n')
   if(nchar(cc)) cat(cc, "\n")
   cat("\nAUC ----\n")
   cat(sprintf("'Point estimate': %.3f\n", x$M.auc))
-  cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n\n", qn.auc[2], qn.auc[1], qn.auc[3]))
+  cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n", qn.auc[2], qn.auc[1], qn.auc[3]))
+  cat(sprintf("Median [95%% CI]: %.3f [%.3f, %.3f]\n\n", qn.auc[2], qn.auc[4], qn.auc[5]))
   cat("PE ----\n")
   cat(sprintf("'Point estimate': %.3f\n", x$M.PE))
-  cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n\n", qn.pe[2], qn.pe[1], qn.pe[3]))
+  cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n", qn.pe[2], qn.pe[1], qn.pe[3]))
+  cat(sprintf("Median [95%% CI]: %.3f [%.3f, %.3f]\n\n", qn.pe[2], qn.pe[4], qn.pe[5]))
   invisible(x)
 }
 
@@ -385,3 +387,89 @@ two.corrected.ROCs <- function(fit0, fit1, data, Tstart, delta, control = list()
                    class = 'two.corrected.joints')
   out
 }
+
+# S3
+print.two.corrected.joints <- function(x, ...){
+  stopifnot(inherits(x, 'two.corrected.joints'))
+  # Print each window in turn -->
+  invisible(lapply(x, function(xx){
+    aa <- sprintf("Time Window w: [%.1f, %.1f],", xx$Tstart, xx$Tstart + xx$delta)
+    bb <- sprintf("Based on %d bootstrap model fits and discrimination measures; %d were successful.", 
+                  xx$nboot, nrow(xx$corrections.M0))
+    # M0 first -->
+    cat("\n------- \nM0 (the simpler model)\n------- \n")
+    auc.m0 <- xx$M0.AUC.c; pe.m0 <- xx$M0.PE.c
+    cc <- ''
+    if(any(auc.m0>1)){
+      cc <- sprintf("\nThere was %d corrected AUC value >1, which has been removed\n", sum(auc.m0 > 1))
+      auc.m0 <- auc.m0[which(auc.m0 < 1)]
+      pe.m0 <- pe.m0[which(auc.m0 < 1)]
+    }
+    qn.auc.m0 <- quantile(auc.m0, c(.25,.5,.75, .025, .975))
+    qn.pe.m0 <- quantile(pe.m0, c(.25,.5,.75, .025, .975))
+    
+    cat(aa, '\n')
+    cat(bb, '\n')
+    if(nchar(cc)) cat(cc, "\n")
+    cat("\nAUC ----\n")
+    cat(sprintf("'Point estimate': %.3f\n", xx$M0.auc))
+    cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n", qn.auc.m0[2], qn.auc.m0[1], qn.auc.m0[3]))
+    cat(sprintf("Median [95%% CI]: %.3f [%.3f, %.3f]\n\n", qn.auc.m0[2], qn.auc.m0[4], qn.auc.m0[5]))
+    cat("PE ----\n")
+    cat(sprintf("'Point estimate': %.3f\n", xx$M0.PE))
+    cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n", qn.pe.m0[2], qn.pe.m0[1], qn.pe.m0[3]))
+    cat(sprintf("Median [95%% CI]: %.3f [%.3f, %.3f]\n", qn.pe.m0[2], qn.pe.m0[4], qn.pe.m0[5]))
+    
+    # M1 next -->
+    cat("\n------- \nM1 (the more complex model)\n------- \n")
+    auc.m1 <- xx$M1.AUC.c; pe.m1 <- xx$M1.PE.c
+    cc <- ''
+    if(any(auc.m1>1)){
+      cc <- sprintf("\nThere was %d corrected AUC value >1, which has been removed\n", sum(auc.m1 > 1))
+      auc.m1 <- auc.m1[which(auc.m1 < 1)]
+      pe.m1 <- pe.m1[which(auc.m1 < 1)]
+    }
+    qn.auc.m1 <- quantile(auc.m1, c(.25,.5,.75, .025, .975))
+    qn.pe.m1 <- quantile(pe.m1, c(.25,.5,.75, .025, .975))
+    
+    cat("\nAUC ----\n")
+    cat(sprintf("'Point estimate': %.3f\n", xx$M1.auc))
+    cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n", qn.auc.m1[2], qn.auc.m1[1], qn.auc.m1[3]))
+    cat(sprintf("Median [95%% CI]: %.3f [%.3f, %.3f]\n\n", qn.auc.m1[2], qn.auc.m1[4], qn.auc.m1[5]))
+    cat("PE ----\n")
+    cat(sprintf("'Point estimate': %.3f\n", xx$M1.PE))
+    cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n", qn.pe.m1[2], qn.pe.m1[1], qn.pe.m1[3]))
+    cat(sprintf("Median [95%% CI]: %.3f [%.3f, %.3f]\n", qn.pe.m1[2], qn.pe.m1[4], qn.pe.m1[5]))
+    
+    # R -->
+    cat("\n------- \nR(w)\n------- \n")
+    point <- 1 - xx$M1.PE/xx$M0.PE
+    qn.R <- quantile(xx$R, c(.25, .50, .75, .025, .975))
+    cat(sprintf("'Point estimate': %.3f\n", point))
+    cat(sprintf("Median [IQR]: %.3f [%.3f, %.3f]\n", qn.R[2], qn.R[1], qn.R[3]))
+    cat(sprintf("Median [95%% CI]: %.3f [%.3f, %.3f]\n", qn.R[2], qn.R[4], qn.R[5]))
+    cat("\n")
+    cat(cli::rule())
+    cat("\n")
+    invisible(NULL)
+  }))
+  
+  invisible(x)
+}
+
+
+
+# $W1
+# Time Window w: [2.0, 3.5], 
+# 
+# There was 1 corrected AUC value >1, which has been removed 
+# 
+# AUC ----
+#   'Point estimate': 0.918
+# Median [IQR]: 0.910 [0.895, 0.937]
+# Median [95% CI]: 0.910 [0.871, 0.992]
+# 
+# PE ----
+#   'Point estimate': 0.068
+# Median [IQR]: 0.065 [0.059, 0.072]
+# Median [95% CI]: 0.065 [0.047, 0.085]

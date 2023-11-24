@@ -36,6 +36,7 @@ W1.01 <- two.corrected.ROCs(serBilir.only, joint.biv2, data = PBCredx, Tstart = 
 W2.01 <- two.corrected.ROCs(serBilir.only, joint.biv2, data = PBCredx, Tstart = 3.5, delta = 3.5)
 W3.01 <- two.corrected.ROCs(serBilir.only, joint.biv2, data = PBCredx, Tstart = 7, delta = 7)
 W.01s <- list(W1 = W1.01, W2 = W2.01, W3 = W3.01)
+class(W.01s) <- "two.corrected.joints"
 save(W.01s, file = save.dir.file.path("TwoROCscorrected.RData"))
 
 # Plotting W.01s
@@ -51,10 +52,13 @@ YY <- lapply(W.01s, function(X){
   PE.c.0 <- X$M0.PE.c; PE.c.1 <- X$M1.PE.c
   AUC.df <- data.frame(model = c(rep("M0", X$valid.boots), rep("M1", X$valid.boots)), 
                        what = "AUC", value = c(AUC.c.0, AUC.c.1))
-  AUC.df <- AUC.df[AUC.df$value < 1, ]
+  ww <- which(AUC.df$value < 1)
+  AUC.df <- AUC.df[ww, ]
   PE.df <- data.frame(model = c(rep("M0", X$valid.boots), rep("M1", X$valid.boots)), 
                       what = "PE", value = c(PE.c.0, PE.c.1))
+  PE.df <- PE.df[ww, ]
   R <- data.frame(model = "M01", what = "R", value = X$R)
+  # R <- R[ww, ]
   df <- rbind(AUC.df, PE.df, R)
   # Work out what window we're in
   Ts <- X$Tstart
