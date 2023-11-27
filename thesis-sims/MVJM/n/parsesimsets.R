@@ -1,7 +1,7 @@
 N <- 100
 # n -----------------------------------------------------------------------
 load.dir <- save.dir.file.path('n/fits')
-fits.file.names <- dir(load.dir)
+fits.file.names <- dir(load.dir, pattern = '\\.RData')
 # Change order slightly
 fits.file.names <- fits.file.names[c(1,3,4,2)]  # 100, 250, 500, 1000.
 .loader <- function(filename){
@@ -20,8 +20,14 @@ parsed <- setNames(lapply(seq_along(fits.file.names), function(i){
   ub <- sapply(this.parsed, function(y) y$ub)
   et <- unname(sapply(this.parsed, function(y) y$elapsed))
   tt <- unname(sapply(this.parsed, function(y) y$total))
-  list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt)
+  it <- unname(sapply(this.parsed, function(y) y$iters))
+  list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt, iters = it)
 }), gsub(".RData", '', fits.file.names))
+
+# Iterations per second
+sapply(lapply(parsed, function(x){
+  x$iters/x$elapsed
+}),quantile)
 
 # Get the target matrix:
 target.mat <- t(create.targetmat())
