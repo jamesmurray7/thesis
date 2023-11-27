@@ -112,3 +112,39 @@ for(i in choices){
   
 }
 
+
+# C -----------------------------------------------------------------------
+out <- save.dir.file.path("C/data")
+filename <- function(x) save.dir.file.path(paste0(x, "_censoring.RData"), out)
+choices <- c("lowest", "medium", "highest")
+# Printing-out the amount of censoring during follow-up
+check.cens.amt <- function(X){
+  stopifnot("list" %in% class(X))
+  indivs <- sapply(X, function(x){
+    xx <- x[!duplicated(x$id),]
+    # Censored during fup?
+    sum(apply(xx, 1, function(y) y['survtime'] < 5.1 & y['status'] == 0L))/nrow(xx)
+  })
+  qn <- quantile(indivs, c(.25,.5,.75)) * 100
+  sprintf("Median [IQR] censoring occurring during follow-up: %.1f [%.1f, %.1f]%%", qn[2], qn[1], qn[3])
+}
+
+for(i in choices){
+  cli::cli_alert_info("Creating data for {i} censoring amount.")
+  if(i == "lowest"){ # This is the default amount of censoring
+    xx <- exp(-3.5)
+  }else if(i == "medium"){
+    xx <- exp(-2.6)
+  }else if(i == "highest"){
+    xx <- exp(-2)
+  }
+  fn <- create.simfn(arguments = list(cens.rate = xx, ntms = 10))
+  sim.sets <- createNsims(fn, N)
+  cli::cli_alert_info(check.cens.amt(sim.sets))
+  save(sim.sets, file = filename(i))
+  cli::cli_alert_success("Done, saved in:\n{filename(i)}.")
+  cat(cli::rule(col = "magenta3"))
+  cat("\n")
+  rm(sim.sets)
+}
+

@@ -25,7 +25,7 @@ make.fits.and.data.subdirs <- function(dirname, replaceAll = FALSE){
 
 # file.show("info.txt")
 
-to.create <- c("K", "n", "r", "omega", "beta", "vechD")
+to.create <- c("K", "n", "r", "omega", "beta", "vechD", "C")
 
 for(i in seq_along(to.create)){
   current <- to.create[i]
