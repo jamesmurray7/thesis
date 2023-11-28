@@ -132,13 +132,13 @@ check.cens.amt <- function(X){
 for(i in choices){
   cli::cli_alert_info("Creating data for {i} censoring amount.")
   if(i == "lowest"){ # This is the default amount of censoring
-    xx <- exp(-3.5)
+    xx <- exp(-3.5)                    #13ish%
   }else if(i == "medium"){
-    xx <- exp(-2.6)
+    xx <- exp(-2.6)                    #30ish%
   }else if(i == "highest"){
-    xx <- exp(-2)
+    xx <- exp(-1.9)                    #50ish%
   }
-  fn <- create.simfn(arguments = list(cens.rate = xx, ntms = 10))
+  fn <- create.simfn(arguments = list(cens.rate = xx, ntms = 10, n = 500))
   sim.sets <- createNsims(fn, N)
   cli::cli_alert_info(check.cens.amt(sim.sets))
   save(sim.sets, file = filename(i))
