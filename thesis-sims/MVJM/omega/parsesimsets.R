@@ -21,6 +21,7 @@ parsed <- setNames(lapply(seq_along(fits.file.names), function(i){
   it <- unname(sapply(this.parsed, function(y) y$iter))
   list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt, iter = it)
 }), gsub(".RData", '', fits.file.names))
+nm <- names(parsed)
 
 # Get the target matrix:
 target.mat <- t(create.targetmat())
@@ -116,7 +117,7 @@ gam.zet <- do.call(rbind,lapply(seq_along(parsed), function(x){
   df <- as.data.frame(t(ests[rn,]))
   df %>% tidyr::pivot_longer(everything()) %>% 
     mutate(omega = paste0(nm[x],"%"), param = case_when(
-      grepl("gamma", name) ~ paste0(gsub("_", '[', name),']'),
+      grepl("gamma", name) ~ paste0(gsub("_", '[~', name),']'),
       name == "zeta_bin" ~ 'zeta'
     ),
     target = case_when(
@@ -138,7 +139,10 @@ gam.zet %>%
   scale_fill_brewer(palette = 'YlOrRd') + 
   scale_y_continuous(breaks = scales::pretty_breaks(6)) + 
   theme(
-    legend.position = 'none'
+    legend.position = 'none',
+    strip.text.x=element_text(margin=margin(b=3,t=5)),
+    # strip.text = element_text(family="Times New Roman"),
+    strip.placement = 'outside'
   )
 
 ggsave(save.dir.file.path("omega_gammazeta.png", load.dir),

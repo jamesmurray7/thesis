@@ -1,13 +1,14 @@
 N <- 100
 # n -----------------------------------------------------------------------
 load.dir <- save.dir.file.path('vechD/fits')
-fits.file.names <- dir(load.dir)
-# Change order slightly: prop: {med -> large}; unprop: {med -> large}
+fits.file.names <- dir(load.dir, pattern = '\\.RData')
+# Change order slightly: prop: D(1), D(2), D(3), D(4)
 fits.file.names <- fits.file.names[c(3,1,4,2)] 
 .loader <- function(filename){
   out <- assign('data', get(load(save.dir.file.path(filename, load.dir))))
   out
 }
+fits.file.names2 <- paste0("D^{(",1:4,")}")
 
 # Get the estimates, SEs, 2.5% and 97.5% estimates
 parsed <- setNames(lapply(seq_along(fits.file.names), function(i){
@@ -22,25 +23,24 @@ parsed <- setNames(lapply(seq_along(fits.file.names), function(i){
   tt <- unname(sapply(this.parsed, function(y) y$total))
   it <- unname(sapply(this.parsed, function(y) y$iter))
   list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt, iter = it)
-}), gsub(".RData", '', fits.file.names))
+}), fits.file.names2)
 
 # Get the target matrix:
 np <- names(parsed)
 background.mat <- matrix(1,6,6) - diag(rep(1,6))
 target.mat <- setNames(lapply(seq_along(parsed), function(i){
   n <- np[i]
-  med <- grepl("medium", n); prop <- grepl("\\_prop$", n) 
-  if(med & prop){
+  # med <- grepl("medium", n); prop <- grepl("\\_prop$", n) 
+  if(grepl("\\(1\\)", n))
     return(create.targetmat(arguments = list(D = .makeD(3) * (diag(rep(3, 6)) + background.mat))))
-  }else if(med & !prop){
-    return(create.targetmat(arguments = list(D = .makeD(3) * (diag(c(3,1.5,5,0.9,4,1.2)) + background.mat))))
-  }else if(!med & prop){
+  else if(grepl("\\(2\\)", n))
     return(create.targetmat(arguments = list(D = .makeD(3) * (diag(rep(10, 6)) + background.mat))))
-  }else if(!med & !prop){
+  else if(grepl("\\(3\\)", n))
+    return(create.targetmat(arguments = list(D = .makeD(3) * (diag(c(3,1.5,5,0.9,4,1.2)) + background.mat))))
+  else if(grepl("\\(4\\)", n))
     return(create.targetmat(arguments = list(D = .makeD(3) * (diag(c(10,2,13,3,15,4)) + background.mat))))
-  }else{
+  else
     message("Oops")
-  }
 }), np)
 
 target.mat <- lapply(target.mat, t)
@@ -98,21 +98,24 @@ to.xtab <- do.call(cbind, lapply(seq_along(tab.components), function(i){
 }))
 
 # Caption with usual stuff + computation times.
-nm <- sapply(np, switch,  # Must be a better way to do this?
-             vechD_medium_unprop = "`Medium' $\\not\\propto$",
-             vechD_medium_prop = "`Medium' $\\propto$",
-             vechD_large_prop = "`Large' $\\propto$",
-             vechD_large_unprop = "`Large' $\\not\\propto$")
+# nm <- sapply(np, switch,  # Must be a better way to do this?
+#              vechD_medium_unprop = "`Medium' $\\not\\propto$",
+#              vechD_medium_prop = "`Medium' $\\propto$",
+#              vechD_large_prop = "`Large' $\\propto$",
+#              vechD_large_unprop = "`Large' $\\not\\propto$")
+
+nm <- paste0("$\\",np,"$")
 
 caption <- paste(sapply(seq_along(parsed), function(x){
   y <- parsed[[x]]
   et <- y$elapsed; tot <- y$tot
-  et <- et[et<800]; tot <- tot[tot<800]
+  et <- et[et<800]; tot <- tot[tot<800] # A couple of outliers --> think my machine went to sleep or something?
   qn.et <- quantile(et, probs = c(.50, .25, .75)); qn.tot <- quantile(tot, probs = c(.50, .25, .75))
   paste0("Median [IQR] elapsed time taken for approximate EM algorithm to converge",
          " and standard error calculation for ", nm[x], " was ", sprintf("%.3f [%.3f, %.3f] seconds", qn.et[1], qn.et[2], qn.et[3]),
          " and total computation time was ", sprintf("%.3f [%.3f, %.3f] seconds", qn.tot[1], qn.tot[2], qn.tot[3]))
 }), collapse = '; ')
+
 caption <- paste("Parameter estimates for different variance covariance matrices $\\D$. `Mean (SD)' denotes",
                  "the average estimated value with standard deviation of the parameter estimate. `SE' denotes the",
                  "mean standard error calculated at each model fit. Coverage probabilities are calculated from",
@@ -124,11 +127,11 @@ library(xtable)
 xt <- xtable(to.xtab, caption = caption,
              align = align)
 addtorow <- list()
-addtorow$pos <- as.list(c(-1,0.5))
+addtorow$pos <- as.list(c(-1))
 addtorow$command <- as.vector(
-  c(paste0("&", paste0("\\multicolumn{10}{c}{", unique(stringr::str_extract(nm, "\\$.*\\$$")), "}", collapse = '&'), '\\\\'),
-    paste0("&", paste0("\\multicolumn{5}{c}{", stringr::str_extract(nm, "\\`.*\\'"), "}", collapse = '&'), '\\\\')
-  ))
+  c(paste0("&", paste0("\\multicolumn{4}{c}{", unique(stringr::str_extract(nm, "\\$.*\\$$")), "}", collapse = '&'), '\\\\')))#,
+    # paste0("&", paste0("\\multicolumn{5}{c}{", stringr::str_extract(nm, "\\`.*\\'"), "}", collapse = '&'), '\\\\')
+  # ))
     
 
 # swap multicolumn and parameter line around manually!
@@ -148,35 +151,43 @@ gam.zet <- do.call(rbind,lapply(seq_along(parsed), function(x){
   df <- as.data.frame(t(ests[rn,]))
   df %>% tidyr::pivot_longer(everything()) %>% 
     mutate(group = nm[x], param = case_when(
-      grepl("gamma", name) ~ paste0(gsub("_", '[', name),']'),
+      grepl("gamma", name) ~ paste0(gsub("_", '[~', name),']'),
       name == "zeta_bin" ~ 'zeta'
     ),
     target = case_when(
       name == 'gamma_1' | name == "gamma_3" ~ 0.5,
       name == 'gamma_2' ~ -0.5,
       name == 'zeta_bin' ~ -0.2
-    )) %>% 
-    tidyr::separate(col = 'group', into = c("Magnitude", "Proportional"), sep = "\\'\\s") %>% 
-    mutate_at("Magnitude", ~ gsub("\\`", "", .x)) %>% 
-    mutate_at("Magnitude", ~ factor(.x, c("Medium", "Large"))) %>% 
-    mutate_at("Proportional", ~ ifelse(grepl("^\\$\\\\propto", .x),
-                                       "Proportional", "Not proportional")) %>% 
-    mutate_at("Proportional", ~ factor(.x, c("Proportional", "Not proportional")))
+    )) #%>% 
+    # tidyr::separate(col = 'group', into = c("Magnitude", "Proportional"), sep = "\\'\\s") %>% 
+    # mutate_at("Magnitude", ~ gsub("\\`", "", .x)) %>% 
+    # mutate_at("Magnitude", ~ factor(.x, c("Medium", "Large"))) %>% 
+    # mutate_at("Proportional", ~ ifelse(grepl("^\\$\\\\propto", .x),
+    #                                    "Proportional", "Not proportional")) %>% 
+    # mutate_at("Proportional", ~ factor(.x, c("Proportional", "Not proportional")))
 }))
 
+gam.zet$group <- gsub("\\$\\\\|\\$$", "", gam.zet$group)
+
 gam.zet %>% 
-  ggplot(aes(x = Magnitude, y = value, fill = Proportional)) + 
-  geom_hline(aes(yintercept = target), lty=5, colour='grey3')+
+  # ggplot(aes(x = Magnitude, y = value, fill = Proportional)) + 
+  ggplot(aes(x = group, y = value, fill = group)) + 
+  geom_hline(aes(yintercept = target), lty = 5, colour='grey3')+
   geom_boxplot(outlier.alpha = .33, lwd = 0.25, fatten = 2,
                outlier.size = .50) + 
   facet_wrap(~param, scales = 'free_y', labeller = label_parsed) +
-  theme_csda() + 
-  labs(x = expression("Magnitude"), y = "Estimate", fill = "") + 
+  theme_csda("Arial") + 
+  labs(x = "Variance-covariance matrix", y = "Estimate", fill = "") + 
   scale_fill_brewer(palette = 'YlOrRd') + 
+  scale_x_discrete(labels = function(r) parse(text=r)) + 
   scale_y_continuous(breaks = scales::pretty_breaks(6)) + 
   theme(
-    legend.position = 'bottom'
+    # legend.position = 'bottom'
+    legend.position = 'none',
+    strip.text.x=element_text(margin=margin(b=3,t=5)),
+    # strip.text = element_text(family="Times New Roman"),
+    strip.placement = 'outside'
   )
 
-ggsave(save.dir.file.path("vechD_gammazeta.png", load.dir),
-       width = 148, height = 110, units = 'mm')
+ggsave(save.dir.file.path("vechD_gammazeta_new.png", load.dir),
+       width = 148, height = 110, units = 'mm', limitsize = F, dpi = 1e3)
