@@ -24,6 +24,8 @@ parsed <- setNames(lapply(seq_along(fits.file.names), function(i){
   list(Omega = Omega, SE = SE, lb = lb, ub = ub, elapsed = et, total = tt, iters = it)
 }), gsub(".RData", '', fits.file.names))
 
+nm <- gsub("^n","n=",names(parsed))
+
 # Iterations per second
 sapply(lapply(parsed, function(x){
   x$iters/x$elapsed
@@ -123,7 +125,7 @@ gam.zet <- do.call(rbind,lapply(seq_along(parsed), function(x){
   df <- as.data.frame(t(ests[rn,]))
   df %>% tidyr::pivot_longer(everything()) %>% 
     mutate(n = nm[x], param = case_when(
-      grepl("gamma", name) ~ paste0(gsub("_", '[', name),']'),
+      grepl("gamma", name) ~ paste0(gsub("_", '[~', name),']'),
       name == "zeta_bin" ~ 'zeta'
     ),
     target = case_when(
@@ -145,7 +147,9 @@ gam.zet %>%
   scale_fill_brewer(palette = 'YlOrRd') + 
   scale_y_continuous(breaks = scales::pretty_breaks(6)) + 
   theme(
-    legend.position = 'none'
+    legend.position = 'none',
+    strip.text.x=element_text(margin=margin(b=3,t=5)),
+    strip.placement = 'outside'
   )
 
 ggsave(save.dir.file.path("n_gammazeta.png", load.dir),
