@@ -3,10 +3,12 @@ source(".Rprofile")
 
 in.dir <- save.dir.file.path("fits")
 (files <- dir(in.dir, pattern = "\\.RData"))
-univs <- files[which(grepl("Univ", files))]
+(univs <- files[c(4, 5, 1, 7)]) # Gamma -> GP (under) -> GP (over) -> NegBin (first edition)
+#univs <- files[which(grepl("Univ", files))]
 # Hardcoding the three I want
-univs <- univs[c(2,3,5)]
-nms <- gsub("\\.RData$|^Univ|\\_Surgery", "", univs)
+#univs <- univs[c(2,3,5#6)] #5)] # Update 29/11/23 the lower \bb ones are better, so use them
+nms <- gsub("\\.RData$|^Univ|\\_Surgery|redux", "", univs)
+nms[2] <- "GP (Under)"; nms[3] <- "GP (Over)"
 # Load list of fitted joint objects
 .loader <- function(f){
   assign("out", get(load(save.dir.file.path(f, in.dir))))
@@ -30,8 +32,10 @@ parsed <- setNames(lapply(univs, function(x){
   }
   out
 }), nms)
+parsed$`GP (Under)`$model <- "genpois (under)"
+parsed$`GP (Over)`$model <-  "genpois (over)"
 
-# Figure (3x gamma + zetaa) -----------------------------------------------
+# Figure (4x gamma + zeta) ------------------------------------------------
 library(dplyr)
 library(ggplot2)
 
@@ -42,6 +46,13 @@ gam.zet.sig <- do.call(rbind, lapply(parsed, function(x){
   gam.ind <- grep("gamma", rownames(gamzetsig))
   zet.ind <- grep("zeta", rownames(gamzetsig))
   mm <- x$model
+  sig.est <- switch(mm,
+                    "Gamma" = 2,
+                    "negbin" = 1,
+                    "genpois (under)" = -0.3,
+                    "genpois (over)" = 0.3)
+  print(mm)
+  print(sig.est)
   if(is.null(mm)) return(NULL)
   # Univariate -> exploit this
   gam <- data.frame(Parameter = "gamma", estimate = unname(gamzetsig[gam.ind,,drop=T]),
@@ -51,7 +62,8 @@ gam.zet.sig <- do.call(rbind, lapply(parsed, function(x){
                     target = -0.2,
                     stringsAsFactors = F, row.names = NULL)
   sig <- data.frame(Parameter = "sigma", estimate = unname(gamzetsig[sig.shape.ind,,drop=T]),
-                    target = ifelse(mm == "Gamma", 2, ifelse(mm == "negbin", 1, -0.3)),
+                    # target = ifelse(mm == "Gamma", 2, ifelse(mm == "negbin", 1, -0.3)),
+                    target = sig.est,
                     stringsAsFactors = F, row.names = NULL)
   out <- rbind(gam,zet,sig)
   out$i <- i; out$model <- mm
@@ -65,7 +77,8 @@ gam.zet.sig %>%
   filter(Parameter != "sigma") %>% 
   mutate(
     model = case_when(
-      model == "genpois" ~ "Generalised Poisson",
+      model == "genpois (under)" ~ "GP-1 (under)",
+      model == "genpois (over)" ~ "GP-1 (over)",
       model == "negbin" ~ "Negative binomial",
       T ~ model
     )
@@ -85,19 +98,21 @@ gam.zet.sig %>%
     legend.position = 'none', 
     axis.ticks.x = element_blank(),
     # axis.text.x = element_blank(),
-    strip.text = element_text(size = 10),
-    axis.text.x = element_text(size = 5)
+    strip.text = element_text(size = 10, vjust = -.25),
+    axis.text.x = element_text(size =5),
+    strip.text.x=element_text(margin=margin(b=3,t=5)),
   )
 
-ggsave(save.dir.file.path("gamzet.png", in.dir),
-       width = 140, height = 60, units = "mm")
+ggsave(save.dir.file.path("gamzet_new.png", in.dir),
+       width = 140, height = 60, units = "mm", dpi = 500)
 
 # sigma, with strip titles `hacked`.
 gam.zet.sig %>% 
   filter(Parameter == "sigma") %>% 
   mutate(
     model = case_when(
-      model == "genpois" ~ "Generalised Poisson",
+      model == "genpois (under)" ~ "GP-1 (under)",
+      model == "genpois (over)" ~ "GP-1 (over)",
       model == "negbin" ~ "Negative binomial",
       T ~ model
     )
@@ -109,37 +124,55 @@ gam.zet.sig %>%
   geom_hline(aes(yintercept = target), lty = 5, colour = 'grey3') +
   geom_boxplot(outlier.alpha = .33, lwd = 0.25, fatten = 2,
                outlier.size = .50, fill = .nice.orange) + 
-  facet_wrap(~model, scales = 'free', nr=1, # Overwrite the panelling with \sigma
-             labeller = function(l) parse(text="sigma"))+
+  facet_wrap(~model, scales = 'free', nr = 1) + 
+#             labeller = function(l) parse(text = 'sigma')) + 
+             #, # Overwrite the panelling with \sigma
+             #labeller = function(l) parse(text="sigma"))+
   theme_csda() + 
-  labs(x = NULL, y = "Estimate") + 
+  labs(x = expression(sigma), y = "Estimate") + 
   scale_y_continuous(breaks = scales::pretty_breaks(6)) + 
   theme(
     legend.position = 'none', 
     axis.ticks.x = element_blank(),
-    # axis.text.x = element_blank(),
-    strip.text = element_text(size = 10)
+    axis.text.x = element_blank(),
+    strip.text = element_text(size = 7, vjust = -.25),
+    strip.text.x=element_text(margin=margin(b=3,t=5)),
   )
 
-ggsave(save.dir.file.path("sigma.png", in.dir),
+ggsave(save.dir.file.path("sigma_new.png", in.dir),
        width = 140, height = 60, units = "mm")
 
 # Tabulation --------------------------------------------------------------
-N=300L
+N = 300L
 
 # Pre-tabulating...
 tabs <- setNames(lapply(seq_along(parsed), function(i){
   x <- parsed[[i]]
   if(is.null(x)) return(NULL)
   mm <- x$model
-  if(mm != "genpois")
+  cat(sprintf("%s---\n", mm))
+  if(!grepl("genpois", mm)){
     target.mat <- t(create.targetmat(family = mm, N = N))
-  else
-    target.mat <- t(create.targetmat(family = mm, N = N,
-                                     arguments = list(
-                                       sigma = list(-0.3),
-                                       random.formulas = list(~1), D = matrix(.30,1,1))
-                                     ))
+  }else{
+    if(grepl("under", mm)){
+      target.mat <- t(create.targetmat(
+        family = "genpois", N = N,
+        arguments = list(
+          sigma = list(-0.3),
+          random.formulas = list(~1), D = matrix(.30,1,1))
+      ))
+    }else{
+      target.mat <- t(create.targetmat(
+        family = "genpois", N = N,
+        arguments = list(
+          sigma = list(0.3), random.formulas = list(~1),
+          D = matrix(.7,1,1)
+        )
+      ))
+      target.mat[2:5,] <- c(0.5, -0.2, 0.05, 0.4)
+    }
+  }
+    
   Omega <- x$Omega; SE <- x$SE; lb <- x$lb; ub <- x$ub
   rn <- row.names(Omega); rn2 <- row.names(target.mat)
   
@@ -195,10 +228,15 @@ to.xtab <- lapply(tabs, function(x){
 caption <- lapply(parsed, function(x){
   if(is.null(x)) return(NULL)
   mm <- x$model
+  if(grepl("genpois", mm))
+    mm <- gsub("\\s|\\(|\\)", "", mm)
+  
   fam <- switch(mm,
                 Gamma = "Gamma",
-                genpois = "Generalised Poisson",
+                genpoisunder = "GP-1 (under)",
+                genpoisover = "GP-1 (over)",
                 negbin = "Negative binomial")
+  
   et <- x$elapsed; tot <- x$tot
   et <- et[et<800]; tot <- tot[tot<800]
   

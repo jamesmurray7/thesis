@@ -2,7 +2,7 @@ rm(list=ls())
 source(".Rprofile")
 
 in.dir <- save.dir.file.path("fits")
-(files <- dir(in.dir))
+(files <- dir(in.dir, pattern = '\\.RData'))
 triv <- files[which(grepl("Triv", files))]
 
 # Load list of fitted joint objects
@@ -10,10 +10,9 @@ load(save.dir.file.path(triv, in.dir))
 
 parsed <- lapply(fits, extract.from.joint)
 
-# Figure (3x gamma + zetaa) -----------------------------------------------
+# Figure (3x gamma + zeta) ------------------------------------------------
 library(dplyr)
 library(ggplot2)
-
 
 i <- 1
 gam.zet <- do.call(rbind, lapply(parsed, function(x){
@@ -29,7 +28,7 @@ gam.zet <- do.call(rbind, lapply(parsed, function(x){
 gam.zet %>% 
   mutate(
     paramlab = case_when(
-      grepl("gamma", Parameter) ~ paste0("gamma[", stringr::str_extract(Parameter, "\\d$"),"]"),
+      grepl("gamma", Parameter) ~ paste0("gamma[~", stringr::str_extract(Parameter, "\\d$"),"]"),
       T ~ "zeta"
     ),
     target = rep(c(.5,-.5,.5,-.2), 300) # Fixed
@@ -49,7 +48,8 @@ gam.zet %>%
     legend.position = 'none', 
     axis.ticks.x = element_blank(),
     axis.text.x = element_blank(),
-    strip.text = element_text(size = 10)
+    strip.text = element_text(size = 10, vjust = -.15),
+    strip.text.x = element_text(margin=margin(b=3,t=5))
   )
 
 ggsave(save.dir.file.path("Triv_surv.png", in.dir),
