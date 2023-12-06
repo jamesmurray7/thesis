@@ -31,7 +31,7 @@ Samp <- Metropolis_Hastings(
   S = S$S[[1]], Fi = S$Fi[[1]], l0i = S$l0i[[1]], SS = S$SS[[1]], Fu = S$Fu[[1]],
   haz = S$l0u[[1]], gamma_rep = rep(jj$coeffs$gamma, sapply(M$inds$R$b, length)), 
   beta_inds = M$inds$Cpp$beta, b_inds = M$inds$Cpp$b, K = M$K, q = M$Pcounts$q,
-  burnin = 500L, N = 10000L, Sigma = gmvjoint:::vech2mat(attr(jj$REs, 'vcov')[1,], M$Pcounts$q),
+  burnin = 1000L, N = 50000L, Sigma = gmvjoint:::vech2mat(attr(jj$REs, 'vcov')[1,], M$Pcounts$q),
   b_dist = "t", df = 4L, tune = 3.5
 )
 Samp$AcceptanceRate
@@ -51,7 +51,7 @@ plot.dens.with.point <- function(i){
   di <- dens[[i]]
   x <- di$x; y <- di$y
   plot(x, y ,'l', 
-       xlab = expression(log(phi[i]*"+"*exp(X[i]*beta*"+"*Z[i]*hat(b)[ik]))),
+       xlab = expression(log(phi[i]*"+"*exp(X[i]*beta*"+"*Z[i]*b[i]))),
        ylab = 'Density')
 }
 

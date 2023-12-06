@@ -31,12 +31,13 @@ Samp <- Metropolis_Hastings(
   S = S$S[[1]], Fi = S$Fi[[1]], l0i = S$l0i[[1]], SS = S$SS[[1]], Fu = S$Fu[[1]],
   haz = S$l0u[[1]], gamma_rep = rep(jj$coeffs$gamma, c(2, 2)), 
   beta_inds = M$inds$Cpp$beta, b_inds = M$inds$Cpp$b, K = M$K, q = M$Pcounts$q,
-  burnin = 500L, N = 10000L, Sigma = gmvjoint:::vech2mat(attr(jj$REs, 'vcov')[1,], M$Pcounts$q),
+  burnin = 1000L, N = 50000L, Sigma = gmvjoint:::vech2mat(attr(jj$REs, 'vcov')[1,], M$Pcounts$q),
   b_dist = "t", df = 4L, tune = 1
 )
+Samp$AcceptanceRate
 W <- t(Samp$walks)
 
-# Shape of E[\exp{SS^T\zeta + \sum_k\gamma_k\b{_k)}]
+# Shape of E[\exp{SS\zeta + \sum_k\gamma_k\b{_k)}]
 I <- apply(W,1,function(x){
   exp(S$SS[[1]]%*%jj$coeffs$zeta + S$Fu[[1]] %*% (rep(jj$coeffs$gamma, c(2, 2)) * x))
 })
@@ -52,7 +53,7 @@ plot.dens.with.point <- function(i){
   x <- di$x; y <- di$y
   xlim.lb <- apply(nodes, 1, min, x)
   xlim.ub <- apply(nodes, 1, max, x)
-  plot(x, y ,'l', xlab = expression(exp(S[i]^T*zeta*"+"*sum(gamma[k]*F[u[ik]]*hat(b)[ik], k==1, K))),
+  plot(x, y ,'l', xlab = expression(exp(S[i]*zeta*"+"*sum(gamma[k]*F[u[ik]]*b[ik], k==1, K))),
        ylab = 'Density')
   #      ylab = "Density",
   #      xlim = c(xlim.lb[i], xlim.ub[i]))

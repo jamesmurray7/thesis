@@ -33,13 +33,13 @@ Samp <- Metropolis_Hastings(
   S = S$S[[1]], Fi = S$Fi[[1]], l0i = S$l0i[[1]], SS = S$SS[[1]], Fu = S$Fu[[1]],
   haz = S$l0u[[1]], gamma_rep = rep(jj$coeffs$gamma, sapply(M$inds$R$b, length)), 
   beta_inds = M$inds$Cpp$beta, b_inds = M$inds$Cpp$b, K = M$K, q = M$Pcounts$q,
-  burnin = 500L, N = 10000L, Sigma = gmvjoint:::vech2mat(attr(jj$REs, 'vcov')[1,], M$Pcounts$q),
+  burnin = 1000L, N = 50000L, Sigma = gmvjoint:::vech2mat(attr(jj$REs, 'vcov')[1,], M$Pcounts$q),
   b_dist = "t", df = 4L, tune = 3.5
 )
 Samp$AcceptanceRate
 W <- t(Samp$walks)
 
-# Shape of log(1 + exp())
+# Shape of log(1 + exp(\eta))
 b <- jj$REs[1,]
 Sig <- gmvjoint:::vech2mat(attr(jj$REs, 'vcov')[1,], M$Pcounts$q)
 tau <- sqrt(diag(tcrossprod(L$Z[[1]][[1]] %*% Sig, L$Z[[1]][[1]])))
@@ -53,17 +53,10 @@ plot.dens.with.point <- function(i){
   di <- dens[[i]]
   x <- di$x; y <- di$y
   plot(x, y ,'l', 
-       xlab = expression(log(1*"+"*exp(X[i]*beta*"+"*Z[i]*hat(b)[ik]))),
+       xlab = expression(log(1*"+"*exp(X[i]*beta*"+"*Z[i]*b[i]))),
        ylab = 'Density')
-  #      ylab = "Density",
-  #      xlim = c(xlim.lb[i], xlim.ub[i]))
-  # points(nodes[1,], c(0,0,0), pch = 'x', col = 'red')
 }
 
-plot.dens.with.point(5)
-
-
-# Exp Linear predictor ----------------------------------------------------
 nr <- nrow(I)
 ceiling(nr/2)
 png(save.dir.file.path("BinomialLogBit.png"),
