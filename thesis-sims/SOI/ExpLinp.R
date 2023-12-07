@@ -11,10 +11,18 @@ source(".Rprofile")
 create.f.plot <- function(f, show.mode = F){
   file.name <- save.dir.file.path(paste0(f, "_ExpLinp.png"))
   if(show.mode) file.name <- gsub("\\.png", "_with_mode.png", file.name)
-  dd <- simData(n = 500, zeta = c(0,-0.2),
-                beta = c(2.0,-0.1,0.1,0.2),
-                D = matrix(c(.5, .125, .125, .09), 2, 2),
-                gamma = .5, family = list(f))$data
+  if(f != "genpois"){
+    dd <- simData(n = 500, zeta = c(0,-0.2), sigma = list(1.0),
+                  beta = c(2.0,-0.1,0.1,0.2),
+                  D = matrix(c(.5, .125, .125, .09), 2, 2),
+                  gamma = .5, family = list(f))$data
+  }else{
+    dd <- simData(n = 500, zeta = c(0,-0.2), sigma = list(0.2),
+                  beta = c(0.5, -0.2, 0.05, 0.4),
+                  gamma = 0.5, family = list(f),
+                  D = matrix(c(0.5, .125, .125, .05), 2, 2),theta = c(-2.95, .1))$data
+  }
+  
   cli::cli_alert("Creating {f} E[exp(eta)|...] plots\n")
   cli::cli_alert("which will be saved in {file.name}.\n")
   
@@ -87,3 +95,4 @@ create.f.plot("poisson")
 create.f.plot("negbin")
 create.f.plot("Gamma")
 create.f.plot("binomial")
+create.f.plot("genpois")

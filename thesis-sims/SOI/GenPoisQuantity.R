@@ -1,24 +1,24 @@
 #' #################################
 #' Shape of integrands             #
 #' -------------------             #
-#' 2. Quantity exclusive to NB     #
+#' 2. Quantity exclusive to GP-1   #
 #'    update                       #
 #' #################################
 
 rm(list=ls())
 source(".Rprofile")
-# Generate Gaussian data
-dd <- simData(n = 500, zeta = c(0,-0.2), sigma = list(1),
-              beta = c(2.0,-0.1,0.1,0.2),
-              D = matrix(c(.5, .125, .125, .09), 2, 2),
-              gamma = .5, family = list("negbin"))$data
+# Generate GP-1 data
+dd <- simData(n = 500, zeta = c(0,-0.2), sigma = list(0.2),
+              beta = c(0.5, -0.2, 0.05, 0.4),
+              gamma = 0.5, family = list("genpois"),
+              D = matrix(c(0.5, .125, .125, .05), 2, 2),theta = c(-2.95, .1))$data
 
 jj <- joint(
   list(
     Y.1 ~ time + cont + bin + (1 + time|id)
   ),
   Surv(survtime, status) ~ bin,
-  dd, list("negbin")
+  dd, list("genpois")
 )
 
 # Take id = 1 -- this is purely for illustrative purposes
@@ -42,7 +42,7 @@ b <- jj$REs[1,]
 Sig <- gmvjoint:::vech2mat(attr(jj$REs, 'vcov')[1,], M$Pcounts$q)
 tau <- sqrt(diag(tcrossprod(L$Z[[1]][[1]] %*% Sig, L$Z[[1]][[1]])))
 I <- apply(W,1,function(x){
-  log(exp(L$X[[1]][[1]]%*%jj$coeffs$beta + L$Z[[1]][[1]] %*% x) + L$W[[1]][[1]]%*%jj$coeffs$sigma[[1]])
+  log(exp(L$X[[1]][[1]]%*%jj$coeffs$beta + L$Z[[1]][[1]] %*% x) + L$Y[[1]][[1]] * (L$W[[1]][[1]]%*%jj$coeffs$sigma[[1]]))
 })
 
 
@@ -51,7 +51,7 @@ plot.dens.with.point <- function(i){
   di <- dens[[i]]
   x <- di$x; y <- di$y
   plot(x, y ,'l', 
-       xlab = expression(log(phi[i]*"+"*exp(X[i]*beta*"+"*Z[i]*b[i]))),
+       xlab = expression(log(Y[i]*phi[i]*"+"*exp(X[i]*beta*"+"*Z[i]*b[i]))),
        ylab = 'Density')
 }
 
@@ -59,7 +59,7 @@ plot.dens.with.point(5)
 
 nr <- nrow(I)
 ceiling(nr/2)
-png(save.dir.file.path("NegativeBinomialLogBit.png"),
+png(save.dir.file.path("GeneralisedPoissonLogBit.png"),
     width = 140, height = 160, units = 'mm', res = 5e2)
 par(mfrow = c(3,1))
 for(pp in c(1, ceiling(nr/2), nr)) # start, midway, end
