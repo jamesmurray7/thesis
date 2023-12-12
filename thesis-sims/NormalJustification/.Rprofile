@@ -15,7 +15,7 @@ options(
 toSentence <- function(x) tools::toTitleCase(x)
 save.dir <- ifelse(grepl("macOS", utils::sessionInfo()$running),
                    '../NJust.nosync',
-                   '/data/c0061461/THESIS/PBC')
+                   '/data/c0061461/THESIS/')
 family.dir.name <- function(f = "Unspecified"){
 	if(f == "Unspecified") cat("\n\n!!!!!\nMake sure f is specified\n!!!!!\n\n")
   stopifnot(.check.family(f))
