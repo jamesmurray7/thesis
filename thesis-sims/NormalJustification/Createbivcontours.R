@@ -243,7 +243,7 @@ print.dist.compare <- function(x){
   print(summary(x$min.diff[acc]))
 }
 
-plot.dist.compare <- function(x){
+plot.dist.compare <- function(x, show.angles = FALSE){
   stopifnot(inherits(x, "dist.compare"))
   acc <- apply(x$Acc, 2, function(y){
     y1 <- round(y[1],2); y2 <- round(y[2],2)
@@ -299,25 +299,23 @@ plot.dist.compare <- function(x){
       legend.position = 'none',
     )
   
-  gridExtra::grid.arrange(P1, P2, P3,
-                          layout_matrix = rbind(
-                            c(1,1,2,2),
-                            c(1,1,2,2),
-                            c(3,3,3,3),
-                            c(3,3,3,3)
-                          ))
+  if(show.angles)
+    gridExtra::grid.arrange(P1, P2, P3,
+                            layout_matrix = rbind(
+                              c(1,1,2,2),
+                              c(1,1,2,2),
+                              c(3,3,3,3),
+                              c(3,3,3,3)
+                            ))
+  else
+    gridExtra::grid.arrange(P1, P2,
+                            layout_matrix = rbind(
+                              c(1,1,2,2),
+                              c(1,1,2,2),
+                              c(1,1,2,2),
+                              c(1,1,2,2)
+                            ))
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 # OLD CODE ----------------------------------------------------------------
