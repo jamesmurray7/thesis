@@ -1,5 +1,104 @@
-.r <- function(){rm(list=ls());source(".Rprofile")}
+.r <- function(){rm(list=ls());gc();source(".Rprofile")}
+.xyz <- function(f) file.path(save.dir.file.path(family.dir.name(f)), paste0(f,"-psi-new.RData"))
 
+# Gaussian ----------------------------------------------------------------
+.r()
+sim <- create.simfn(list("gaussian"), arguments = list(n = 500L, theta = c(-3,.1)))
+X_ <- dataGen(sim)
+(S <- Sample(X_, TUNE = 3, T, T, T, "t", 4, 1000L, 5000L))
+psis <- prop.by.mi(S, .2, .3)
+save(psis, file = .xyz("gaussian"))
+
+# Poisson -----------------------------------------------------------------
+.r()
+sim <- create.simfn(list("poisson"), arguments = list(n = 500L, theta = c(-3,.1)))
+X_ <- dataGen(sim)
+(S <- Sample(X_, TUNE = 3, T, T, T, "t", 4, 1000L, 5000L))
+psis <- prop.by.mi(S, .2, .3)
+save(psis, file = .xyz("poisson"))
+
+
+# Binomial ----------------------------------------------------------------
+.r()
+sim <- create.simfn(list("binomial"), arguments = list(n = 500L, theta = c(-3,.1), beta = t(c(2.0,-0.1,0.1,0.2)),
+                                                       D = matrix(c(.5, .125, .125, .09), 2, 2)))
+X_ <- dataGen(sim)
+(S <- Sample(X_, TUNE = 2, T, T, T, "t", 4, 1000L, 5000L))
+psis <- prop.by.mi(S, .2, .3)
+save(psis, file = .xyz("binomial"))
+
+# Gamma -------------------------------------------------------------------
+.r()
+sim <- create.simfn(list("Gamma"), arguments = list(n = 500L, theta = c(-3,.1)))
+X_ <- dataGen(sim)
+(S <- Sample(X_, TUNE = 3, T, T, T, "t", 4, 1000L, 5000L))
+psis <- prop.by.mi(S, .2, .3)
+save(psis, file = .xyz("Gamma"))
+
+
+# Negbin ------------------------------------------------------------------
+.r()
+sim <- create.simfn(list("negbin"), arguments = list(n = 500L, theta = c(-3,.1)))
+X_ <- dataGen(sim)
+(S <- Sample(X_, TUNE = 3, T, T, T, "t", 4, 1000L, 5000L))
+psis <- prop.by.mi(S, .2, .3)
+save(psis, file = .xyz("negbin"))
+
+# Genpois -----------------------------------------------------------------
+.r()
+sim <- create.simfn(list("genpois"), arguments = list(n = 500L, theta = c(-3,.1),
+                                                      D = matrix(c(0.5, .125, .125, .05), 2, 2),
+                                                      sigma = list(0.2), beta = t(c(.5,-.2,.05,.4))))
+X_ <- dataGen(sim)
+(S <- Sample(X_, TUNE = 3, T, T, T, "t", 4, 1000L, 5000L))
+psis <- prop.by.mi(S, .2, .3)
+save(psis, file = .xyz("genpois"))
+
+# Plotting all ------------------------------------------------------------
+dirs <- fs::dir_ls(save.dir, type = 'directory')
+dirs <- dirs[grepl("Justification$", dirs)]
+out <- vector("list", length(dirs))
+p <- 1
+for(d in dirs){
+  f <- gsub("\\/data\\/c0061461\\/THESIS\\/", "", d)
+  f <- stringr::str_extract(f, '\\w+')
+  cat(sprintf("\nDirectory: %s;\nFamily: %s", d, f))
+  
+  if(f == "Generalisedpoisson") f <- "Generalised Poisson"
+  if(f == "Negativebinomial") f <- "Negative binomial"
+  
+  to.load <- dir(d, pattern = 'new\\.RData', full.names = T)
+  assign("xxx", get(load(to.load)))
+  
+  xxx$f <- f
+  
+  out[[p]] <- xxx
+  cat("\n")
+  rm(xxx)
+  p <- p + 1
+  cat(cli::rule(col = 'red'))
+}
+
+out <- do.call(rbind, out)
+
+library(ggplot2)
+ggplot(out, aes(x = mi, y = psi, group = mi)) + 
+  facet_wrap(~f,scales='free') + 
+  geom_boxplot(outlier.alpha = 0.33, lwd = 0.25, 
+               fatten = 2, outlier.size = 0.50, fill = .nice.orange, colour = 'black') + 
+  theme_csda() + 
+  scale_x_continuous(expression(m[i]), breaks = 1:10) + 
+  scale_y_continuous(expression(psi[~~i])) + 
+  theme(
+    strip.text = element_text(size=7,vjust=1)
+  )
+
+ggsave(save.dir.file.path("psi-vs-mi-new.png"), width = 140, height = 90, units = "mm")
+
+
+# ########################################
+# THE BELOW IS OLD                       #
+# ########################################
 
 # mi vs psi ---------------------------------------------------------------
 .r()
