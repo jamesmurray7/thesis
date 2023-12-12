@@ -177,7 +177,7 @@ plot.Sample <- function(x, min.acc = 0.20, max.acc = 0.25){
   plot(x$Acc, pch = 19, main = sprintf("%.2f%% acceptance rate >= %.2f and <= %.2f", 
                                        num.between, min.acc, max.acc),
        ylab = "Acceptance rate", xaxt = "n", xlab = "")
-  abline(h = c(0.20, 0.25), lty = 5, col = "red2")
+  abline(h = c(min.acc, max.acc), lty = 5, col = "red2")
 }
 
 
