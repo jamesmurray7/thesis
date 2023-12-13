@@ -20,6 +20,21 @@ wrap <- function(f = "gaussian"){
   optim(1, obj, NULL, sim = S, method = 'Brent', lower = 1e-2, upper = 2,
         control = list(abstol = 1e-3, reltol = 1e-2))$par
 }
+
+# This takes ages
 r.gaussian <- replicate(100, wrap("gaussian"))
+dd <- data.frame(i = 1:100L, a = r.gaussian)
+qq <- quantile(dd$a)
+ggplot(dd, aes(x = i, y = a)) + 
+  geom_hline(yintercept = c(qq[2], qq[4]), lty = 5, alpha = .5, colour = .nice.orange, lwd = .25) + 
+  geom_hline(yintercept = qq[3], lty = 5, alpha = .5, colour = 'steelblue', lwd = .25) + 
+  geom_point(size = .25) + 
+  scale_y_continuous(expression(a), breaks = scales::pretty_breaks(6)) + 
+  scale_x_continuous("",breaks=c()) + 
+  theme_csda()
+ggsave(save.dir.file.path("sf.png"), width = 140, height = 60, units = "mm")
+write.table(qq, file = save.dir.file.path("sf.txt"))
+
+# Quick look -> These look okay and about 0.75, too.
 wrap("poisson")
 wrap("Gamma")
