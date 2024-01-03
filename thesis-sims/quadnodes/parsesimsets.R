@@ -71,6 +71,8 @@ step <- lapply(seq_along(parsed), function(i){
                    # Absolute bias summaries
                    mnabsBias = mn.abs.Bias, mdabsBias = md.abs.Bias,
                    p025absBias = q.abs.Bias[1,], p975absBias = q.abs.Bias[2,],
+                   # MSE
+                   MSE = rowMeans(MSE), RMSE = sqrt(rowMeans(MSE)),
                    row.names = NULL, stringsAsFactors = FALSE
                    )
   
@@ -169,7 +171,7 @@ summ.tab2 %>%
       Parameter == "Y.3_bin" ~ "beta[33]",
     )
   ) %>% 
-  ggplot(aes(x = forcats::fct_inorder(x), y = mdabsBias, group=Parameter)) + 
+  ggplot(aes(x = forcats::fct_inorder(x), y = RMSE, group=Parameter)) + 
   geom_line(lwd=.5) + geom_point(size=.85)+
   # geom_line(aes(y=p025absBias), lty = 5) +
   # geom_line(aes(y=p975absBias), lty = 5) + 
@@ -190,8 +192,8 @@ summ.tab2 %>%
     })
   }, name=bquote(rho)) + 
   scale_y_continuous(breaks = scales::pretty_breaks(5), labels = function(l) fmtter(l)) +
-  labs(y="Median absolute bias") + 
-  theme_csda() + 
+  labs(y=expression(sqrt("MSE"))) + 
+  theme_csda(base_family = "sans") + 
   theme(
     # axis.ticks.x=element_blank(),
     axis.text.y = element_text(size=4.5),
@@ -200,6 +202,11 @@ summ.tab2 %>%
     strip.text = element_text(size=7)
   )
 
-ggsave(save.dir.file.path("GHinvestigation.png", in.dir),
-       width = 140, height = 90, units = "mm")
+# ggsave(save.dir.file.path("GHinvestigationRMSE.png", in.dir),
+#        width = 140, height = 90, units = "mm")
+
+png(save.dir.file.path("GHinvestigationRMSE.png", in.dir), 
+    width = 140, height = 90, units = 'mm', res = 250)
+last_plot()
+dev.off()
 
