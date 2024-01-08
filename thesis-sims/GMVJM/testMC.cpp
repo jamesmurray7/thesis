@@ -73,6 +73,21 @@ mat EymetaT(const vec& Y, const mat& X, const mat& Z,
 }
 
 // [[Rcpp::export]]
+List make_binExp(const vec& Y, const mat& X, const mat& Z, 
+            const vec& beta, const mat& draws){
+  uword N = draws.n_rows;
+  vec out1(Y.size()), out2(Y.size());
+  for(uword i = 0; i < N; i++){
+    vec b_i = draws.row(i).t();
+    vec yyy = exp(X * beta + Z * b_i);
+    out1 += yyy / (1. + yyy);
+    out2 += yyy / (pow(1. + yyy, 2.));
+  }
+  return List::create(_["dot"] = out1 / N,
+                      _["ddot"] = out2/ N);
+}
+
+// [[Rcpp::export]]
 vec make_Esurvpart(const mat& draws,
                    const mat& SS, const mat& Fu, 
                    const vec& gamma_rep, const vec& zeta){
