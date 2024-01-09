@@ -1,0 +1,3 @@
+Not an MC revamp as it will ONLY fit specifically gaussian-poisson-binomial gmvjms.
+
+Contains some ripped elements from gmvjoint which was just to allow for ease of implementation on my end!
