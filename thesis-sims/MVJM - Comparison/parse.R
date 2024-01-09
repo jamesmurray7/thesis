@@ -208,5 +208,7 @@ gam.zet2 %>%
   )
 
 ggsave(save.dir.file.path("Kgammazeta.png", load.dir),
-       width = 140, height = 90, units = "mm")
+       device = png, type = 'cairo',
+       symbolfamily = cairoSymbolFont("ComputerModern2"),
+       width = 140, height = 90, units = "mm", res = 250)
 
