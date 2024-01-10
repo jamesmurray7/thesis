@@ -27,7 +27,7 @@ surv.formula <- Surv(survtime, status) ~ bin
 
 control <- list()
 disp.formulas = NULL
-MCtype <- 'ordinary'; N <- 1e3
+MCtype <- 'ordinary'; N <- 1e2
 
 a1 <- joint(long.formulas, surv.formula, data, family, disp.formulas = NULL,
            "ordinary", N = 1e3)

@@ -19,9 +19,6 @@ EMupdate <- function(Omega, family, dmats, b,                # Params; families;
   b.hat <- lapply(b.update, el, 1)
   Sigma <- lapply(b.update, function(x) solve(x$hessian))
   
-  # Split into K constituent sub-matrices.
-  SigmaSplit <- lapply(Sigma, function(x) lapply(inds$R$b, function(y) as.matrix(x[y,y])))
-  
   # Draws for E-step ======================================================
   if(MCtype == "ordinary"){
     draws <- Map(function(b.hat, Sigma.hat){
@@ -159,8 +156,7 @@ EMupdate <- function(Omega, family, dmats, b,                # Params; families;
     gamma = gamma.new, zeta = zeta.new,                         #   survival;
     l0 = lambda.update, l0u = l0u.new, l0i = as.list(l0i.new),  #   hazard;
     l0u.hat = l0u.hat,                                          #   (+ profile);
-    b = b.hat,                                                  #   REs;
-    Sigma = Sigma                                               #   + their variance.
+    b = b.hat                                                   #   REs
   )
   
 }

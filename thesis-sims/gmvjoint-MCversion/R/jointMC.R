@@ -8,7 +8,7 @@ joint <- function(long.formulas, surv.formula,
                   control = list()){
   
   con <- list(correlated = T, gh.nodes = 3, gh.sigma = 1, center.ph = T,
-              tol.abs = 1e-3, tol.rel = 1e-2, tol.thr = 1e-1, tol.den = 1e-3,
+              tol.abs = 5e-3, tol.rel = 1e-2, tol.thr = 1e-1, tol.den = 1e-3,
               grad.eps = .Machine$double.eps^(1/3), hess.eps = .Machine$double.eps^(1/4), inits = NULL,
               maxit = 200, conv = 'sas', verbose = F, return.inits = F, return.dmats = T, post.process = T)
   conname <- names(con)
@@ -132,6 +132,9 @@ joint <- function(long.formulas, surv.formula,
   XTX <- lapply(dmats$X, function(x) crossprod(x[[1]]))
   XTX <- Reduce("+", XTX)
   EMstart <- proc.time()[3]
+  conv <- rep(F, con$maxit)
+  rel.diff <- rep(NA, con$maxit)
+  cv.old <- 0
   while((!converged) && (iter < con$maxit)){
     update <- EMupdate(Omega, family, dmats, b, sv, 
                        surv, MCtype, N, con, inds, XTX)
@@ -151,7 +154,20 @@ joint <- function(long.formulas, surv.formula,
     Omega <- list(D = D, beta = beta, sigma = sigma, gamma = gamma, zeta = zeta)
     
     convcheck <- converge.check(params, params.new, convergence.criteria, iter, Omega, con$verbose)
-    if(iter >= 4) converged <- convcheck$converged # Allow to converge after 3 iterations
+    
+    conv[iter] <- convcheck$converged
+    rel.diff[iter] <- max(convcheck$diffs.rel)
+    cv <- ifelse(iter >= 3, sd(rel.diff[(iter-2):iter])/mean(rel.diff[(iter-2):iter]), 0)
+    rip.check <- cv > cv.old
+    cv.old <- cv
+    if(rip.check){
+      N <- min(N + floor(N/3), 1e3)
+      if(con$verbose) cat(sprintf("\nNew N: %d\n", N))
+    }
+    if(iter >= 3){
+      converged <- all(conv[(iter-2):iter])
+    }
+    # if(iter >= 4) converged <- convcheck$converged # Allow to converge after 3 iterations
     params <- params.new
   }
   
