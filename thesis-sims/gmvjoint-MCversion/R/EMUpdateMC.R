@@ -1,5 +1,5 @@
 EMupdate <- function(Omega, family, dmats, b,                # Params; families; dmats; REs;
-                     sv, surv, MCtype, N,                    # Survival; MC stuff;
+                     sv, surv, MCtype, N, sf,                # Survival; MC stuff;
                      con, inds, XTX){                        # control arguments; indices
   
   # Unpack Omega, the parameter vector
@@ -22,14 +22,14 @@ EMupdate <- function(Omega, family, dmats, b,                # Params; families;
   # Draws for E-step ======================================================
   if(MCtype == "ordinary"){
     draws <- Map(function(b.hat, Sigma.hat){
-      MASS::mvrnorm(N, b.hat, Sigma.hat)
+      MASS::mvrnorm(N, b.hat, Sigma.hat*sf)
     }, b.hat = b.hat, Sigma.hat = Sigma)
   }else if(MCtype == "antithetic"){
-    draws <- joineRML:::bSim(floor(N/2), b.hat, Sigma)
+    draws <- joineRML:::bSim(floor(N/2), b.hat, lapply(Sigma, '*', sf))
   }else if(MCtype == "sobol"){
     zzz <- suppressWarnings(randtoolbox::sobol(N, sum(dmats$q), normal = T, scrambling = 1))
     draws <- Map(function(b.hat, Sigma.hat){
-      C <- chol(Sigma.hat)
+      C <- chol(Sigma.hat*sf)
       matrix(rep(b.hat, N), N, byrow = T) + (zzz %*% C)
     }, b.hat = b.hat, Sigma.hat = Sigma)
   }else{

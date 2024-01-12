@@ -1,8 +1,12 @@
 rm(list=ls())
 source(".Rprofile")
-# Load in
-load(save.dir.file.path("fitsMC.RData"))
-load(save.dir.file.path("fitsGH.RData"))
+# Load in appropriate one ----
+# load(save.dir.file.path("fitsMC4-nosf.RData"))
+# load(save.dir.file.path("fitsMC4.RData"))
+# load(save.dir.file.path("fitsGH.RData"))
+load(save.dir.file.path("fitsGH-n500"))
+fits <- GHfits
+load(save.dir.file.path("fitsMC4-nosf-n500.RData"))
 
 Antifits <- lapply(MCfits, el, 2)
 Quasfits <- lapply(MCfits, el, 3)
@@ -93,7 +97,7 @@ to.tab <- function(X, method = "GH"){
                    GH = "Gauss-Hermite quadrature",
                    Antithetic = "Antithetic Monte Carlo",
                    Quasi = "Quasi Monte Carlo via the Sobol sequence")),
-    sprintf("%.2f [%.2f, %.2f] seconds and total computation time %.2f [%.2f, %.2f], with median number of iterations %d",
+    sprintf("%.2f [%.2f, %.2f] seconds and total computation time %.2f [%.2f, %.2f], with median number of iterations %.0f",
             et[1], et[2], et[3], tot[1], tot[2], tot[3], median(X$iters))
   )
     
@@ -117,10 +121,63 @@ p <- gsub("bin$", "1}", p)
 p <- gsub("Y\\.1\\_", "beta_{1", p)
 p <- gsub("Y\\.2\\_", "beta_{2", p)
 p <- gsub("Y\\.3\\_", "beta_{3", p)
-p <- paste0("$\\", p, "$")
+p <- paste0("$\\", p, "=", .f(targets), "$")
 tab$Parameter <- p
 
 library(xtable)
 xt <- xtable(tab, caption = paste0(GHtab$cap, ATtab$cap, QItab$cap))
 print(xt, include.rownames = F,
       sanitize.text.function = identity)
+
+# Make the usual plot -----------------------------------------------------
+fits <- list(
+  "Gauss-Hermite quadrature" = GHfits,
+  "Antithetic Monte Carlo" = Antifits,
+  "Quasi Monte Carlo" = Quasfits
+)
+
+fits2 <- do.call(rbind, lapply(seq_along(fits), function(i){
+  df <- data.frame(method = names(fits)[i], t(sapply(fits[[i]], function(x) c(x$coeffs$gamma, x$coeffs$zeta))))
+  tidyr::pivot_longer(df, cols = "gamma_1":"zeta_bin")
+}))
+
+library(dplyr)
+library(ggplot2)
+
+fits2 %>% 
+  mutate(
+    name = case_when(
+      grepl("\\_bin$", name) ~ gsub("\\_bin$", "", name),
+      T ~ paste0(gsub("\\_", '[', name), "]")
+    ),
+    target = case_when(
+      name == "zeta" ~ -0.2,
+      name == "gamma[2]" ~ -0.5,
+      T ~ 0.5
+    )
+  ) %>% 
+  mutate_at("method", forcats::fct_inorder) %>% 
+  ggplot(aes(x = method, y = value, fill = method)) + 
+  geom_hline(aes(yintercept = target), lty = 5, colour = 'grey3') + 
+  geom_boxplot(outlier.alpha = .33, lwd = 0.25, fatten = 2,
+               outlier.size = .50) + 
+  facet_wrap(~name, scales = 'free_y', labeller = label_parsed) +
+  theme_csda() + 
+  labs(x = "E-step method", y = "Estimate") + 
+  scale_fill_brewer(palette = 'YlOrRd') + 
+  scale_y_continuous(breaks = scales::pretty_breaks(6)) + 
+  theme(
+    legend.position = 'none',
+    strip.placement = 'outside',
+    axis.text.x = element_text(size = 4.5)
+  )
+
+ggsave("/data/c0061461/THESIS/gmvjoint-MC/MCEM_gamzet.png",
+       device = grDevices::png,
+       type = 'cairo', width = 140, height = 90, units = 'mm', res = 250L)
+
+
+
+
+
+

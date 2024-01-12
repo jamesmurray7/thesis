@@ -124,6 +124,17 @@ converge.check <- function(params.old, params.new, criteria, iter, Omega, verbos
        diffs.abs = diffs.abs, diffs.rel = diffs.rel)
 }
 
+print.burnin.iters <- function(burn, max.burn, Omega){
+  cat("\n")
+  cat(sprintf("Burnin: %d/%d ====\n", burn, max.burn))
+  cat("vech(D):", round(vech(Omega$D), 4), "\n")
+  cat("beta:", round(Omega$beta, 4), "\n")
+  cat("sigma:", round(unlist(Omega$sigma)[unlist(Omega$sigma) != 0], 4), "\n")
+  cat("gamma:", round(Omega$gamma, 4), "\n")
+  cat("zeta:", round(Omega$zeta, 4), "\n")
+  cat("\n")
+}
+
 # Don't think this is ever used  -- remove?
 # Create appropriately-dimensioned matrix of random effects.
 #' @keywords internal

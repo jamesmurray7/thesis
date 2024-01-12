@@ -4,7 +4,7 @@
 joint <- function(long.formulas, surv.formula, 
                   data, family,
                   disp.formulas = NULL, 
-                  MCtype = 'ordinary', N = 5e3,
+                  MCtype = 'ordinary', N = 1e2, sf = NULL,
                   control = list()){
   
   con <- list(correlated = T, gh.nodes = 3, gh.sigma = 1, center.ph = T,
@@ -112,7 +112,7 @@ joint <- function(long.formulas, surv.formula,
   w <- GH$w; v <- GH$n
 
   # Begin EM ----
-  diff <- 100; iter <- 0;
+  diff <- 100; iter <- 0; burn <- 0
   # Convergence criteria setup
   if(!con$conv%in%c('abs', 'rel', 'either', 'sas')){
     warning("Convergence criteria must be one of ", sQuote('abs'), ', ', sQuote('rel'), ', ',
@@ -133,11 +133,18 @@ joint <- function(long.formulas, surv.formula,
   XTX <- Reduce("+", XTX)
   EMstart <- proc.time()[3]
   conv <- rep(F, con$maxit)
-  rel.diff <- rep(NA, con$maxit)
+  Nvec <- rel.diff <- rep(NA, con$maxit)
   cv.old <- 0
+  Nvec[1] <- N
+  if(is.null(sf)){
+    sf <- bDiag(list(matrix(1, 2, 2), 
+                     matrix(.77, 2, 2),
+                     matrix(1, 1, 1)))
+    sf[sf==0] <- 1
+  } 
   while((!converged) && (iter < con$maxit)){
     update <- EMupdate(Omega, family, dmats, b, sv, 
-                       surv, MCtype, N, con, inds, XTX)
+                       surv, MCtype, N, sf, con, inds, XTX)
     
     if(!con$correlated) update$D[inits.long$off.inds] <- 0
     params.new <- c(vech(update$D), update$beta, unlist(update$sigma)[sigma.include], 
@@ -150,9 +157,9 @@ joint <- function(long.formulas, surv.formula,
     gamma <- update$gamma; zeta <- update$zeta
     l0 <- update$l0; l0u <- update$l0u; l0i <- update$l0i
     sv$l0 <- l0; sv$l0i <- l0i; sv$l0u <- l0u
-    iter <- iter + 1
     Omega <- list(D = D, beta = beta, sigma = sigma, gamma = gamma, zeta = zeta)
     
+    iter <- iter + 1
     convcheck <- converge.check(params, params.new, convergence.criteria, iter, Omega, con$verbose)
     
     conv[iter] <- convcheck$converged
@@ -161,12 +168,15 @@ joint <- function(long.formulas, surv.formula,
     rip.check <- cv > cv.old
     cv.old <- cv
     if(rip.check){
-      N <- min(N + floor(N/3), 1e3)
+      N <- min(N + floor(N/5), 1e3)
       if(con$verbose) cat(sprintf("\nNew N: %d\n", N))
+      Nvec[iter+1] <- N
     }
+    
     if(iter >= 3){
-      converged <- all(conv[(iter-2):iter])
+      converged <- all(conv[(iter-1):iter])
     }
+    
     # if(iter >= 4) converged <- convcheck$converged # Allow to converge after 3 iterations
     params <- params.new
   }
@@ -202,7 +212,9 @@ joint <- function(long.formulas, surv.formula,
   ModelInfo$mi <- sapply(dmats$mi, unlist)
   ModelInfo$nev <- sum(sv$nev)
   ModelInfo$MCtype <- MCtype
-  ModelInfo$N <- N
+  ModelInfo$Nfinal <- N
+  ModelInfo$Nvec <- Nvec
+  ModelInfo$sf <- sf
   ModelInfo$id.assign <- list(original.id = id.assign$id,
                               assigned.id = id.assign$assign)
   out$ModelInfo <- ModelInfo
@@ -214,7 +226,7 @@ joint <- function(long.formulas, surv.formula,
     pp.start.time <- proc.time()[3]
     
     II <- obs.emp.I(coeffs, dmats, surv, sv, family, b, 
-                    l0i, l0u, MCtype, N, inds, con)
+                    l0i, l0u, MCtype, N, sf, inds, con)
     H <- structure(II$Hessian,
                    dimnames = list(names(params), names(params)))
     

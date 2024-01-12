@@ -30,11 +30,11 @@ disp.formulas = NULL
 MCtype <- 'ordinary'; N <- 1e2
 
 a1 <- joint(long.formulas, surv.formula, data, family, disp.formulas = NULL,
-           "ordinary", N = 1e3)
+           "ordinary")
 a2 <- joint(long.formulas, surv.formula, data, family, disp.formulas = NULL,
-            "antithetic", N = 1e3)
+            "antithetic")
 a3 <- joint(long.formulas, surv.formula, data, family, disp.formulas = NULL,
-            "sobol", N = 1e3)
+            "sobol")
 
 # This is Sec 4.5.3 simulation
 load("/data/c0061461/THESIS/GMVJM/data/Triv.RData")
