@@ -1,0 +1,224 @@
+\begin{chapter}{\label{cha:justification}Justification for the Normal Approximation}
+  \section{Approximation foundations and simulation objectives}\label{sec:justification-background-objectives}
+  \subsection{Background}\label{sec:justification-background}
+  We seek to justify usage of the normal approximation as we laid out in Section \ref{sec:approx-approx-specificbit}. As mentioned, \citet{Rizopoulos2012} previously noted -- in the context of a univariate (Gaussian) joint model -- that the conditional (log) density of the random effects $\log f(\b|T_i,\Delta_i,\Y;\bO)$ is dominated by the (log) density of the linear mixed effects model $\log f(\Y|\b;\bO)$, and resembles a (multivariate) normal distribution. Specifically \citet{Rizopoulos2012} present under certain regularity conditions as $m_i\rightarrow\infty$,  
+  \begin{align}
+    \b|T_i,\Delta_i,\Y;\bO\appx \Rapprox,
+  \label{eq:justification-Rizapprox}
+  \end{align}
+  with $\tb=\argmax{\b}\log f(\b, \Y| \bO)$, and the variance of the estimate $\tS$ defined similarly to \eqref{eq:approx-Sigmahat}. Note we discussed this approximation under the guise of numerical integration in Section \ref{sec:numint-paGH}, but have restated it here for completeness' sake.
+  
+  \citet{Rizopoulos2012} utilise their approximation on the linear mixed effects model in the context of pseudo-adaptive Gauss-Hermite quadrature, such that their abscissae and weights are only calculated \textit{once} for each subject; centered at each subject's posterior mode $\tilde{\bm{b}}_i$ and scaled by the Choleski factor of $\tilde{\Sigma}_i$. In contrast, we utilise weights and abscissae based on a $N\lb0,1\rb$ kernel and scale these based on $\hb$ and $\hS$ at \textit{each} EM iteration in order to approximate requisite conditional expectations as shown in Section \ref{sec:approx-Mstep}.
+
+  \citet{Bernhardt15} extended the approximation \eqref{eq:justification-Rizapprox} to a joint model with a logistic sub-model in place of the survival \eqref{eq:approx-approx}; later extended to the `classic' joint models we considered in Chapter \ref{cha:methods-classic} by \citet{Murray2022}; and finally the emergent joint models with (at least one) GLMM sub-model \citep{Murray2023}.
+
+  \subsection{Simulation objectives}\label{sec:justification-objective}
+  Consider a subject with the set of observed (univariate) data $\mathcal{D}_i=\lbr\Y, T_i, \Delta_i\rbr$, which was generated under the known set of `true' parameters 
+  \begin{align*}
+      \bOT=\lb{\TRUE{\bb}}^\top,{\TRUE{\bs}}^\top,\TRUE{\gamma},\TRUE{\zeta}\rb^\top
+  \end{align*}
+  following the simulation strategy in \eg Section \ref{sec:approx-simsetup-proper}. We want to contend that the posterior distribution of their random effects, $\postb$ approximately follows a (multivariate) normal distribution centered on $\hb$ with curvature $\hS$. That is, the normal approximation on the distribution of the random effects conditioned on the observed data and parameter estimates laid out in Section \ref{sec:approx-approx-specificbit} and used throughout the thesis is reasonable.
+
+  In addition, earlier results \citep{baghishani2012, Rizopoulos2012} suggest that an approximation such as \eqref{eq:justification-Rizapprox} should improve as an increased longitudinal profile length is observed \ie $m_i\rightarrow\infty$, which we aim to verify. Simultaneously, we further want to argue that the result from \citet{baghishani2012} -- that the posterior distribution of random effects for \textit{any} GLMM are asymptotically normal -- extends to the ``generalised'' joint modelling scenario \eqref{eq:flexible-likelihood-glmm}. Lastly, we undertake investigation into the differences \textit{between} previously-used approximations from \citet{Rizopoulos2012}, \ie $\Rapprox$ \eqref{eq:justification-Rizapprox} and \citet{Bernhardt15}, \ie $\Napprox$ \eqref{eq:approx-approx}.
+  
+  \subsection{Simulation strategy}\label{sec:justification-strategy}
+  With our objectives delineated, we now outline the simulation strategy taken to achieve them.
+
+  For $\bOT$ determined by the `standard' simulation scenarios specified in Sections \ref{sec:approx-simsetup-proper} and \ref{sec:flexible-simsetup-proper} for the Gaussian and non-Gaussian cases, respectively, we simulate \textit{one} set of data, $\mathcal{D}=\lbr\mathcal{D}_1,\dots,\mathcal{D}_n\rbr$, using the methodology outlined in Section \ref{sec:methods-simulation}. In a slight departure from Section \ref{sec:flexible-simsetup-proper}, the binomial and (overdispersed) generalised Poisson are instead simulated under an intercept-and-slope with $\vech\lb\D\rb=\lb0.50,0.125,0.09\rb^\top$. The Gompertz baseline hazard with scale $\log\nu=-3$ and shape $\alpha=0.1$ produces a relatively low failure rate, allowing for an abundance of profiles of maximal length $m_i=10$, whilst simultaneously resulting in a `\textit{grading}' of longitudinal profile lengths $m_i=1,\dots,9$, which should provide insight into the suitability of the approximation as $m_i$ gradually grows large.
+
+  \begin{remark}
+      We set $r=10$ in keeping with our `default' simulation scenario in Section \ref{sec:approx-simsetup-proper}. The approximation -- ostensibly improving as $m_i\rightarrow\infty$ -- unsurprisingly benefits from a longer longitudinal profile given its underlying assumption of normality. We \textit{don't} consider larger $r$ in what we believe is a neat compromise between a `realistic' length of follow-up and a visual argument for the approximation's improvement with $m_i$.
+  \end{remark}
+
+  We proceed then as follows, for each $i=1,\dots,n$:
+  \begin{enumerate}
+      \item Calculate $\hb$ and $\hS$ by \eqref{eq:approx-bhat} and \eqref{eq:approx-Sigmahat}, respectively, with $\bO^{(m)}$ substituted by $\bOT$ and $\bm{\lambda}_0^{(m)}\lb\cdot\rb$ by $\exp\lbr\log\nu+\alpha\bm{u}^\top\rbr$ where $\bm{u}$ is the vector of failure times in the simulated set of data $\mathcal{D}$. If no survival part is required, then we instead calculate $\tb$ and $\tS$ by methodology in Section \ref{sec:justification-background}.
+      \item Simulate from $\postb$ using a Metropolis-Hastings scheme with 1,000 iterations of burn-in and 10,000 iterations thereafter. This results in two vectors of correlated `draws' from the target density: $\bm{b}_{i0}^{(\mathrm{MH})}$ and $\bm{b}_{i1}^{(\mathrm{MH})}$. We obtain proposals for the random effects from the multivariate $t$ distribution with 4 degrees of freedom, $t_4\big(\hb,a\hS\big)$, where $a$ is a scalar tuning parameter controlled to ensure efficient sampling from the target distribution. This Metropolis-Hastings acceptance rate is captured in $A_i$.
+      \item Generate 10,000 samples from $\Napprox$, or indeed $\Rapprox$ if required, using \eg \tt{rmvnorm} \citep{R-mvtnorm} and produce a data ellipse based on this sample \citep{R-car, Friendly2013}: $\mathcal{E}$, signifying where one expects the majority of the `datapoints' (\ie the sample determined by the approximate distribution) to lie at the 95\% confidence level.
+      \item Calculate the proportion of the generated samples from $\postb$ which lie within the region bounded by $\mathcal{E}$, denoting this quantity $\psi_i$. The methodology used in determining this is given in Appendix \ref{sec:appendix-ellipsecheck}.
+  \end{enumerate}
+  The above routine then equips us with the posterior density $\postb$; the posterior modes and (co)variances, say $\big\{\hb,\hS\big\}$, as well as the analogous quantities calculated under omission of $f\big(T_i,\Delta_i|\b;\bOT\big)$, $\big\{\tb,\tS\big\}$, $i=1,\dots,n$.
+
+  We then visualise the `true' posterior $\postb$ with $\mathcal{E}$, showing where the `mass' of the theoretical distribution \textit{should} lie, superimposed; investigate the relationship between $\psi_i$ and $m_i$; and explore differences in the normal distributions $\Napprox$ and $\Rapprox$.
+
+  \section{Results}\label{sec:justification-results}
+  \subsection{Visualisations}\label{sec:justification-results-visualisations}
+  We begin by undertaking purely visual appraisal of the approximation obtained by the strategy outlined in Section \ref{sec:justification-strategy}. 
+  
+  We ensure only subjects for whom $\postb$ has been efficiently sampled from (\ie neither `stuck' in one place, nor freely exploring the real line) by employing the common heuristic of only considering subjects with $0.20<A_i<0.25$. 
+  
+  We select 40 simulated subjects to produce such visualisations for, and present these on a per-family basis in Appendix \ref{sec:appendix-suppfigs-justification-viz}. When deciding which profiles to show, we \textit{always} attempt to show the `graded' incrementing of $m_i$ and its effect on the feasibility of the approximation. This is achieved by first ordering the simulated subjects by $m_i$, further ordering within this follow-up length by their (purely arbitrary) allocated subject identifier and taking the first 40 resultant samples; subsequently applying the process delineated in Section \ref{sec:justification-strategy}.
+
+  On the whole, for each family we observe that the samples from the posterior density $\postb$ lie comfortably within the theoretical $\mathcal{E}$. We observe \textit{generally} that the scatter of sampled random effects becomes increasingly concentrated as $m_i$ grows large, which is reflected by commensurate shrinkage exhibited in $\mathcal{E}$. Indeed, as $m_i$ increases, there will be less uncertainty in the estimate for $\hb$, which is reflected in the resultant distribution $\Napprox$, which generates said ellipse. 
+
+  However, this is by no means steadfast. For instance, when the response of interest is a count there are noticeable fluctuations in the spread, even for the longest profiles $m_i$. This could be due to the magnitude of the response here leading to greater uncertainty in the estimate for $\hb$ (\ie a larger resultant covariance matrix $\hS$). Additionally, say for the binomial family, there is some notable `shifting' occurring, resulting in the sample from $\postb$ not best `lining up' with $\mathcal{E}$. In spite of this, there is still a good proportion of overlap between the true distribution of $\b|\mathcal{D}_i;\bOT$ and $\Napprox$.
+
+  To bring this purely visual inspection exercise to a close, we perhaps conclude that -- for the profiles shown in Appendix \ref{sec:appendix-suppfigs-justification-viz} -- the approximation appears to be reasonable, with there generally being tangible (visual) benefit from the presence of a longer period of follow-up.
+  
+  \subsection{Relationship between \texorpdfstring{$m_i$}{mi} and \texorpdfstring{$\psi_i$}{psi}}\label{sec:justification-results-psi}
+  Next, we undertake a slightly different simulation strategy: Increasing the number of subjects to $n=1000$, and repeating the process solely monitoring $m_i$, $A_i$, and $\psi_i$. 
+  
+  In a frequentist sense, if the normal approximation is reasonable for the density $\postb$, we would expect approximately 95\% of the samples from this posterior to lie \textit{within} the region bounded by $\mathcal{E}$. Due to the stochastic nature of Metropolis-Hastings scheme utilised, or other reasons to be discussed, there may be some variability in this proportion. Given we obtain $10^4$ samples from both $\postb$ and $\Napprox$, we can perhaps be confident such a contribution would be relatively small, with observed discrepancies then inherent to the approximation itself.
+
+  \begin{figure}[th]
+      \centering
+      \includegraphics{Figures_Justification/psi-vs-mi-new.png}
+      \caption{Boxplots of $\psi_i$ against graded profile lengths $m_i$ for each family considered in Chapters \ref{cha:methods-classic}--\ref{cha:flexible}}
+      \label{fig:justification-psi-mi-families}
+  \end{figure}
+  
+  We note from Figure \ref{fig:justification-psi-mi-families} that there is evidence to suggest that $\Napprox$ is over-confident, as we appear to routinely overshoot the nominal 0.95 we expect from theory. As previously ascribed, we don't expect this to be due to variability in the sampling process, but perhaps could attribute to some other behaviour of $\Napprox$. For instance, this may produce a density more variable than $\postb$; exhibit strange behaviour in the tails; or otherwise be less/more concentrated about the modal mass, such that the additional $\approx0.025$--$0.030$ coverage we observe could be accounted for. 
+
+  %The result from \citet{Rizopoulos2012}, that the conditional (log) density of the random effects $\log\condb$ is dominated by the (log) density of the linear mixed effects model $\log f(\Y|\b;\bO)$, appears to extend neatly to the generalised linear mixed effects case we consider here and as previously shown in \citet{baghishani2012}. However, this does not appear to hold particularly well for the binomial family. Indeed the the survival density's inclusion here results in an approximate normal which is much `wider' than the true (conditional) density of the random effects, perhaps implying that said conditional density is \textit{not} dominated by the GLMM, at least for these data characteristics.
+
+  In order to investigate the over-confidence noted in Figure \ref{fig:justification-psi-mi-families}, we briefly turn attention to the produced densities themselves. We follow earlier work \citep{Murray2023} and `zoom in' on the densities for the random effects for randomly-chosen subjects who fall into different `halves' of follow-up, $m_i\in[1,5]$ and $m_i\in[6,10]$, presenting the posterior $\postb$ with the theoretical $\Napprox$ overlaid in Figure \ref{fig:justification-gaussian-breakdown}. Here we observe some behaviour which could account for the additional coverage we noted in Figure \ref{fig:justification-psi-mi-families}: The normal distribution sometimes fully encapsulates the notably more concentrated posterior distribution \ie $\hS$ in $\Napprox$ \textit{overestimates the variance}. Interestingly this occurs more frequently around the modal mass of $\postb$ rather than in its tails, which one may expect a priori.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics[width=0.95\textwidth]{Figures_Justification/gaussian_RE_mi_breakdown_crop.png}
+      \caption{Posterior distributions for $\torm{b_{i0}}{MH}$ and $\torm{b_{i1}}{MH}$ for five randomly chosen subjects who fall into two follow-up `halves'. The solid black line is the sampled posterior density and the red dashed line shows $\Napprox$.}
+      \label{fig:justification-gaussian-breakdown}
+  \end{figure}
+
+  \subsection{Effect of the inclusion of the survival density}\label{sec:justification-include-surv-ellipse}
+  Thus far we have conducted an investigation investigation into the normal approximation $\Napprox$, with focus on the ellipse $\mathcal{E}$ arising from a large number of draws from this distribution. We now turn our attention to the characteristics of $\mathcal{E}$ itself; namely on the differences in normal distributions centered and scaled by $\hb$ and $\hS$ (\ie Section \ref{sec:approx-approx}) in contrast with $\tb$ and $\tS$ (Section \ref{sec:justification-background}). That is, monitoring the effect of including $f\big(T_i,\Delta_i|\b;\TRUE{\bO}\big)$ in calculating the location and curvature of resultant (multivariate) normal distributions.
+  
+  We look to achieve this by studying the components of $\mathcal{E}$ generated by the modal estimate $\hb$ (and its covariance $\hS$), and $\tb$ ($\tS$) calculated by accounting for the survival part (`S') in the complete data log-likelihood, and without (`NS' \ie `no survival'), respectively. For $n=1000$ simulated subjects we calculate $\big\{\hb,\hS\big\}$ and $\big\{\tb,\tS\big\}$ and subsequently construct the ellipses $\mathcal{E}^{(S)}$ and $\mathcal{E}^{(NS)}$, respectively. We then compare: Estimates for $\hb$ and $\tb$ (dictating the origin of the ellipse); the semi-minor, $\torm{r_y}{S}$ and $\torm{r_y}{NS}$, and semi-major axes, $\torm{r_x}{S}$ and $\torm{r_x}{NS}$. The interested reader is pointed to Appendix \ref{sec:appendix-ellipsecheck} for information relating to the derivation of these quantities.
+
+  For each family, we present the difference in the random intercept and slope, say $\hb-\tb$ as well as the difference in the semi-minor $\torm{r_y}{S}-\torm{r_y}{NS}$ and semi-major axes $\torm{r_x}{S}-\torm{r_x}{NS}$. The quantities related to the ellipsis' axes directly stem from the estimated $\hS$, with smaller variances leading to smaller minor and major axes. In addition to the presence of $f\big(T_i,\Delta_i|\b;\TRUE{\bO}\big)$, we hold secondary interest in the effect an increased profile length $m_i$ has on the difference observed in these quantities. 
+  
+  Negative values for the difference in (semi-)minor and major axes implies the ellipse containing 95\% of the theoretical data sample is \textit{larger} when the survival density is \textit{not} included \ie $\hS$ is less variable than $\tS$. Differences in modal estimates $\hb-\tb$ simply represents the modal `mass' lying at a different point.
+  
+  The Gaussian case is presented in Figure \ref{fig:justification-ellipse-gaussian}. In order to reduce bloat, all remaining families are presented in Appendix \ref{sec:appendix-suppfigs-justification-ellipses}. For the Gaussian case, estimates for the intercept and slope are both larger \textit{without} inclusion of the survival density in their calculation, particularly for larger $m_i$; implying incorporation of survival information, correlated with the longitudinal process, influences the optimisation routine for the value $\hb$ compared to $\tb$. The ellipsis' axes are always slightly smaller in both the $x$- and $y$-direction under inclusion of the survival process, implying that the variance is larger with its removal. This perhaps makes sense given the additional information afforded by inclusion of the time-to-event process. There exists some visual banding here between lengths of follow-up: At lower $m_i$ there's little difference in the semi-major axis, which increases with increased $m_i$.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_Justification/gaussian-ellipse-new.png}
+      \caption{Difference in the modal estimates $\hb-\tb$; semi-minor axis $\torm{r_y}{S}-\torm{r_y}{NS}$; and semi-major $\torm{r_x}{S}-\torm{r_x}{NS}$. The differences themselves arise from the \textit{removal} of the survival density from the complete data log-likelihood in the process to obtain the modal estimate and its covariance.}
+      \label{fig:justification-ellipse-gaussian}
+  \end{figure}
+
+  To briefly summarise the differences in modal estimates and quantities relating to the ellipse's axes for the other exponential families presented in Appendix \ref{sec:appendix-suppfigs-justification-ellipses}, we observe that both the intercept and slope estimates are larger if the survival density is \textit{excluded}. For the negative binomial, Gamma and Poisson case, these observed differences are relatively small in magnitude; the binomial, and to a lesser extent the generalised Poisson, exhibiting the largest differences here. This perhaps suggests for the binomial specifically, referring back to results from \citet{Rizopoulos2012} discussed in Section \ref{sec:justification-background}, that the joint density $f\lb\b,\Y,T_i,\Delta_i;\bO\rb$ here is \textit{not} dominated by the density $\sfY$. \newline 
+  Interestingly, the estimated variance (\ie $\hS$ against $\tS$) is larger with the survival density included for the generalised Poisson and Poisson, and smaller for all other families. We note however that the differences here are all relatively close to zero, save for the binomial case once more, where the difference is more dramatic.
+
+  \section{Concluding remarks}\label{sec:justification-conclusion}
+  Bringing this exercise to a close, we review our objectives detailed in Section \ref{sec:justification-objective} and aim to provide concise conclusionary statements. We approached all objectives by sampling from the `true' posterior $\postb$ and comparing to the theoretical distribution arising from the normal approximation both with, $\Napprox$ \citep{Bernhardt15, Murray2022, Murray2023}, and without, $\Rapprox$ \citep{Rizopoulos2012}, the survival density considered in order to evaluate some of our objectives.
+
+  Primarily, we wanted to argue that the normal approximation on the conditional distribution of the random effects appears reasonable. We initially carried out a purely visual approach in Section \ref{sec:justification-results-visualisations}, wherein we posited that for all presented profiles, there visually was a good deal of agreement.\newline
+  In Section \ref{sec:justification-results-psi} we sought to \textit{quantify} the agreement by summarising the quantity $\psi_i$ for each candidate exponential distribution considered in Chapters \ref{cha:approx} and \ref{cha:flexible}. Here we noted that the coverage given by $\Napprox$ was over-confident, providing approximately 2.5-3\% extra coverage than the nominal. We concluded here that the (co)variance $\hS$ is over-estimated. This finding, which was consistent across families, could lead to development of some scale factor applied to $\hS$ in order to generate a distribution truer to $\postb$. These cross-family findings appeared to cement earlier results from \citet{baghishani2012}.\newline
+  Finally, we investigated the approximated distribution itself in Section \ref{sec:justification-include-surv-ellipse}, wherein we investigated more thoroughly the difference in approximations by comparing resultant estimates for $\hb$ and components relating to the ellipse (representing said approximated distribution). We noted changes which weren't overtly substantial; corroborating earlier results from \citet{Rizopoulos2012}.
+  
+  To provide something of a denouement, we conclude here that the approximation \textit{is} reasonable. However, we note these simulations are non-exhaustive: The results here appear to present the approximation in a fairly positive manner, but there may be scenarios where the approximation is not suitable \eg due to some data characteristics. Indeed, as we lamented in Section \ref{sec:methods-simulation}, there exist \textit{many} tuning knobs when simulating data under a joint model; throughout Section \ref{sec:justification-results} we presented only \textit{one} set of parameters $\bOT$. Future work indeed could involve monitoring the effect of certain parameters, or other data characteristics as we performed in earlier simulations (\eg Section \ref{sec:approx-simsetup-intro}). Lastly, we only considered intercept-and-slope parameterisations of the random effects -- largely to allow for simpler visualisations -- where in actuality different specifications may be pertinent.
+
+  \section{On the shape of required integrands}\label{sec:justification-integrands}
+  When fitting joint models, the approximate EM algorithm is used to evaluate expectations of the form $\Expi{g\lb\b\rb|T_i,\Delta_i,\Y;\bO}$ as outlined in Sections \ref{sec:approx-Mstep}, \ref{sec:flexible-Mstep-fixef}, and \ref{sec:flexible-Mstep-disp}. We exploited the normal approximation \eqref{eq:approx-approx} to evaluate these against $\Napprox$ instead of `full' conditional distribution $\condb$ in \eqref{eq:numint-expandtarget}.
+
+  For these expectations, we seek to provide the posterior distribution of the term in the corresponding integrand \ie $g\lb\b\rb|T_i,\Delta_i,\Y;\bO$ as means of justification for appraisal via adaptive Gauss-Hermite quadrature (since the resultant distribution resembles the normal) or at the median value of the log-normal distribution in instances where $g\lb\b\rb|\cdot=\exp\lbr\X_i\bb+\Z_i\hb\rbr$. We therefore proceed by considering these disparate methods of integral evaluation.
+
+  We acquire these posteriors by first fitting a joint model to a set of simulated data to obtain MLEs $\hbO$. Next, for the \textit{first} simulated subject who survived follow-up, we sample from $f\big(\b|T_i,\Delta_i,\Y;\hbO\big)$ 50,000 times after 1,000 iterations of burn-in using a Metropolis-Hastings scheme in order to obtain $\torm{\b}{MH}$ and then appraising the appropriate function $g\big(\b^{(\mathrm{MH})}\big)$ at \textit{each} of these draws; the acceptance rate of the sampling scheme is controlled to be between 23-28\%. The resultant posterior distribution of $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO$ is then shown for this subject, allowing for visual inspection at (the arbitrarily chosen) start, middle, and end of follow-up.
+
+  \subsection{Expectations evaluated by Gauss-Hermite quadrature}\label{sec:justification-integrands-normals}
+  Across Chapters \ref{cha:approx} and \ref{cha:flexible} we require
+  \begin{align}
+      \Exp_i\ls\exp\lbr\mathrm{S}_i\bz+\Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr\Bigg|T_i,\Delta_i,\Y;\bO\rs,
+  \label{eq:justification-integrands-survival}
+  \end{align}
+  for updates to both the baseline hazard $\lo\lb\cdot\rb$ and survival parameters $\bm{\Phi}$. Additionally, in Chapter \ref{cha:flexible} specifically when updating the parameter vector $\bO^{(m)}\rightarrow\bO^{(m+1)}$ under a binomial-, negative binomial-, or generalised Poisson-distributed response we needed to evaluate
+  \begin{equation}
+    \begin{aligned}
+        \Exp_i&\ls\log\lb\bone+\exp\lbr\X_i\bb+\Z_i\b\rbr\rb|T_i,\Delta_i,\Y;\bO\rs,\\
+        \Exp_i&\ls\log\lb\bphi+\exp\lbr\X_i\bb+\Z_i\b\rbr\rb|T_i,\Delta_i,\Y;\bO\rs,\quad\ \mathrm{and}\\
+        \Exp_i&\ls\log\lb\Y\bphi+\exp\lbr\X_i\bb+\Z_i\b\rbr\rb|T_i,\Delta_i,\Y;\bO\rs,
+    \end{aligned}
+  \label{eq:justification-integrands-logexps}    
+  \end{equation}
+  respectively. 
+
+  The posterior density of $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO$ for the survival expectation \eqref{eq:justification-integrands-survival} is shown in Figure \ref{fig:justification-integrands-survival} which we note adequately resembles the normal distribution across failure times and so our implementation using adaptive Gauss-Hermite quadrature is reinforced here. The same is noted for the quantity $g\lb\b\rb$ housed in the expectation related to the negative binomial, binomial, and generalised Poisson cases are presented in Figure \ref{fig:justification-integrands-negbinquantity}, Appendix \ref{sec:appendix-suppfigs-justification-binomallogbit}, and Appendix \ref{sec:appendix-suppfigs-justification-GP1logbit}, respectively. We note for the binomial case presented in the Appendix that the resultant density has slightly heavier tails than one may expect a normally distributed quantity to have; perhaps explaining some of the poorer performance noted for the binomial case in Chapter \ref{cha:flexible}.
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_IntegrandShapes/SurvivalExp.png}
+      \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\exp\lbr\mathrm{S}_i\bz+\Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr$ evaluated at the first (top pane), middle and final (bottom pane) failure time for a set of simulated bivariate Gaussian data with $\TRUE{\bg}=\lb0.5,-0.5\rb^\top$.}
+      \label{fig:justification-integrands-survival}
+  \end{figure}
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_IntegrandShapes/NegativeBinomialLogBit.png}
+      \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\log\lb\bphi+\exp\lbr\X_i\bb+\Z_i\b\rbr\rb$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate negative binomial simulated data.}
+      \label{fig:justification-integrands-negbinquantity}
+  \end{figure}
+
+  \subsection{Expectations evaluated at median value of the log-normal}\label{sec:justification-integrands-medians}
+  In Chapter \ref{cha:flexible} we frequently required the expectation
+  \begin{equation}
+      \Expi{\exp\lbr\X_i\bb+\Z_i\b\rbr|T_i,\Delta_i,\Y;\bO}
+  \label{eq:justification-integrands-Expeta}
+  \end{equation}
+  in the E-step for GLMMs. Given the normal approximation we utilise as outlined in Section \ref{sec:approx-approx-specificbit} -- and specifically \eqref{eq:approx-Mstep-longitappx} -- the quantity \eqref{eq:justification-integrands-Expeta} is log-normally distributed, \ie
+  \begin{align*}
+      \exp\lbr\linp\rbr&\appx LN\lb\hbmu,\Amat\rb\quad\ \mathrm{since}\\
+      \linp&\appx N\lb\hbmu,\Amat\rb,
+  \end{align*}
+  where `$LN$' denotes `log-normal'. The mean and median of the log-normally distributed random variable $X\sim LN\lb\mu,\sigma^2\rb$ is, respectively, $\exp\lbr\mu+\frac{\sigma^2}{2}\rbr$ and $\exp\lbr\mu\rbr$. Given our (multivariate) specification above and previously in \eqref{eq:approx-Mstep-longitappx}, these are respectively
+  \begin{equation}
+      \begin{aligned}
+          \exp\lbr\hbmu+\frac{\btau^2}{2}\rbr,\qquad\exp\lbr\hbmu\rbr.
+      \end{aligned}
+  \label{eq:justification-integrands-medmeanLN}
+  \end{equation}
+  Throughout the parameter updates we presented Chapter \ref{cha:flexible} for the fixed effects and dispersion parameters in Sections \ref{sec:flexible-Mstep-fixef} and \ref{sec:flexible-Mstep-disp} we evaluated the expectation \eqref{eq:justification-integrands-Expeta} at the median value in \eqref{eq:justification-integrands-medmeanLN} with reasoning that it is more centered at the modal mass of the posterior distribution of $g\lb\b\rb|T_i,\Delta_i;\bO=\exp\lbr\linp\rbr$, which we seek to justify here.
+
+  We present the posterior distribution for the Poisson GLMM sub-model in Figure \ref{fig:justification-integrands-poisson-Expeta}. Interestingly, at the start of follow-up ($t_1=0$) the distribution resembles a slightly right skew normal. The skewness \ie log-normality is much more marked in later stages of follow-up. We note that for each panel in Figure \ref{fig:justification-integrands-poisson-Expeta} the median is located in the modal mass of the posterior, with the mean being quite clearly more inappropriate at greater levels of skewness.
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_IntegrandShapes/poisson_ExpLinp.png}
+      \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\exp\lbr\X_i\bb+\Z_i\b\rbr$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate Poisson simulated data. The mean and median of the posterior distribution are denoted by the red and blue dashed lines, respectively.}
+      \label{fig:justification-integrands-poisson-Expeta}
+  \end{figure}
+
+  The same distribution is presented for the binomial, Gamma, negative binomial, and generalised Poisson case in Appendix \ref{sec:appendix-suppfigs-justification-Expetas} where we once more note that the median appears more reasonable, with distributions gradually exhibiting more skew. Additionally, we present the modal value for the Poisson case in Appendix \ref{sec:appendix-suppfigs-integrands-mode}; here we note that the mode of the log-normal, $\exp\lbr\hbmu-\btau^2\rbr$, appears to `undershoot' the peak of the posterior distribution of interest. This, along with the mean `overshooting' the modal mass, perhaps cements our earlier finding that the normal approximation overestimates the variance in $\hS$ on average.
+
+  \section{Scaling \texorpdfstring{$\hS$}{hs} to achieve nominal coverage}\label{sec:justification-scale-factor}
+  Despite being reasonably satisfied with the normal distribution $\Napprox$, we collected some evidence in Sections \ref{sec:justification-results-psi} and \ref{sec:justification-integrands-medians} that the variance term $\hS$ \eqref{eq:approx-Sigmahat} is \textit{over}estimating the true variability in $\postb$. Indeed, in Section \ref{sec:justification-conclusion} we hypothesised a scale factor may be developed and applied to $\hS$ such that $\Napprox$ more closely resembles $\postb$. That is, $\psi_i$ is closer to the nominal $0.95$.
+
+  Denoting the coverage of the posterior density $\postb$ given the bivariate normal distribution with parameters $\hb$ and $\hS$ by $\psi_i\big(\hb,a\hS\big)$ where $a>0$ is a scale factor, we consider the minimisation problem of the objective
+  \begin{align}
+      Q\lb a\rb=\frac{1}{n}\Si\big|\psi_i\big(\hb,a\hS\big)-0.95\big|
+  \label{eq:justification-minimisation-problem}
+  \end{align}
+  across $n=100$ simulated subjects. Since this is one-dimensional in $a$, we calculate $\min_aQ\lb a\rb$ one hundred times using \tt{optim} with Brent's algorithm in the constrained search space for $a\in\lb0.01,2.00\rb$.
+
+  \begin{table}[ht]
+      \centering
+      \rowcolors{2}{lightgray!20}{white}
+      \captionsetup{font=scriptsize}
+      \begin{tabular}{l|rr}
+        & \multicolumn{2}{c}{$a$}\\
+        Family &  Median [IQR] & Minimum, maximum\\
+        \hline
+        Gaussian  & 0.75 [0.74, 0.77] & 0.71, 0.83\\
+        Gamma & 0.77 [0.76, 0.79] & 0.71, 0.85\\
+        Poisson & 0.77 [0.75, 0.78] & 0.72, 0.83\\
+        Negative binomial & 0.79 [0.77, 0.81] & 0.73, 0.85\\
+        Generalised Poisson (over) & 0.77 [0.75, 0.79] & 0.70, 0.86\\
+        Binomial & 0.76 [0.75, 0.78] & 0.71, 0.82\\
+        \hline
+      \end{tabular}
+      \caption{Median [IQR] along with minimum and maximum values for $a$ which minimise $Q\lb a\rb$ in \eqref{eq:justification-minimisation-problem} across one hundred sets of data simulated under the family shown.}
+      \label{tab:justification-sfs}
+  \end{table}
+
+  Owing to computational cost, only 5,000 posterior samples are taken from $\postb$ for each $i=1,\dots,100$. Table \ref{tab:justification-sfs} lists the median [IQR], along with the minimum and maximum, estimates for $a$ obtained under previously described `stock' simulation scenarios for families considered in Chapter \ref{cha:flexible}. Here, the binomial and (overdispersed) generalised Poisson are instead simulated under an intercept-and-slope with $\vech\lb\D\rb=\lb0.50,0.125,0.09\rb^\top$. We note that in all cases the scale factor $a$ reduces the (co)variance present in $\hS$ obtained by \eqref{eq:approx-Sigmahat}, indicating that overestimation does occur. The results for the Gaussian case are presented in Figure \ref{fig:justification-scalefactor-gaussian} where we observe median value $a\approx0.75$ achieves nominal coverage. Visualisations in a similar spirit to Figure \ref{fig:justification-scalefactor-gaussian} are provided in Appendix \ref{sec:appendix-suppfigs-justification-scalefactor} for the other families considered.
+  
+  The investigation carried out here is non-exhaustive and very much represents a line of future enquiry. We note in Table \ref{tab:justification-sfs} that there are small differences between families, which could indicate necessity of a scale factor \textit{matrix} in the multivariate case \ie scaling along the block diagonal of $\hS$. Indeed, we considered only the univariate case and thus not potential impact of applying the scalar $a$ to covariance \textit{between} random effects. The approximate EM algorithm as implemented in Chapters \ref{cha:approx} and \ref{cha:flexible} appears to perform well without any such scaling of the covariance $\hS$; this scale factor $a$ would need to be applied `during' the EM algorithm itself.
+  \begin{figure}
+      \centering
+      \includegraphics{Figures_Justification/sf-gaussian.png}
+      \caption{Values for $a$ which minimise $Q\lb a\rb$ in \eqref{eq:justification-minimisation-problem}; each point represents the value $a$ from \textit{one} set of Gaussian simulated data. The median value is denoted by the blue dashed line and the orange dashed lines represent the interquartile range.}
+      \label{fig:justification-scalefactor-gaussian}
+  \end{figure}
+  
+\end{chapter}

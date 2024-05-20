@@ -1,0 +1,121 @@
+%-----------
+% thesis.tex
+%-----------
+% This is a template which hopefully is useful to anyone putting together their
+% thesis.  It is usually a good idea to have one main file (such as this) which
+% includes all your chapters.  That way you can work on separate chapters
+% without having to compile your whole thesis.  I would also recommend not
+% calling your files chap1.tex, chap2.tex etc., since you are bound to want to
+% change the order around, and then the numberings will just cause confusion!
+% Questions/comments  should be sent to to george.stagg@ncl.ac.uk
+%------------------------------------------------------------------------------
+
+%------------------------------------------------------------------------------
+% Set the class and font size.  The article class does not allow chapters, so
+% you'll want to avoid that.  I used 11pt for final submission.
+\documentclass[11pt, openany]{report}
+%------------------------------------------------------------------------------
+
+%------------------------------------------------------------------------------
+% Set the left and right margins.  Remember, you will need to leave more space
+% on the left, to allow for binding, when it comes to submission.  You can
+% easily change the margins as you like, but I think there must be at least a
+% 30mm margin on the binding edge.
+%
+% One-sided A4 (A one-sided version is good to take into the viva for making notes)
+%\usepackage[a4paper,left=35mm,right=25mm,top=40mm,bottom=35mm]{geometry}
+% TEXTWIDTH :::: 149.99825mm
+% TEXTHEIGHT :::: 221.99739mm
+%
+% Two-sided A4 (Use this for the final offical binding/submission)
+\usepackage[a4paper,twoside,left=35mm,right=25mm,top=40mm,bottom=35mm]{geometry}
+%
+% Centred A4
+%\usepackage[a4paper,left=30mm,right=30mm,top=40mm,bottom=35mm]{geometry}
+%
+% Two-sided smaller book sized
+%\usepackage[papersize={6in,9in},twoside,left=0.75in,right=0.5in,top=0.5in,bottom=0.5in,includehead, includefoot]{geometry}
+%------------------------------------------------------------------------------
+
+%------------------------------------------------------------------------------
+% Uncomment the two lines below if you would prefer blank lines for paragraph
+% breaks, rather than indents.
+\setlength{\parindent}{0em}
+\setlength{\parskip}{1ex}
+%------------------------------------------------------------------------------
+
+%------------------------------------------------------------------------------
+% This line prevents LaTeX complaining about \headheight being too small.
+\setlength{\headheight}{15pt}
+%------------------------------------------------------------------------------
+
+%------------------------------------------------------------------------------
+% If you only want to include certain chapters in the final output, do
+% something like the commented line below.  Note that the entire document must
+% have been compiled at least once for references to work correctly.
+%\includeonly{chapter}
+%------------------------------------------------------------------------------
+
+% The masthesis style file itself.  Many additional packages are already
+% defined in the style file (inputs/masthesis.sty).  Either add your own
+% packages there, or below the following line.
+\usepackage{masthesis}
+\input{00preamble}
+% One-and-a-half or double-line spacing.  I used 1.5 for final submission.
+\onehalfspacing
+%\doublespacing
+\setcounter{tocdepth}{4}
+
+\begin{document}
+
+  \phdtitle{Faster Fitting for Joint Models of Survival and Multivariate Longitudinal Data} % Title,
+           {James Murray}                                 % Author,
+           {logo}                                         % Graphic for the title page,
+           {February 2024}                                % Date,
+
+  \thispagestyle{empty}
+  \cleardoublepage
+  % Abstract
+  \input{zzzAbstractForMain}
+  % Acknowledgements
+  \input{zzzAcknowledgements}
+  % Declaration?
+  \input{zzzDeclaration}
+  %\cleardoublepage
+  \pagenumbering{roman}                 % Change the page numbering style
+  \tableofcontents
+  \clearpage
+  \pagenumbering{arabic}                % Reset the page numbering style.
+  \include{1bIntroductionNew} 
+  \include{2MethodsClassicJointModel}
+  \include{3FasterFitting}
+  \include{4TowardsFlexibleJM}
+  \include{5Justification}
+  \include{6PostHocs}
+  \include{7ApplicationPBC}
+  \include{8ConclusionsFutureWork}
+  
+  \appendix
+
+  \include{99_1Appendix1_ExtraStuffDerivs}            % Appendix 1. (A)
+  \include{99_2Appendix2_SupplementaryTables}         % Appendix 2. (B)
+  \include{99_3Appendix3_SupplementaryFigures}        % Appendix 3. (C)
+  \include{99_4Appendix4_gmvjoint}                    % Appendix 4. (D)
+
+  % Uncomment the line below if you want your Bibliography to appear in the
+  % table of contents.
+  \addcontentsline{toc}{chapter}{Bibliography}
+
+  % Add your .bib file here
+  \bibliography{refs}             % References.
+
+  % By default, references look like this: Jones et al. (1990).
+  \bibliographystyle{elsarticle-harv}
+  %\bibliographystyle{apa}
+  %\bibliographystyle{authoryear}
+  % If you would prefer APS style referencing [1], uncomment the line below
+  % and also change the natbib package options in masthesis.sty
+  %  [1] APS style looks like this, with square brackets and numbers.
+  %\bibliographystyle{apsrev}
+
+\end{document}

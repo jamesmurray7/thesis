@@ -1,0 +1,187 @@
+% EXTRA DERIVATIONS/PROOFS/ETC. 
+% TRY AND KEEP IN SAME ORDER AS APPEAR IN MAIN TEXT.
+\chapter{Extra information and derivations}\label{cha:appendix-ExtraStuff}
+\renewcommand{\thealgorithm}{\Alph{chapter}.\arabic{algorithm}} 
+
+\section{Numerical differentiation techniques}\label{sec:appendix-numdiff}
+In numerous places, we have utilised numerical differentiation to obtain score vectors and hessian matrices necessary to form parameter updates when faced with particularly unattractive log-likelihood functions. For instance in updating the dispersion parameters $\bm{\sigma}$ in the Negative binomial GLMM (Section \ref{sec:flexible-Mstep-disp}), or differentiating the conditional expectation of the survival log-density in Section \ref{sec:approx-Mstep-Phi}. We note these are not strictly speaking the \textit{scores} (instead the \textit{gradient}), but we continue with this statistical faux pas regardless. The analytical implementations would simply be tedious and time-consuming in such cases. We therefore outline forward and central differencing to obtain the Score vector for $P$-vector parameter $\bb$ in Algorithms \ref{alg:app-fordiff} and \ref{alg:app-cendiff} respectively, and a three-point central difference formula used to obtain the Hessian matrix in \ref{alg:app-cenhess}.
+
+Note that the algorithm presented to obtain the Hessian matrix is overkill for any case when the parameter vector of interest is of length one. In this scenario, we simply find the second derivative by a three-point central differencing routine given as the sub-routine on line 16 of Algorithm \ref{alg:app-cenhess}.
+
+\begin{algorithm}[H]
+  \caption{Forward differencing for score calculation}\label{alg:app-fordiff}
+  \begin{algorithmic}[1]
+    \Require
+      \Statex $\ell$: The log-likelihood function, returns scalar value.
+      \Statex $\bb$: Parameter vector we want to differentiate log-likelihood with respect to.
+      \Statex $h$: Step size for differencing, typically cube root of machine precision.
+
+    \Ensure
+      \Statex $\bm{S}$: Score vector
+
+    \State $\ell_0 \gets \ell(\bb)$ 
+    \State $\bm{S} \gets \bm{0}$ 
+
+    \For{$j \gets 1$ to $P$} \Comment{Loop over $P$ parameters}
+      \State $\bb^* \gets \bb$ 
+      \State $\beta^*_j \gets \beta_j + h$ 
+      \State $\ell^* \gets \ell(\bb^*)$ 
+      \State $S_j \gets (\ell^* - \ell_0) / h$
+
+    \EndFor
+
+    \State \Return $\bm{S}$ 
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Central differencing for score calculation}\label{alg:app-cendiff}
+  \begin{algorithmic}[1]
+    \Require
+      \Statex $\ell$: The log-likelihood function, returns scalar value.
+      \Statex $\bb$: Parameter vector we want to differentiate log-likelihood with respect to.
+      \Statex $h$: Step size for differencing, typically cube root of machine precision.
+
+    \Ensure
+      \Statex $\bm{S}$: Score vector
+
+    \State $\bm{S} \gets \bm{0}$ 
+
+    \For{$j \gets 1$ to $P$} \Comment{Loop over $P$ parameters}
+      \State $\bb^+ \gets \bb;\ \bb^- \gets \bb$ 
+      \State $\beta^+_j \gets \beta_j + h;\ \beta^-_j \gets \beta_j - h$ 
+      \State $\ell^+ \gets \ell(\bb^+);\ \ell^- \gets \ell(\bb^-)$ 
+      \State $S_j \gets (\ell^+ - \ell^-) / 2h$
+    \EndFor
+
+    \State \Return $\bm{S}$ 
+  \end{algorithmic}
+\end{algorithm}
+\clearpage
+\begin{algorithm}
+    \caption{Three-point central differencing for Hessian calculation}\label{alg:app-cenhess}
+    \begin{algorithmic}[1]
+        \Require
+            \Statex $\ell$: The log-likelihood function, returns scalar value.
+            \Statex $\bb$: Parameter vector we want to differentiate log-likelihood with respect to.
+            \Statex $h$: Step size for differencing, typically fourth root of machine precision.
+
+        \Ensure 
+            \Statex $\mathrm{H}$: Hessian Matrix.
+
+        \State $\mathrm{H} \gets O_{P,P}$ \Comment{$P\times P$ matrix of zeroes}
+        \State $\mathrm{M} \gets \mathbb{I}_P\times h$ \Comment{$P\times P$ matrix of zeroes with $h$ on diagonal} 
+        \If{$P>1$}
+            \For{$j \gets 1$ to $(P-1)$}
+                \State $\bm{h}_j \gets \mathrm{M}_{:,j}$
+                \State $\mathrm{H}_{j,j} \gets (\ell(\bb+\bm{h}_j) + \ell(\bb - \bm{h}_j) - 2\times\ell(\bb))/h^2$ 
+                \For{$k \gets (j+1)$ to $P$}
+                    \State $\bm{h}_k \gets \mathrm{M}_{:,k}$
+                    \State $\mathrm{H}_{j,k} \gets (\ell(\bb+\bm{h}_j+\bm{h}_k) - \ell(\bb+\bm{h}_j-\bm{h}_k) - \ell(\bb-\bm{h}_j+\bm{h}_k) + \ell(\bb-\bm{h}_j-\bm{h}_k))/(4\times h^2)$
+                    \State $\mathrm{H}_{k,j} \gets \mathrm{H}_{j,k}$ \Comment{Symmetrise}
+                \EndFor
+            \EndFor
+            \State $\bm{h} \gets \mathrm{M}_{:,P}$
+            \State $\mathrm{H}_{P,P} \gets (\ell(\bb+\bm{h}) + \ell(\bb - \bm{h}) - 2\times\ell(\bb))/h^2$ 
+        \Else
+            \State $\mathrm{H}_{1,1} \gets (\ell(\beta+h) + \ell(\beta - h) - 2\times\ell(\beta))/h^2$ \Comment{NB: scalar argument}
+        \EndIf
+
+        \State \Return $\mathrm{H}$
+    \end{algorithmic}
+\end{algorithm}
+
+\section{Simulation of failure times for Weibull and Exponential baseline hazards}\label{sec:appendix-survtimes}
+In Section \ref{sec:sim-joint} we considered only simulation of the Gompertz distribution of event times. For completeness' sake, we show the routine taken for both the exponential and Weibull event times from our re-written Cox PH model \eqref{eq:sim-rewrite} in turn.
+\subsection*{Exponentially distributed event times}
+Under the exponential distribution, the baseline hazard is determined by the scale parameter $\lo(t)=\nu,\nu>0$. We then form
+\begin{align*}
+    \Lambda\lb t|\cdot\rb&=\int_0^t\lambda\lb u|\cdot\rb du=\int_0^t\nu\exp\lbr P + Qu\rbr du,\\
+    &=\nu\exp\lbr P\rbr\int_0^t\exp\lbr Qu\rbr du,\\
+    &=\nu\exp\lbr P\rbr\ls\frac{\exp\lbr Qu\rbr}{Q}\rs_0^t=\frac{\nu\exp\lbr P\rbr}{Q}\lb\exp\lbr Qt\rbr -1\rb.
+\end{align*}
+
+Then, setting the survival function $S(t)=\exp\lbr-\Lambda\lb t|\cdot\rb\rbr$ equal to a random uniform draw, $U\sim \mathrm{Unif}\lb 0, 1\rb$, we obtain the simulated survival time $T$
+\begin{align*}
+    \log U=-\Lambda\lb t|\cdot\rb&=-\frac{\nu\exp\lbr P\rbr}{Q}\lb\exp\lbr Qt\rbr -1\rb,\nonumber \\
+    \exp\lbr Qt\rbr &= 1 - \frac{Q\log U}{\nu\exp\lbr P \rbr}, \nonumber\\
+\end{align*}
+and finally, 
+\begin{align}
+    T=\frac{1}{Q}\log\ls1 - \frac{Q\log U}{\nu\exp\lbr P \rbr}\rs.
+\end{align}
+\subsection*{Weibull distributed event times}
+Under the Weibull distribution, the baseline hazard is determined by the scale $\nu$ and shape $\alpha$, $\lo(t)=\nu\alpha t^{\alpha-1},\ \alpha,\nu>0$. The cumulative hazard is then
+\begin{align*}
+    \Lambda\lb t|\cdot\rb&=\int_0^t\lambda\lb u|\cdot\rb du=\int_0^t\exp\lbr P + Qu\rbr\nu\alpha u^{\alpha-1}du,\\
+    &=\nu\alpha\exp\lbr P \rbr\int_0^t\exp\lbr Qu\rbr u^{\alpha-1}du,
+\end{align*}
+by substitution we then obtain \citep{Austin2012}
+\begin{align*}
+    \Lambda\lb t|\cdot\rb&=\nu\alpha\exp\lbr P\rbr\ls\frac{Q\exp\lbr Qu^{1+\alpha}\rbr}{1+\alpha}\rs_0^t,\\
+    &=\frac{\nu\alpha\exp\lbr P\rbr Q}{1+\alpha}\lb\exp\lbr Qt^{1+\alpha}\rbr-1\rb.
+\end{align*}
+Again, setting the survival function equal to a random uniform draw, $U\sim \mathrm{Unif}\lb 0, 1\rb$, we work toward obtention of the simulated survival time $T$
+\begin{align*}
+    \log U &= -\Lambda\lb t|\cdot\rb,\\
+    \implies\exp\lbr Qt^{1+\alpha}\rbr-1&=-\frac{\lb 1 + \alpha\rb \log U}{Q\nu\alpha\exp\lbr P \rbr},
+\end{align*}
+which we can rearrange to obtain our simulated event time,
+\begin{equation}
+    T=\ls\frac{1}{Q}\log\lb1-\frac{\lb1+\alpha\rb\log U}{Q\nu\alpha\exp\lbr P\rbr}\rb\rs^{\frac{1}{1+\alpha}}.
+\end{equation}
+
+\section{Alternative method for calculation of \texorpdfstring{$s_i\lb\vD\rb$}{Dscore}}\label{sec:appendix-alt-Dscore}
+In \ref{sec:approx-SEs}, we showed one method for calculation of the scores of (the half vectorisation of) the variance-covariance matrix $\D$ in \eqref{eq:approx-SE-scores}. This notably involved calculation of the quantity $\dXdY{\D}{\bO_\D}$. 
+
+This partial derivative takes the form of a cube in computation routines, with each `slice' the derivative with respect to each element of $\vD$ calculated against the score function in \eqref{eq:approx-SE-scores}. We can circumvent derivation of this quantity by simply differentiating the conditional expectation of the log-likelihood \eqref{eq:methods-loglik-ranefs} with respect to the (known symmetric) matrix $\D$, thereby obtaining its matrix derivative. Then, taking half-vectorisation of and doubling the off-diagonal contributions (correctly weighting their appearance in both the upper- and lower-triangles of this derivative), we obtain the same score as given in \eqref{eq:approx-SE-scores}.
+
+The derivative of the conditional expectation on \eqref{eq:methods-loglik-ranefs} with respect to $\D$ is given by
+\begin{align}
+    \dXdY{\Expi{\log f\lb\b|\D\rb}}{\D} = \lb
+    \frac{1}{2}\D^{-1}\ls\hS+\hb\hb^\top\rs\D^{-1}-
+    \frac{1}{2}\D^{-1}
+    \rb^\top.
+\end{align}
+
+\section{Gradient vector of complete data log-likelihood wrt \texorpdfstring{$\b$}{b}}\label{sec:appendix-gradb}
+The numerical optimiser used in calculation of $\hb$ \eqref{eq:approx-bhat} benefits greatly from a gradient function being supplied, else numerical differentiation routines are instead used internally by \tt{optim}, at some computational expense. With this in mind, we demonstrate formation of the gradient vector taken with respect to $\b$ of the complete data log-likelihood,
+\begin{equation}
+    \dXdY{\log\compdata}{\b}=\dXdY{\log f(\Y|\b;\hbO)}{\b}+\dXdY{\log f(\b|\hbO)}{\b} + \dXdY{\log f(T_i, \Delta_i|\b;\hbO)}{\b}.
+\label{eq:appendix-logcompdatadb}
+\end{equation}
+We refer to Section \ref{sec:flexible-Mstep-fixef} for the case when $\Y|\b$ is non-Gaussian, since $\dXdY{\log f(\Y|\b;\hbO)}{\b}=\Z_i^\top\dotlinp$, with the approximated expected value in the definition of $\dotlinp$ \eqref{eq:flexible-tExpi-derivs} corresponding complete data log-likelihood components with no expectation operator on it. For the Gaussian case (not surveyed in Section \ref{sec:flexible-Mstep-fixef}) this quantity is given by $\dXdY{\log f(\Y|\b;\hbO)}{\b}=\Z_i^\top\mathrm{V}_i^{-1}\lb\Y-\linp\rb$; the derivative of the log density of random effects is trivially given by $\dXdY{\log f(\b|\hbO)}{\b}=-\D^{-1}\b$, and finally for the (rewritten) survival log-density \eqref{eq:approx-Mstep-survrewrite}
+\begin{equation}
+    \begin{aligned}
+        \dXdY{\log f(T_i, \Delta_i|\b;\hbO)}{\b}&=\Delta_i\ls\bm{F}_i^\top\bg^*\rs\\&\qquad\quad\quad-\bg^*\lb\mathrm{F}_{\bm{u}_i}^\top\ls\lo\lb\bm{u}_i\rb\odot
+        \exp\lbr\mathrm{S}_i^\top\bz+\mathrm{F}_{\bm{u}_i}\lb\b\odot\bg^*\rb\rbr\rs\rb,
+    \end{aligned}
+\label{eq:appendix-gradb-surv}
+\end{equation}
+where $\odot$ denotes element-wise multiplication; $\mathrm{F}_{\bm{u}_i}$ is the horizontal concatenation of $\mathrm{F}_{\bm{u}_i1},\dots,\mathrm{F}_{\bm{u}_iK}$; and $\bg^*=(\gamma_1, \gamma_1,\dots,\gamma_1,\gamma_2,\dots,\gamma_{K-1},\gamma_K,\dots,\gamma_K)^\top$ \ie the vector with $q_k$ replicates of $\gamma_k\ \forall\ k=1,\dots,K$. 
+
+\section{Proof that the GP1 reduces to the Poisson when \texorpdfstring{$\bphi=0$}{phi}}\label{sec:appendix-gp2poiss-proof}
+The log-likelihood of the Poisson is given in \eqref{eq:flexible-poisson-ll}, and the GP-1 in \eqref{eq:flexible-genpois-ll}. Taking $\bs=0\implies\bphi=0$, 
+\begin{equation}
+    \begin{aligned}
+        \log f\lb\Y|\b;\bb,\bphi=0\rb&=\boneT\log\bmu+\lb\Y-\bone\rb^\top\log\bmu-\Y^\top\cancelto{0}{\log\bone}\\&\qquad\qquad-\boneT\log\Y!-\boneT\bmu\\
+        &=\cancel{\boneT\log\bmu}+\Y^\top\log\bmu-\cancel{\boneT\log\bmu}-\boneT\bmu-\boneT\log\Y!\\
+        &=\Y^\top\log\bmu-\boneT\bmu-\boneT\log\Y!\qquad\underset{\square}{{}}
+    \end{aligned}
+\label{eq:appendix-gp2poiss-proof}
+\end{equation}
+
+\section{Determining whether a point lies within an ellipse}\label{sec:appendix-ellipsecheck}
+Suppose we want to determine whether a `test point' coordinate $\lb x,y\rb$ lies within the ellipse with covariance matrix $\Sigma$ and center point $\bm{O}=\lb a,b\rb$. We calculate the eigenvalues $\lambda_1$ and $\lambda_2$ and eigenvectors $\bm{v}_1$ and $\bm{v}_2$ of the covariance matrix, and use these to calculate the semi-minor and semi-major axes, $r_y$ and $r_x$, respectively, of the ellipse
+\begin{equation}
+        r_x = \sqrt{\lambda_1\chi^2_{\alpha,2}},\qquad r_y = \sqrt{\lambda_2\chi^2_{\alpha,2}},
+\label{eq:appendix-ellipsis-axes}
+\end{equation}
+where $\chi^2_{\alpha,2}$ denotes the quantile of the $\chi^2_2$ distribution on two degrees of freedom which corresponds to probability level $\alpha$. We then calculate the ellipse's orientation $\vartheta$ given as the arctangent between the $x$ axis and $\bm{O}$. The region bounded by the ellipse is given by
+\begin{equation}
+    \frac{\lb\cos\vartheta\lb x-a\rb + \sin\vartheta\lb y-b\rb\rb^2}{r_x^2} +
+    \frac{\lb\sin\vartheta\lb x-a\rb - \cos\vartheta\lb y-b\rb\rb^2}{r_y^2}
+    \le 1.
+\label{eq:appendix-ellipsis-ineq}    
+\end{equation}
+We test the coordinate $\lb x, y\rb$ by checking whether or not it satisfies the inequality \eqref{eq:appendix-ellipsis-ineq}. If satisfied, then $\lb x, y\rb$ lies \textit{within} the ellipse.

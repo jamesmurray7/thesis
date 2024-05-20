@@ -1,0 +1,567 @@
+\begin{chapter}{\label{cha:app-PBC}Application: Primary Biliary Cirrhosis}
+  \section{Introduction and motivation}\label{sec:PBC-intro-motiv}
+  We now bring together the (flexible) joint models we established in Chapters \ref{cha:methods-classic}--\ref{cha:flexible} with post-hoc analyses such as model selection and dynamic prediction we described in Chapter \ref{cha:posthoc} in an exemplary application to the Mayo Clinic primary billiary cirrhosis (PBC) clinical trial \citep{PBCarticle} first mentioned in Section \ref{sec:intro-motivation-pbc}. Conducted over ten years, the PBC trial data is a popular example in joint modelling literature owing to the presence of many longitudinal biomarkers -- moreover, it is particularly appealing to us due to the mixture of response types -- and information on an event-time (death or transplantation). Additionally, there is an opportunity to `verify' results indicating a biomarkers' association with mortality \citep{PBCarticle} which pre-date joint modelling.
+
+  The intention for this chapter is to act as a `full' application to this oft-used clinical data set in which we demonstrate how one may arrive at the `best-fitting' joint model for the data using the methodology outlined thus far. We begin by providing a detailed overview of the data itself in Section \ref{sec:pbc-eda}, before turning our attention to model building in Section \ref{sec:pbc-modelbuilding-parent}. We initiate this by first finding the best-fitting survival sub-model (\ie by Cox PH alone); performing then a similar process for the longitudinal biomarkers we consider. Next, in Section \ref{sec:pbc-jointmodelling-parent} we use these best-fitting longitudinal and survival sub-models in a series of univariate joint model fits to test for standalone significant associations with mortality; followed by the multivariate scenario which supplements our arrival at the most parsimonious joint model in Section \ref{sec:pbc-finalmodel}. Finally, in Section \ref{sec:pbc-final-model-exploration} we establish the prognostic capabilities of our chosen model using methods from Section \ref{sec:posthoc-prognostics}. The \tt{R} code used in this Chapter is available at \url{https://github.com/jamesmurray7/thesis/tree/main/thesis-app/PBC}
+
+  \begin{remark}
+    These first steps of the model building process occur outside of the joint modelling framework to mimic what practitioners may do in practise: Elucidating the `best' available fit for each of the longitudinal and survival sub-models, before jointly analysing these in a (multivariate) joint model.
+  \end{remark}
+
+  \section{Data description and exploration}\label{sec:pbc-eda}
+  There are $n=312$ subjects in the PBC data, of whom $n=154\ (49.4\%)$ were randomised to placebo treatment and the remainder to the active treatment D-penicillamine. Patients were monitored until either they experienced mortality, underwent liver transplantation, or reached the end of follow-up. We are interested with the clinical outcome of mortality \textit{only}. In total, $n=140\ (44.9\%)$ subjects died during follow-up. The usual Kaplan-Meier curve for the data is presented in Figure \ref{fig:pbc-survival-KM} along with a histogram of failure times. We observe from said histogram that many subjects die in the study's infancy.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/PBC-KM2.png}
+      \caption{Left-hand plot: Kaplan-Meier estimate of the survival function for the PBC data. A vertical line ($|$) represents a censor-time and the shaded ribbon the 95\% confidence interval for the survival function. Right-hand plot: Histogram of failure times.}
+      \label{fig:pbc-survival-KM}
+  \end{figure}
+
+  As mentioned, numerous longitudinal outcomes exist with varying degrees of completeness in the data. Of these, we consider four to be continuous: Log serum bilirubin; log serum aspartate aminotransferase (`AST'); serum albumin and prothrombin time. Three are binary markers which indicate presence of: Enlarged liver (hepatomegaly); accumulation of fluid in abdomen (ascites) and malformed blood vessels in skin (`spiders'). Finally, platelet count and alkaline phosphatase are treated as count biomarkers. The longitudinal trajectories of these non-binary biomarkers is given in Figure \ref{fig:pbc-longitudinal-nonbin}. Here we observe separation between average trajectories amongst those who did/not survive follow-up, perhaps most notably for (log) serum bilirubin and albumin.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/PBCTrajectories.png}
+      \caption{Longitudinal trajectories for continuous or count biomarkers present in the PBC data. Grey lines show individual trajectories and overlaid smoothed (LOESS) curves the average trajectories for those who experienced mortality during follow-up and those who did not.}
+      \label{fig:pbc-longitudinal-nonbin}
+  \end{figure}
+
+  The binary biomarkers are presented in Appendix \ref{sec:appendix-suppfigs-binaryheatmap}. Here we note the relative lack-of prevalence for spiders and ascites, especially compared with hepatomegaly. With this in mind, especially in conjunction with our conclusions in Chapters \ref{cha:flexible} and \ref{cha:justification} -- that the approximation may not suit, or struggle to fit, a binary response -- we elect to \textit{only} consider hepatomegaly of these three binary biomarkers hereafter.
+
+  We have access to many baseline covariates which could be of interest to both the survival and longitudinal processes. We consider the (standardised) age at baseline; the patient's sex; recipiency of drug and the histologic  status of the disease. The histological stage is an ordinal covariate with four stages reflecting worsening disease progression, from stage 1 indicating presence of lesions in the bile duct to stage 4 cirrhosis of the liver \citep{PBCpatho}.
+  
+  A data characteristics table split by those who survived the follow-up period is given in Table \ref{tab:pbc-data-characteristics}. Here we note from a precursory glance at the data that those who died tended to be older and enter the study at a more advanced cirrhosis disease state. The analysis set used here and in all subsequent analyses are those with \textit{no} missing covariate or biomarker values.
+
+  \begin{remark}
+      The presence of `cirrhosis' as an histologic state given our naming of `primary billiary cirrhosis' is perhaps confusing. Indeed `cirrhosis' is a feature \textit{only} of advanced disease, such that recently patient advocacy groups have proposed a changing of its name to `primary billiary cholangitis' to more accurately reflect the disease's pathology \citep{PBCnamechange}. In keeping with the vast majority of existing literature in joint modelling, we solely note this contention in naming and proceed as before.
+  \end{remark}
+
+  \begin{table}[h]
+      \centering
+      \rowcolors{2}{lightgray!20}{white}
+      \captionsetup{font=scriptsize}
+      \begingroup\scriptsize
+      \begin{tabular}{l|rrr}
+           & Transplanted or survived ($n=172$) & Died ($n=140$) & $p$-value\\ \hline
+           $n\ (\%)$ Female & 162 (94.2\%) & 114 (81.4\%)& 0.001 \\
+           $n\ (\%)$ received placebo & 85 (49.4\%) & 69 (49.3\%) & 0.999\\
+           Median [IQR] follow-up length & $6.5\ [4,\ 10]$ & $4\ [2,\ 7]$ & $<0.001$ \\
+           Mean (SD) age & $47.07\ (9.876)$ & $53.64\ (10.323)$ & $<0.001$ \\
+           $n\ (\%)$ histologic status & & & $<0.001$\\
+           $\qquad$1 & 15 (8.7\%) & 1 (0.7\%) & \\
+           $\qquad$2 & 46 (26.7\%) & 21 (15.0\%) & \\
+           $\qquad$3 & 72 (41.9\%) & 48 (34.3\%) & \\
+           $\qquad$4 & 39 (22.7\%) & 70 (50.0\%) & \\
+           \hline
+      \end{tabular}
+      \endgroup
+      \caption{Baseline data characteristics for the PBC data, stratified by whether or not the subject died during follow-up, or received a transplant or reached the end of the follow-up period. The $p$-values are calculated from appropriate tests for difference between clinical endpoint. Where the characteristic of interest reported as median [IQR], Wilcoxon rank-sum test was used; where mean (SD), student $t$-test was used; and where categorical, $\chi^2$ test was used.}
+      \label{tab:pbc-data-characteristics}
+  \end{table}
+
+  \section{Model building}\label{sec:pbc-modelbuilding-parent}
+  With the data summarised in the previous section, we turn our attention now to identifying the best-fitting survival sub-model (\ie ignoring the longitudinal nature of the data), which will be employed in \textit{all} subsequent joint models, as well as the best-fitting GLMM for each of the longitudinal responses we consider.
+  \subsection{The survival sub-model}\label{sec:pbc-modelbuilding-survival}
+  In Table \ref{tab:pbc-data-characteristics} we tabulated the covariates we consider to be baseline for the purposes of analyses presented in this chapter, naming them (receipt of) \tt{drug}, (standardised) \tt{age}, \tt{sex} (female) and \tt{histologic} status. Since those with cirrhosis drastically inflate the hazard of mortality, which will likely be problematic, we combine the disease stages 0--1 and 3--4 together in a re-definition of \tt{histologic} for analysis purposes. We note at the outset that we do \textit{not} consider interactions between baseline covariates due to limitations with \tt{gmvjoint}, which is used to fit all joint models in future sections.
+
+  We begin with the (saturated) four-variate model which we present in Appendix \ref{sec:appendix-PBC-surv}. The covariates \tt{age} and \tt{histologic} appear to be very significantly associated with mortality, with being female also significantly protective at the 5\% level. Recipiency of the study drug (as we may expect from Table \ref{tab:pbc-data-characteristics}) does not appear to hold association here. There is evidence to remove the study drug and re-fit the PH model, then. Doing so, we fit the trivariate Cox PH model
+  \begin{align}
+      \li\lb t\rb=\lo\lb t\rb\exp\lbr\tt{age}\times\zeta_1+\tt{sex}\times\zeta_2+\tt{histologic}\times\zeta_3\rbr,
+  \label{eq:pbc-surv-model}
+  \end{align}
+  with resultant parameter estimates presented in Table \ref{tab:pbc-surv-model}
+  \begin{table}[ht]
+  \centering
+  \rowcolors{2}{lightgray!20}{white}
+  \captionsetup{font=scriptsize}
+  \begin{tabular}{l|rrrrr}
+    Parameter & Estimate & $\exp\lbr\mathrm{Estimate}\rbr$ & Standard Error & $Z$ & $p$-value \\ 
+    \hline
+    $\zeta_1$ & 0.41 & 1.50 & 0.09 & 4.55 & $<0.001$ \\ 
+    $\zeta_2$ & -0.45 & 0.64 & 0.22 & -2.00 & 0.049   \\ 
+    $\zeta_3$ & 0.99 & 2.70 & 0.23 & 4.24 & $<0.001$ \\ 
+    \hline
+  \end{tabular}
+  \caption{Parameter estimates, presented with their standard errors and exponentiated value for the Cox PH model fit to PBC data using all considered baseline covariates bar \tt{drug}.}
+  \label{tab:pbc-surv-model}
+  \end{table}
+  
+  As a final consideration, we fit every possible trivariate, bivariate, and univariate Cox PH model and collate the resultant values for AIC (defined in the same way as \eqref{eq:posthocs-AIC-BIC} in Section \ref{sec:posthocs-hypothesis-testing-model-selection}) and Harrell's C-index, which is a goodness-of-fit measure commonly used in survival analysis (higher values better). These two criterion are presented in Figure \ref{fig:pbc-surv-allmodels} for each model; we note the model we considered in \eqref{eq:pbc-surv-model} attains the lowest AIC and amongst the highest C-index. The (further) reduced model containing only \tt{age} and \tt{histologic} we note comes close in both measures, but the inclusion of \tt{sex} is borderline significant (test statistic $\chi^2=3.678$, $p$-value=0.055) and so is included going forward.
+  
+  We can therefore be confident that the model we arrive to here is the `best available' given the available covariates. Since \tt{histologic} and \tt{age} are `most associated' in Table \ref{tab:pbc-surv-model}, we are compelled to monitor attenuation in estimates for $\bz$ in presence of longitudinal biomarkers in subsequent joint models. Hereafter, every survival sub-model in Section \ref{sec:pbc-jointmodelling-parent} takes the form \eqref{eq:pbc-surv-model}.
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/allsurvmodels.png}
+      \caption{AIC and Harrell's C-index for each possible trivariate, bivariate, and univariate Cox model fit to available covariates. \tt{A}: \tt{age}; \tt{D}: \tt{drug}; \tt{H}: \tt{histologic}; \tt{S}: \tt{sex}. The four lowest AIC values are superimposed.}
+      \label{fig:pbc-surv-allmodels}
+  \end{figure}
+  \subsection{Longitudinal sub-models}\label{sec:pbc-modelbuilding-longit}
+  We now turn attention to the more complex issue of identifying the best-fitting model for \textit{each} of the longitudinal biomarkers we identified in Section \ref{sec:pbc-eda}. Since these are temporal in nature, we also need to consider the time specification (\eg linear, quadratic, and so on) in addition to the baseline covariates which we considered in the survival model selection in the previous section. 
+
+  In an effort to streamline the process somewhat, we model (log) serum bilirubin, (log) AST and serum albumin to be Gaussian in keeping with existing literature (to name but two, \citet{Hickey2018} and \citet{Rustand2023}). However, in a departure from said existing literature, we use the Gamma distribution for prothrombin time since in Section \ref{sec:flexible-gmvjm-distribs} we explicitly noted this family's use for modelling times. We utilise the negative binomial and generalised Poisson for alkaline and platelet count since we note these produced much better model fits than the regular Poisson family (results not shown).
+
+  For each of the longitudinal biomarkers, we (attempt to) fit every possible GLMM constructed by a possibly linear, quadratic, or natural cubic splines (with knots at tertiles of follow-up) \tt{time} specification, with some combination of \tt{drug}, \tt{age}, \tt{sex} and \tt{histologic} as defined previously. For each \tt{time} specification we elect a random effects structure which mimics the chosen temporal structure \ie if \tt{time} is to be modelled as quadratic in the fixed effects then the random effects are defined as $b_{i0} + b_{i1}\tt{time} + b_{i2}\tt{time}^2$. For the linear \tt{time} model we separately consider a random intercept only specification. In their application to PBC data \citet{Rustand2023} elect a \tt{drug} interaction with \tt{time} which we additionally consider in each possible fit, too.
+
+  Fitting each model by \tt{glmmTMB} \citep{R-glmmTMB}, we collect the summary measures of AIC, BIC, and the log-likelihood of each successfully fitted model. If a singular fit is returned by \tt{glmmTMB} -- indicating that the model is overfit -- or else the model fit is unsuccessful then the corresponding model formula is discarded and not considered further. As we mentioned in Section \ref{sec:posthocs-hypothesis-testing-model-selection} these information criteria often return different models. Since BIC penalises model complexity much more harshly, we identify the best fitting by this criterion in an effort to favour the more parsimonious model in each case.
+
+  The resultant BICs are presented in Figure \ref{fig:pbc-longitudinal-allmodels}. Here we observe that a mixture of linear, quadratic, and natural cubic spline time specifications are chosen. No drug interaction is present in any model identified best fitting for any response. The \tt{histologic} status is present in each model, in combination with a mixture of either \tt{age} or \tt{sex}; interestingly no model is chosen with more than two baseline covariates included.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/allLongmodels.png}
+      \caption{BIC values for each longitudinal response. A cross (`x') indicates \tt{drug}-\tt{time} interaction and a closed circle no interaction. The $x$-axis presents the combination of baseline covariates \tt{A}: \tt{age}; \tt{H}: \tt{histologic}; \tt{S}: \tt{sex}. A black square is drawn behind the model with the lowest BIC for each response for clarity's sake.}
+      \label{fig:pbc-longitudinal-allmodels}
+  \end{figure}
+  
+  With the best longitudinal model identified by this long-winded supervised process, we have the additional task of electing dispersion models for those applicable models: Alkaline (negative binomial); prothrombin time (Gamma) and platelet count (generalised Poisson). To continue along the more parsimonious line of thinking -- reflected in our prior choice to employ BIC -- we consider \textit{only five} alternative (to the global intercept already in place thus far) univariate dispersion models: Each of the four baseline covariates and \tt{time}. The results from this exercise are presented in Appendix \ref{sec:appendix-suppfigs-PBC-dispmodels}. We take forward a dispersion model of \tt{time} for both platelets and prothrombin time, and \tt{histologic} for alkaline.
+
+  To bring this exercise to a close, we present all chosen models for clarity's sake in Table \ref{tab:pbc-longitudinal-models}
+
+  \begin{table}[ht]
+      \centering
+      \rowcolors{2}{lightgray!20}{white}
+      \captionsetup{font=scriptsize}
+      \begingroup\small
+      \begin{tabular}{l|rrrrr}
+       & \multicolumn{2}{c}{Longitudinal model} & \\
+      Response & Time specification & Other covariates & Dispersion model & $P$ & $q$\\\hline
+      Albumin & Linear & \tt{age}, \tt{histologic} & N/A & 4 & 2\\
+      Alkaline & Natural cubic splines & \tt{age}, \tt{histologic} & \tt{histologic} & 8 & 4 \\
+      AST & Quadratic & \tt{age}, \tt{histologic} & N/A & 5 & 3 \\
+      Hepatomegaly & Linear & \tt{histologic}, \tt{sex} & N/A & 4 & 2 \\
+      Platelet count & Natural cubic splines & \tt{age}, \tt{histologic} & \tt{time} & 8 & 4 \\
+      Prothrombin time & Linear & \tt{histologic}, \tt{sex} & \tt{time} & 6 & 2 \\
+      Serum bilirubin & Natural cubic splines & \tt{histologic}, \tt{sex} & N/A & 6 & 4\\
+      \end{tabular}
+      \endgroup
+      \caption{Chosen models for each longitudinal response we consider in the PBC application. The number of parameters (determined by the longitudinal \textit{and} dispersion models) is given by $P$, notably the number of covariance parameters $\vD$ is \textit{excluded}, and the dimension of random effects by $q$.}
+      \label{tab:pbc-longitudinal-models}
+  \end{table}
+
+  \section{Joint modelling}\label{sec:pbc-jointmodelling-parent}
+  In the previous section, we identified what we believe to be the `best performing' survival sub-model \eqref{eq:pbc-surv-model} -- which we don't change in any subsequent fit unless stated -- as well as the most parsimonious GLMM for each of the seven biomarkers given in Table \ref{tab:pbc-longitudinal-models}. We now move on to the joint modelling of the longitudinal and time-to-event processes. We begin by establishing association with mortality on a biomarker-by-biomarker basis before considering multivariate fits.
+  
+  \subsection{Univariate joint models}\label{sec:pbc-jointmodelling-univs}
+  We are predominantly interested in the estimated survival parameters $\hat{\bm{\Phi}}=\lb\hat{\gamma},\hat{\bz}^\top\rb^\top$ obtained from each of seven univariate joint models (one for each biomarker). Before proceeding we recall the parameter estimates for $\hat{\bz}=\lb\hat{\zeta}_1,\hat{\zeta}_2,\hat{\zeta}_3\rb^\top$ we obtained when considering only the baseline covariates \tt{age}, \tt{sex} and \tt{histologic} in Table \ref{tab:pbc-surv-model}, noting attenuation (if any) that occur when each biomarker is jointly modelled.
+  
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/UnivSurvModels.png}
+      \caption{Survival parameter estimates $\hat{\bm{\Phi}}$ (with 95\% confidence interval shown) from univariate joint models fit to each biomarker (denoted by panel title). The longitudinal and dispersion sub-models are given in Table \ref{tab:pbc-longitudinal-models} and the survival sub-model by \eqref{eq:pbc-surv-model}.}
+      \label{fig:pbc-univariate-survivals}
+  \end{figure}
+
+  The survival parameter estimates in Figure \ref{fig:pbc-univariate-survivals} reveal univariate association between the levels of each biomarker, given by association parameter estimate $\hat{\gamma}$, and mortality. The estimates for the association parameter indicate that increased levels (in the linear predictor) of alkaline phosphotase; AST; hepatomegaly; prothrombin time and serum bilirubin all \textit{increase} the hazard, the same being true for lower levels of platelet count and serum albumin. We note that the very large value for $\hat{\gamma}$ observed in the prothrombin joint model is not worlds away from the absolute value observed in an analogous Gaussian fit conducted by \citet{Hickey2018} on a Box-Cox transformed prothrombin, the large value here stemming from relatively small random effects.
+
+  In each case, taking account of the longitudinal biomarker does not appear to greatly attenuate the estimate for $\hat{\zeta}_1$ (\tt{age}), with the same largely being true for $\hat{\zeta}_3$ (\tt{histologic}), besides for serum bilirubin and hepatomegaly, where the point estimate is increased. Interestingly, the biomarker's presence in the survival sub-model leads to $\hat{\zeta}_2$ (\tt{sex}) -- which only held borderline significance in the standalone model in Table \ref{tab:pbc-surv-model} -- largely holding either no, or still only borderline, significance for the most part. Note however that we do not undertake model reduction and re-fitting on each univariate joint model fit here, opting instead to perform this when considering the multivariate case in the next sections.
+  
+  The Pearson residuals (derived in the same manner as presented in Section \ref{sec:posthoc-residuals-long}) are presented in Appendix \ref{sec:appendix-suppfigs-univpearson}. We note little awry amongst these results; save for some larger residuals for, say, alkaline. Two exemplar Cox-Snell residual plots are shown in Appendix \ref{sec:appendix-suppfigs-univcoxsnell}, indicating broadly good agreement with observed and theoretical curves.
+  
+  \subsection{Multivariate joint models}\label{sec:pbc-jointmodelling-multivs}
+  \rmtoc
+  When considering how best to build a multivariate joint model, we first revisit prior discussion and consternation from Sections \ref{sec:sim-considerations-power}, \ref{sec:approx-sims-K} and \ref{sec:approx-comparisons} that a large number of longitudinal responses being jointly modelled likely requires a larger sample size or incidence of failure, which would perhaps admonish against simply fitting one seven-variate model.
+
+  With this in mind then, we consider a joint model which attempts to group the biomarkers into broad categories of liver function, such that those we expect to be \textit{most correlated} with one another (since ostensibly they measure they same, or similar, pathological states) are first modelled together, in an effort to establish the `more dominant' biomarker(s) (determined by the observed association(s) with mortality), which we then carry forward.
+
+  Specifically, we consider three non-overlapping multivariate joint models, each conveniently consisting of biomarkers of differing types. We group together prothrombin time and platelet count into `\textit{Blood clotting and flow}'; alkaline, AST, and serum bilirubin into `\textit{Liver enzymes}'; and finally hepatomegaly and serum albumin into `\textit{Liver health and function}'. 
+
+  The parameter estimates for $\hat{\bm{\Phi}}$ obtained from these intermediary multivariate joint models are presented in Figure \ref{fig:pbc-multivariate-intermediate}. Here we note that for the `\textit{Blood clotting and flow}' model, prothrombin retains its large association parameter $\hat{\gamma}$, and diminishes the standalone association we observed for platelet count in Figure \ref{fig:pbc-univariate-survivals}. Similar phenomena occurs in `\textit{Liver enzymes}', where serum bilirubin dominates alkaline and AST, and in `\textit{Liver health and function}' in the presence of serum albumin, hepatomegaly is no longer considered significant, albumin explaining the purported association we observed at the univariate stage here; this interpretation extends to the other observed attenuations.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/IntermediateMultivs.png}
+      \caption{Survival parameter estimates $\hat{\bm{\Phi}}$ (with 95\% confidence interval shown) from the intermediate multivariate joint models with grouped biomarkers (denoted by panel title). The subscripts for $\hat{\gamma}$ contain the first three letters of the corresponding biomarker to facilitate identification here. The longitudinal and dispersion sub-models are given in Table \ref{tab:pbc-longitudinal-models} and the survival sub-model by \eqref{eq:pbc-surv-model}.}
+      \label{fig:pbc-multivariate-intermediate}
+  \end{figure}
+
+  The full parameter estimates alongside the estimated covariance matrices (with correlations) for each model are presented in Appendix \ref{sec:appendix-PBC-multivs}. The correlations here elucidate the relationships between \eg having higher values, or say a steeper trajectory, in one biomarker and another. Perhaps being of particular note is the relationship (\ie high correlation) between trajectories of AST and serum bilirubin in the trivariate `\textit{Liver enzymes}' fit. The available information on the hazard here is correlated, and we don't `need' both biomarkers; the signal from serum bilirubin is stronger than that from AST in this instance.
+
+  These three joint models point us toward the next stage of model building: A trivariate joint model consisting of (log) serum bilirubin, albumin and prothrombin time.
+    
+  \resettocmain
+  \section{Arriving at the final model}\label{sec:pbc-finalmodel}
+  At the end of the multivariate joint model building exercise, we whittled down three joint models which broadly pertained to certain categories of liver function each to a sole longitudinal response which held the greatest association with mortality. In this section we bring the process to a close.
+
+  We begin with the trivariate model we previously identified. Specifically, we fit the model
+  % Equation for trivariate model 
+  \begin{equation}
+    \begin{aligned}
+    \begin{cases}
+        % Prothrombin
+        \begin{cases}
+           \log\lb\Exp\ls\mathrm{Prothrombin\ time}|\b{_1}\rs\rb&=\lb\beta_{10}+b_{i10}\rb + \lb\beta_{11}+b_{i11}\rb t \\&+\ \tt{H}_i\times\beta_{12} + \tt{S}_i\times\beta_{13}\\ 
+           \log\lb\bphi{_1}\rb&=\sigma_{10} + \sigma_{11}t\\ 
+        \end{cases}
+        \\\noalign{\vspace*{2mm}}
+        % log(serum bilirubin)
+        \begin{cases}
+            \log\lb\mathrm{Serum\ bilirubin}\rb &= \lb\beta_{20} + b_{i20}\rb + \lb\beta_{21} + b_{i21}\rb N_1(t) \\&\ + \lb\beta_{22} + b_{i22}\rb N_2(t) + \lb\beta_{23} + b_{i23}\rb N_3(t)\\&\ +\ \tt{H}_i\times\beta_{24} + \tt{S}_i\times\beta_{25} + \varepsilon_{i2}\lb t\rb
+        \end{cases}
+        \\\noalign{\vspace*{2mm}}
+        % Albumin
+        \begin{cases}
+            \mathrm{Albumin} &= \lb\beta_{30} + b_{i30}\rb + \lb\beta_{31} + b_{i31}\rb t +\ \tt{A}_i\times\beta_{32} + \tt{H}_i\times\beta_{33} + \varepsilon_{i3}\lb t\rb
+        \end{cases}
+        \\\noalign{\vspace*{2mm}}
+        % Survival
+        \ \ \li\lb t\rb = \lo\lb t\rb \exp\lbr\tt{A}_i\times\zeta_1+\tt{S}_i\times\zeta_2+\tt{H}_i\times\zeta_3+\sum_{k=1}^3\gamma_k\bm{W}_k\lb t\rb^\top\b{_k}\rbr,
+    \end{cases}       
+    \end{aligned}
+    \label{eq:pbc-trivariate}
+  \end{equation}
+  where subject $i$'s \tt{age}, \tt{sex} and \tt{histologic} state is given by $\tt{A}_i$, $\tt{S}_i$ and $\tt{H}_i$ respectively and $N_1(t),\dots,N_3(t)$ denotes the set of natural cubic splines with knots at tertiles of follow-up. Left braces are used to separate each sub-model (and its dispersion model) visually, with the left-most brace denoting that these are to be jointly modelled.
+
+  The results from this trivariate model are presented in Table \ref{tab:pbc-trivmodel}. Alongside the results obtained using the methodology outlined in Chapters \ref{cha:approx} and \ref{cha:flexible} we additionally present results from an analogous model fit using conventional software \tt{JMbayes2} \citep{R-JMbayes2}. We note at the outset that \tt{JMbayes2} fits the joint model under a different parameterisation of association; the \textit{current value} of the linear predictor placed in \eqref{eq:methods-survival} instead of the shared random effects. Additionally, a smoothed baseline hazard is estimated by \tt{JMbayes2}, whereas it is unspecified in \eqref{eq:methods-survival}. Therefore, the results for $\hat{\bg}$ (and by extension $\hat{\bz}$) are not \textit{directly} comparable. The MCMC fits are conducted with 2000 iterations of burnin and 10,000 iterations afterwards across three chains.
+
+  With this in mind, we note the results show broadly good agreement between the approximate method and the `gold standard' of MCMC. The fixed effects $\hat{\bb}=\lb\hat{\bb}_1^\top,\hat{\bb}_2^\top,\hat{\bb}^\top_3\rb^\top$ are all of similar magnitude and direction, with the same being true for $\mathrm{vech}\big(\hat{\D}\big)$. Across all parameters we note that the MCMC approach yields parameter estimates with far less uncertainty around them; we discuss inherent differences between these methodological approaches later in Section \ref{sec:pbc-conclusions}. 
+  
+  Both approaches agree that prothrombin ($\hat{\gamma}_1$) is \textit{not} significantly associated with mortality: The 95\% confidence (and credible) intervals straddling zero. The signals provided by the other two biomarkers explain the purported association we previously noted. We note agreement in magnitude and direction for $\hat{\gamma}_2$ and $\hat{\gamma}_3$. 
+  
+  Focusing lastly on computation time, the time taken for the approximate EM algorithm to converge and standard errors be calculated was 55.104 seconds, which (unsurprisingly) is approximately a 4.5-fold decrease in the computation time for the \tt{JMbayes2} fit. We note the comparison in elapsed time is largely unfair; simply emphasising the ability to obtain a comparable set of parameter estimates in a relatively fast manner.
+
+  % Table for trivariate model (large).
+  \begin{table}[ht]
+    \centering
+    \rowcolors{2}{lightgray!20}{white}
+    \captionsetup{font=scriptsize}
+    \begingroup\scriptsize
+    \begin{tabular}{lrrrr}
+        & \multicolumn{2}{c}{Approximate EM} & \multicolumn{2}{c}{\tt{JMbayes2}}\\
+        Parameter & Estimate (SE) & 95\% CI & Mean (SD) & 95\% CrI \\
+        \hline
+        $\D_{1,00}$ & 0.005 (0.001) & [0.004, 0.007] & 0.006 (0.001) & [0.004, 0.008] \\ 
+        $\D_{1,10}$ & 0.000 (0.000) & [0.000, 0.000] & 0.000 (0.000) & [0.000, 0.000] \\ 
+        $\D_{1,11}$ & 0.000 (0.000) & [0.000, 0.000] & 0.000 (0.000) & [0.000, 0.000] \\ 
+        $\beta_{10}$ &   2.344 (0.016) & [  2.312,   2.376] &  2.356 (0.014) & [ 2.329,  2.383] \\ 
+        $\beta_{11}$ &   0.017 (0.001) & [  0.015,   0.020] &  0.017 (0.001) & [ 0.014,  0.020] \\ 
+        $\beta_{12}$ &   0.045 (0.013) & [  0.020,   0.070] &  0.044 (0.010) & [ 0.025,  0.063] \\ 
+        $\beta_{13}$ &  -0.024 (0.014) & [ -0.051,   0.003] & -0.027 (0.012) & [-0.050, -0.003] \\ 
+        $\sigma_{10}$ & 4.893 (0.039) & [4.817, 4.969] &  5.249 (0.048) & [ 5.172,  5.324] \\ 
+        $\sigma_{11}$ &   0.124 (0.012) & [0.101, 0.147] &  {} & {} \\ % JMb2 doesn't allow this?
+        $\gamma_1$ &   1.754 (3.659) & [ -5.417,   8.925] &  2.389 (2.012) & [-1.700,  6.338] \\ 
+        \hdashline
+        $\D_{2,00}$ & 0.905 (0.100) & [ 0.709, 1.101] & 0.912 (0.076) & [ 0.775, 1.073] \\ 
+        $\D_{2,10}$ & 0.171 (0.173) & [-0.167, 0.510] & 0.148 (0.125) & [-0.101, 0.399] \\ 
+        $\D_{2,20}$ & 0.477 (0.280) & [-0.071, 1.025] & 0.285 (0.142) & [ 0.009, 0.599] \\ 
+        $\D_{2,30}$ & 0.459 (0.407) & [-0.339, 1.257] & 0.195 (0.216) & [-0.233, 0.692] \\ 
+        $\D_{2,11}$ & 1.789 (0.348) & [ 1.106, 2.471] & 1.765 (0.287) & [ 1.260, 2.407] \\ 
+        $\D_{2,21}$ & 1.775 (0.429) & [ 0.935, 2.616] & 1.425 (0.215) & [ 1.027, 1.876] \\ 
+        $\D_{2,31}$ & 0.820 (0.472) & [-0.105, 1.745] & 0.398 (0.255) & [-0.121, 0.857] \\ 
+        $\D_{2,22}$ & 2.638 (0.768) & [ 1.132, 4.144] & 2.110 (0.356) & [ 1.467, 2.842] \\ 
+        $\D_{2,32}$ & 1.556 (0.837) & [-0.084, 3.197] & 1.017 (0.342) & [ 0.430, 1.744] \\ 
+        $\D_{2,33}$ & 1.906 (0.807) & [ 0.325, 3.487] & 1.604 (0.379) & [ 0.987, 2.444] \\ 
+        $\beta_{20}$ &  0.218 (0.220) & [-0.213, 0.649] &  0.342 (0.171) & [ 0.008, 0.681] \\ 
+        $\beta_{21}$ &  1.070 (0.139) & [ 0.797, 1.342] &  1.168 (0.125) & [ 0.923, 1.417] \\ 
+        $\beta_{22}$ &  1.485 (0.210) & [ 1.075, 1.896] &  1.484 (0.156) & [ 1.196, 1.816] \\ 
+        $\beta_{23}$ &  1.452 (0.327) & [ 0.812, 2.093] &  1.302 (0.242) & [ 0.865, 1.829] \\ 
+        $\beta_{24}$ &  0.608 (0.157) & [ 0.301, 0.915] &  0.595 (0.124) & [ 0.347, 0.838] \\ 
+        $\beta_{25}$ & -0.212 (0.190) & [-0.585, 0.160] & -0.268 (0.149) & [-0.558, 0.025] \\ 
+        $\sigma^2_2$ &  0.076 (0.002) & [ 0.072, 0.081] &  0.076 (0.003) & [ 0.070, 0.083] \\ 
+        $\gamma_2$ &  1.067 (0.163) & [ 0.747, 1.387] &  1.124 (0.140) & [ 0.848, 1.398] \\ 
+        \hdashline
+        $\D_{3,00}$ & 0.110 (0.015) & [ 0.081, 0.139] & 0.109 (0.012) & [ 0.087, 0.134] \\ 
+        $\D_{3,10}$ & 0.002 (0.003) & [-0.003, 0.007] & 0.002 (0.002) & [-0.002, 0.005] \\ 
+        $\D_{3,11}$ & 0.003 (0.001) & [ 0.001, 0.005] & 0.002 (0.001) & [ 0.002, 0.004] \\ 
+        $\beta_{30}$ &  3.722 (0.056) & [ 3.612,  3.832] &  3.697 (0.039) & [ 3.619,  3.773] \\ 
+        $\beta_{31}$ & -0.093 (0.006) & [-0.105, -0.081] & -0.095 (0.006) & [-0.107, -0.084] \\ 
+        $\beta_{32}$ & -0.058 (0.025) & [-0.108, -0.009] & -0.063 (0.018) & [-0.097, -0.029] \\ 
+        $\beta_{33}$ & -0.212 (0.064) & [-0.337, -0.086] & -0.209 (0.044) & [-0.296, -0.123] \\ 
+        $\sigma^2_3$ &  0.097 (0.002) & [ 0.094,  0.101] &  0.098 (0.004) & [ 0.091,  0.106] \\ 
+        $\gamma_3$ & -1.912 (0.711) & [-3.306, -0.519] & -2.158 (0.471) & [-3.169, -1.306] \\ 
+        \hdashline
+        $\zeta_1$ &  0.559 (0.115) & [ 0.335, 0.784] &  0.459 (0.134) & [ 0.196, 0.722] \\ 
+        $\zeta_2$ & -0.474 (0.433) & [-1.323, 0.376] & -0.252 (0.296) & [-0.828, 0.329] \\ 
+        $\zeta_3$ &  1.631 (0.447) & [ 0.756, 2.506] &  0.528 (0.272) & [-0.004, 1.079] \\ 
+    \hline
+    \end{tabular}
+    \endgroup
+    \caption{Parameter estimates (SE) for the trivariate model \eqref{eq:pbc-trivariate} applied to the PBC data. Total computation time for the approximate EM algorithm was 59.993 seconds. Horizontal dashed lines are used to visually separate results for each response, and the time-invariant survival parameters $\hat{\bz}$ which aren't associated with a specific response and reported separately. Parameter estimates (SD) from \tt{JMbayes2} are additionally reported (`CrI': Credible interval). Computation time for the MCMC scheme in the \tt{JMbayes2} fit was 283.329 seconds, not including time spent in obtention of its initial conditions. \tt{JMbayes2} does not allow for dispersion sub-models, and so $\sigma_{11}$ is left blank here. The variance-covariance matrix $\hat{\D}_k$ is reported for each of the responses in the form $\hat{\D}_{k,ef}$ where $k$ denotes the longitudinal response, and $e,f$ the random effect indices.}
+    \label{tab:pbc-trivmodel}
+  \end{table}
+
+  There is strong evidence in Table \ref{tab:pbc-trivmodel} -- given the discussion above -- that prothrombin should be removed and the model reduced to a bivariate joint model containing only (log) serum bilirubin and albumin. To be explicit, we now fit
+  % Equation for bivariate model 
+  \begin{equation}
+    \begin{aligned}
+    \begin{cases}
+        \log\lb\mathrm{Serum\ bilirubin}\rb &= \lb\beta_{10} + b_{i10}\rb + \lb\beta_{11} + b_{i11}\rb N_1(t) \\&\ + \lb\beta_{12} + b_{i12}\rb N_2(t) + \lb\beta_{13} + b_{i13}\rb N_3(t)\\&\ +\ \tt{H}_i\times\beta_{14} + \tt{S}_i\times\beta_{15} + \varepsilon_{i1}\lb t\rb\\
+        % Albumin
+        \mathrm{Albumin} &= \lb\beta_{20} + b_{i20}\rb + \lb\beta_{21} + b_{i21}\rb t +\ \tt{A}_i\times\beta_{22} \\&\ + \tt{H}_i\times\beta_{23} + \varepsilon_{i2}\lb t\rb \\
+        % Survival
+        \li\lb t\rb &= \lo\lb t\rb \exp\bigg\{\tt{A}_i\times\zeta_1+\tt{S}_i\times\zeta_2+\tt{H}_i\times\zeta_3\\&\qquad\qquad\qquad +\sum_{k=1}^2\gamma_k\bm{W}_k\lb t\rb^\top\b{_k}\bigg\},
+    \end{cases}       
+    \end{aligned}
+    \label{eq:pbc-bivariate}
+  \end{equation}  
+
+  The resultant parameter estimates are presented in Table \ref{tab:pbc-bivmodel}. Once more we present parameter estimates from an analogous fit by \tt{JMbayes2} to act as a `barometer'. Since now $\Y{_k}|\b{_k}\sim\mathrm{MVN}\lb\cdot\rb,\ k=1,2$ we additionally present parameter estimates from a multivariate joint model fit by \tt{joineRML} \citep{Hickey2018}, utilising the same model control arguments here as in Section \ref{sec:approx-comparisons}. 
+  
+  Comparing the elapsed time for convergence to be achieved by the two ML approaches (\ie discounting initial conditions etc.), the approximate EM algorithm converged in 33.5 seconds, and \tt{joineRML} in 53.6, indicating that the `flattening' of multidimensional integrals ($q=6$) leads to approximately a 40\% decrease in time spent in the algorithm. Indeed, in Section \ref{sec:approx-comparisons} we observed that this gain in performance only increases with $q$. 
+
+  As we mentioned in Section \ref{sec:approx-comparisons} we expect very good agreement in parameter estimates across the approximate EM algorithm and \tt{joineRML} since the approaches to the modelling process and model parameterisation is the same, in comparison with the Bayesian \tt{JMbayes2}'s slightly different parameterisation of the joint model already discussed.
+
+  Inspecting the parameter estimates across approaches, we observe excellent agreement between the approximate EM and the established ML approach \tt{joineRML}. When incorporating \tt{JMbayes2} into the inspection we note that some inferential differences do exist, for instance the MCMC approach finds being female to significantly reduce the (log) value of serum bilirubin, whereas the two maximum likelihood approaches do not. The association parameters indicate higher bilirubin values and lower albumin values increase the log hazard. 
+  
+  Overall, we observe good agreement in both sign and magnitude of $\hbO$ across approaches. The largest discrepancy appears to be for $\hat{\zeta}_3$ (the coefficient attached to \tt{histologic}), where \tt{JMbayes2} declares it to hold only borderline significance. This may be due to the alternative parameterisation of the survival sub-model, or the prior imposed on the survival parameters perhaps `anchoring' the estimates towards the null. All approaches declare sex to not be associated with mortality.
+  % Table for bivariate model (large)
+  \begin{table}[ht]
+  \centering
+  \rowcolors{2}{lightgray!20}{white}
+  \captionsetup{font=scriptsize}
+  \begingroup\scriptsize
+  \setlength{\tabcolsep}{3pt} % Avoid overfull hbox warning.
+  \begin{tabular}{lrrrrrr}
+    & \multicolumn{2}{c}{Approximate EM} & \multicolumn{2}{c}{\tt{JMbayes2}} & \multicolumn{2}{c}{\tt{joineRML}}\\
+    Parameter & Estimate (SE) & 95\% CI & Mean (SD) & 95\% CrI & Estimate (SE) & 95\% CI\\
+    \hline
+    $\D_{1,00}$ & 0.905 (0.098) & [ 0.714, 1.097] & 0.921 (0.109) & [ 0.732, 1.154] & 0.904 (0.097) & [ 0.714, 1.095] \\ 
+    $\D_{1,10}$ & 0.127 (0.161) & [-0.188, 0.443] & 0.098 (0.133) & [-0.162, 0.369] & 0.106 (0.154) & [-0.196, 0.408] \\ 
+    $\D_{1,20}$ & 0.403 (0.230) & [-0.049, 0.855] & 0.302 (0.156) & [ 0.012, 0.648] & 0.400 (0.224) & [-0.039, 0.839] \\ 
+    $\D_{1,30}$ & 0.404 (0.340) & [-0.263, 1.071] & 0.294 (0.256) & [-0.203, 0.870] & 0.432 (0.327) & [-0.208, 1.073] \\ 
+    $\D_{1,11}$ & 1.703 (0.312) & [ 1.091, 2.314] & 1.727 (0.277) & [ 1.265, 2.357] & 1.597 (0.292) & [ 1.025, 2.169] \\ 
+    $\D_{1,21}$ & 1.646 (0.366) & [ 0.928, 2.364] & 1.377 (0.226) & [ 0.968, 1.853] & 1.662 (0.352) & [ 0.972, 2.351] \\ 
+    $\D_{1,31}$ & 0.763 (0.375) & [ 0.029, 1.497] & 0.419 (0.264) & [-0.144, 0.940] & 0.834 (0.350) & [ 0.149, 1.519] \\ 
+    $\D_{1,22}$ & 2.440 (0.600) & [ 1.264, 3.616] & 2.080 (0.342) & [ 1.474, 2.839] & 2.420 (0.579) & [ 1.285, 3.556] \\ 
+    $\D_{1,32}$ & 1.464 (0.651) & [ 0.187, 2.740] & 1.108 (0.349) & [ 0.506, 1.950] & 1.469 (0.619) & [ 0.255, 2.683] \\ 
+    $\D_{1,33}$ & 1.882 (0.665) & [ 0.578, 3.186] & 1.735 (0.425) & [ 1.024, 2.749] & 1.882 (0.649) & [ 0.610, 3.154] \\ 
+    $\beta_{10}$ &  0.246 (0.209) & [-0.163, 0.655] &  0.368 (0.170) & [ 0.033,  0.703] &  0.299 (0.209) & [-0.111, 0.709] \\ 
+    $\beta_{11}$ &  1.052 (0.128) & [ 0.801, 1.303] &  1.121 (0.124) & [ 0.881,  1.369] &  1.064 (0.120) & [ 0.829, 1.300] \\ 
+    $\beta_{12}$ &  1.450 (0.159) & [ 1.138, 1.762] &  1.502 (0.148) & [ 1.231,  1.816] &  1.517 (0.153) & [ 1.218, 1.816] \\ 
+    $\beta_{13}$ &  1.420 (0.250) & [ 0.929, 1.911] &  1.399 (0.223) & [ 1.004,  1.877] &  1.509 (0.242) & [ 1.035, 1.983] \\ 
+    $\beta_{14}$ &  0.602 (0.150) & [ 0.309, 0.896] &  0.601 (0.124) & [ 0.359,  0.844] &  0.625 (0.147) & [ 0.336, 0.914] \\ 
+    $\beta_{15}$ & -0.228 (0.178) & [-0.577, 0.122] & -0.302 (0.150) & [-0.596, -0.006] & -0.285 (0.184) & [-0.644, 0.075] \\ 
+    $\sigma^2_1$ &  0.076 (0.002) & [ 0.072, 0.080] &  0.076 (0.003) & [ 0.070,  0.083] &  0.077 (0.002) & [ 0.073, 0.081] \\ 
+    $\gamma_1$ &  1.082 (0.145) & [ 0.798, 1.367] &  1.148 (0.133) & [ 0.893,  1.411] &  1.117 (0.148) & [ 0.828, 1.407] \\   
+    \hdashline
+    $\D_{2,00}$ & 0.111 (0.014) & [ 0.083, 0.138] & 0.109 (0.012) & [ 0.087, 0.135] & 0.108 (0.014) & [ 0.081, 0.135] \\ 
+    $\D_{2,10}$ & 0.001 (0.002) & [-0.004, 0.005] & 0.001 (0.002) & [-0.003, 0.005] & 0.001 (0.002) & [-0.003, 0.006] \\ 
+    $\D_{2,11}$ & 0.003 (0.001) & [ 0.001, 0.004] & 0.003 (0.001) & [ 0.002, 0.004] & 0.003 (0.001) & [ 0.001, 0.004] \\ 
+    $\beta_{20}$ &  3.723 (0.053) & [ 3.620,  3.826] &  3.707 (0.040) & [ 3.628,  3.785] &  3.719 (0.052) & [ 3.617,  3.822] \\ 
+    $\beta_{21}$ & -0.091 (0.006) & [-0.102, -0.080] & -0.094 (0.006) & [-0.106, -0.084] & -0.093 (0.005) & [-0.104, -0.083] \\ 
+    $\beta_{22}$ & -0.078 (0.022) & [-0.122, -0.034] & -0.082 (0.018) & [-0.117, -0.046] & -0.082 (0.022) & [-0.126, -0.038] \\ 
+    $\beta_{23}$ & -0.219 (0.061) & [-0.339, -0.100] & -0.225 (0.046) & [-0.315, -0.134] & -0.229 (0.061) & [-0.348, -0.110] \\ 
+    $\sigma^2_2$ &  0.097 (0.002) & [ 0.094,  0.100] &  0.098 (0.004) & [ 0.091,  0.106] &  0.097 (0.002) & [ 0.094,  0.101] \\ 
+    $\gamma_2$ & -2.178 (0.463) & [-3.085, -1.271] & -2.505 (0.428) & [-3.315, -1.690] & -2.360 (0.459) & [-3.260, -1.459] \\ 
+    \hdashline
+    $\zeta_1$ &  0.597 (0.108) & [ 0.386, 0.808] &  0.432 (0.133) & [ 0.174, 0.695] &  0.627 (0.109) & [ 0.412, 0.841] \\ 
+    $\zeta_2$ & -0.496 (0.390) & [-1.261, 0.268] & -0.314 (0.292) & [-0.871, 0.257] & -0.586 (0.409) & [-1.386, 0.215] \\ 
+    $\zeta_3$ &  1.654 (0.432) & [ 0.807, 2.502] &  0.577 (0.271) & [ 0.066, 1.131] &  1.800 (0.445) & [ 0.927, 2.672] \\ 
+    \hline
+  \end{tabular}
+  \endgroup
+  \caption{Parameter estimates (SE) for the bivariate model \eqref{eq:pbc-bivariate} applied to the PBC data. Total computation time for the approximate EM algorithm was 36.618 seconds. Horizontal dashed lines are used to visually separate results for each response, and the time-invariant survival parameters $\hat{\bz}$ which aren't associated with a specific response and reported separately. Parameter estimates (SD) from \tt{JMbayes2} are additionally reported (`CrI': Credible interval) along with \tt{joineRML}. Computation time for the MCMC scheme in the \tt{JMbayes2} fit was 148.458 seconds, not including time spent in obtention of its initial conditions; total computation time for \tt{joineRML} was 80.090 seconds. The variance-covariance matrix $\hat{\D}_k$ is reported for each of the responses in the form $\hat{\D}_{k,ef}$ where $k$ denotes the longitudinal response, and $e,f$ the random effect indices.}
+  \label{tab:pbc-bivmodel}
+  \end{table}
+
+  \section{A final model and post-hoc analyses}\label{sec:pbc-final-model-exploration}
+  Across Sections \ref{sec:pbc-jointmodelling-parent} and \ref{sec:pbc-finalmodel} we have built-up, and whittled down, to a bivariate joint model of (log) serum bilirubin and serum albumin. In the last model we presented in the previous section \eqref{eq:pbc-bivariate}, we noted there is evidence (across \textit{all} modelling approaches) to remove \tt{sex} from the survival sub-model as seen in Table \ref{tab:pbc-bivmodel}. Indeed, in the first instance in Section \ref{sec:pbc-modelbuilding-survival} we noted only borderline significance (see Table \ref{tab:pbc-surv-model}), and upon inclusion of the longitudinal responses its coefficient quickly attenuated toward the null (\eg in Figures \ref{fig:pbc-univariate-survivals} and \ref{fig:pbc-multivariate-intermediate}). Removing this covariate from the survival sub-model, we arrive at our `final' model
+  \begin{equation}
+    \begin{aligned}
+        \begin{cases}
+            % Serum bilirubin
+            \log\lb\mathrm{Serum\ bilirubin}\rb &= \lb\beta_{10} + b_{i10}\rb + \lb\beta_{11} + b_{i11}\rb N_1(t) \\&\ + \lb\beta_{12} + b_{i12}\rb N_2(t) + \lb\beta_{13} + b_{i13}\rb N_3(t)\\&\ +\ \tt{H}_i\times\beta_{14} + \tt{S}_i\times\beta_{15} + \varepsilon_{i1}\lb t\rb\\
+            % Albumin
+            \mathrm{Albumin} &= \lb\beta_{20} + b_{i20}\rb + \lb\beta_{21} + b_{i21}\rb t +\ \tt{A}_i\times\beta_{22} \\&\ + \tt{H}_i\times\beta_{23} + \varepsilon_{i2}\lb t\rb \\
+            % Survival
+            \li\lb t\rb &= \lo\lb t\rb \exp\bigg\{\tt{A}_i\times\zeta_1+\tt{H}_i\times\zeta_2\\&\qquad\qquad\qquad +\sum_{k=1}^2\gamma_k\bm{W}_k\lb t\rb^\top\b{_k}\bigg\}.
+        \end{cases}
+    \end{aligned}
+  \label{eq:pbc-finalmodel}    
+  \end{equation}
+  We once more provide tabulated results in Table \ref{tab:pbc-finalmodel}, where we once more note good agreement across the available methods. The MCMC approach took approximately 160 seconds for its sampling to be completed, the approximate EM converged and calculated standard errors in 29.310 seconds, quite inexplicably this elapsed time for \tt{joineRML} was 148.811 seconds\footnote{This strange result replicated across two machines, with a few attempts on each!}.
+  % Table for _final_ bivariate model model (large)
+  \begin{table}[ht]
+  \centering
+  \rowcolors{2}{lightgray!20}{white}
+  \captionsetup{font=scriptsize}
+  \begingroup\scriptsize
+  \setlength{\tabcolsep}{3pt} % Avoid overfull hbox warning.
+  \begin{tabular}{lrrrrrr}
+    & \multicolumn{2}{c}{Approximate EM} & \multicolumn{2}{c}{\tt{JMbayes2}} & \multicolumn{2}{c}{\tt{joineRML}}\\
+    Parameter & Estimate (SE) & 95\% CI & Mean (SD) & 95\% CrI & Estimate (SE) & 95\% CI\\
+    \hline
+    $\D_{1,00}$ & 0.905 (0.096) & [ 0.716, 1.094] & 0.922 (0.111) & [ 0.735, 1.166] & 0.903 (0.096) & [ 0.715, 1.090] \\ 
+    $\D_{1,10}$ & 0.126 (0.161) & [-0.189, 0.441] & 0.094 (0.129) & [-0.153, 0.351] & 0.111 (0.154) & [-0.192, 0.413] \\ 
+    $\D_{1,20}$ & 0.404 (0.230) & [-0.047, 0.854] & 0.275 (0.140) & [ 0.017, 0.566] & 0.414 (0.224) & [-0.025, 0.852] \\ 
+    $\D_{1,30}$ & 0.402 (0.340) & [-0.264, 1.067] & 0.254 (0.206) & [-0.095, 0.690] & 0.446 (0.325) & [-0.192, 1.084] \\ 
+    $\D_{1,11}$ & 1.702 (0.311) & [ 1.092, 2.311] & 1.629 (0.278) & [ 1.128, 2.240] & 1.603 (0.293) & [ 1.029, 2.178] \\ 
+    $\D_{1,21}$ & 1.638 (0.363) & [ 0.926, 2.349] & 1.364 (0.207) & [ 0.967, 1.777] & 1.670 (0.353) & [ 0.979, 2.361] \\ 
+    $\D_{1,31}$ & 0.753 (0.372) & [ 0.025, 1.481] & 0.475 (0.237) & [ 0.022, 0.977] & 0.853 (0.350) & [ 0.168, 1.538] \\ 
+    $\D_{1,22}$ & 2.430 (0.598) & [ 1.258, 3.601] & 2.077 (0.359) & [ 1.474, 2.882] & 2.447 (0.583) & [ 1.303, 3.590] \\ 
+    $\D_{1,32}$ & 1.452 (0.648) & [ 0.183, 2.722] & 1.093 (0.357) & [ 0.553, 1.942] & 1.499 (0.625) & [ 0.274, 2.723] \\ 
+    $\D_{1,33}$ & 1.868 (0.661) & [ 0.572, 3.164] & 1.650 (0.408) & [ 1.010, 2.664] & 1.901 (0.658) & [ 0.611, 3.191] \\ 
+    $\beta_{10}$ &  0.184 (0.185) & [-0.179, 0.546] &  0.354 (0.172) & [ 0.016, 0.686] &  0.218 (0.180) & [-0.134, 0.570] \\ 
+    $\beta_{11}$ &  1.050 (0.128) & [ 0.799, 1.301] &  1.101 (0.122) & [ 0.867, 1.349] &  1.066 (0.120) & [ 0.831, 1.302] \\ 
+    $\beta_{12}$ &  1.448 (0.158) & [ 1.138, 1.758] &  1.493 (0.157) & [ 1.200, 1.804] &  1.534 (0.152) & [ 1.235, 1.832] \\ 
+    $\beta_{13}$ &  1.417 (0.249) & [ 0.929, 1.905] &  1.394 (0.245) & [ 0.940, 1.851] &  1.532 (0.240) & [ 1.061, 2.003] \\ 
+    $\beta_{14}$ &  0.602 (0.150) & [ 0.309, 0.895] &  0.606 (0.125) & [ 0.360, 0.848] &  0.620 (0.147) & [ 0.332, 0.909] \\ 
+    $\beta_{15}$ & -0.156 (0.135) & [-0.420, 0.108] & -0.292 (0.152) & [-0.588, 0.010] & -0.187 (0.131) & [-0.443, 0.070] \\ 
+    $\sigma^2_1$ &  0.076 (0.002) & [ 0.072, 0.080] &  0.077 (0.003) & [ 0.070, 0.084] &  0.077 (0.002) & [ 0.073, 0.081] \\ 
+    $\gamma_1$ &  1.090 (0.141) & [ 0.813, 1.367] &  1.162 (0.134) & [ 0.907, 1.435] &  1.121 (0.144) & [ 0.838, 1.404] \\ 
+    \hdashline
+    $\D_{2,00}$ & 0.110 (0.014) & [ 0.083, 0.137] & 0.109 (0.012) & [ 0.088, 0.134] & 0.108 (0.014) & [ 0.081, 0.135] \\ 
+    $\D_{2,10}$ & 0.001 (0.002) & [-0.004, 0.005] & 0.001 (0.002) & [-0.003, 0.004] & 0.001 (0.002) & [-0.003, 0.006] \\ 
+    $\D_{2,11}$ & 0.003 (0.001) & [ 0.001, 0.004] & 0.002 (0.000) & [ 0.002, 0.004] & 0.003 (0.001) & [ 0.001, 0.004] \\ 
+    $\beta_{20}$ &  3.722 (0.053) & [ 3.619,  3.826] &  3.707 (0.040) & [ 3.629,  3.786] &  3.718 (0.052) & [ 3.615,  3.821] \\ 
+    $\beta_{21}$ & -0.091 (0.006) & [-0.102, -0.080] & -0.093 (0.005) & [-0.104, -0.083] & -0.093 (0.005) & [-0.104, -0.083] \\ 
+    $\beta_{22}$ & -0.077 (0.022) & [-0.120, -0.034] & -0.081 (0.018) & [-0.117, -0.045] & -0.081 (0.022) & [-0.124, -0.037] \\ 
+    $\beta_{23}$ & -0.220 (0.061) & [-0.339, -0.101] & -0.226 (0.046) & [-0.317, -0.136] & -0.228 (0.061) & [-0.348, -0.109] \\ 
+    $\sigma^2_2$ &  0.097 (0.002) & [ 0.094,  0.100] &  0.098 (0.004) & [ 0.091,  0.106] &  0.098 (0.002) & [ 0.094,  0.101] \\ 
+    $\gamma_2$ & -2.084 (0.445) & [-2.955, -1.212] & -2.348 (0.409) & [-3.155, -1.556] & -2.257 (0.441) & [-3.121, -1.392] \\  
+    \hdashline
+    $\zeta_1$ & 0.637 (0.100) & [0.442, 0.833] & 0.476 (0.128) & [0.228, 0.726] & 0.669 (0.103) & [0.467, 0.871] \\ 
+    $\zeta_2$ & 1.637 (0.425) & [0.804, 2.470] & 0.570 (0.279) & [0.036, 1.131] & 1.759 (0.438) & [0.900, 2.619] \\ 
+    \hline
+  \end{tabular}
+  \endgroup
+  \caption{Parameter estimates (SE) for the bivariate model \eqref{eq:pbc-bivariate} applied to the PBC data. Total computation time for the approximate EM algorithm was 31.656 seconds. Horizontal dashed lines are used to visually separate results for each response, and the time-invariant survival parameters $\hat{\bz}$ which aren't associated with a specific response and reported separately. Parameter estimates (SD) from \tt{JMbayes2} are additionally reported (`CrI': Credible interval) along with \tt{joineRML}. Computation time for the MCMC scheme in the \tt{JMbayes2} fit was 159.739 seconds, not including time spent in obtention of its initial conditions; total computation time for \tt{joineRML} was 175.013 seconds. The variance-covariance matrix $\hat{\D}_k$ is reported for each of the responses in the form $\hat{\D}_{k,ef}$ where $k$ denotes the longitudinal response, and $e,f$ the random effect indices.}
+  \label{tab:pbc-finalmodel}
+  \end{table}
+
+  A graphical representation of the results in Table \ref{tab:pbc-finalmodel} are given in Figure \ref{fig:pbc-finalmodel}. Model diagnostics in the form of Pearson and Cox-Snell residuals are provided in Appendices \ref{sec:appendix-suppfigs-finalpearson} and \ref{sec:appendix-suppfigs-finalcoxsnell}, respectively (for the joint model fit by approximate EM only). The plot of Pearson residuals against fitted values allows us to be reasonably confident our assumptions from Section \ref{sec:posthoc-residuals-long} are satisfied; the survival function of the Cox-Snell residuals captures (roughly, at least at the 95\% confidence level) the expected unit exponential. We can use the likelihood ratio test \eqref{eq:posthocs-LRT} to ensure that the removal of \tt{sex} from the survival sub-model \eqref{eq:pbc-bivariate} to arrive at our `final' model \eqref{eq:pbc-finalmodel} is justified. We obtain $\mathrm{LRT}=3.200$ indicating only weak evidence ($p$-value=0.074) that we should include this extra covariate at the 10\% significance level. 
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/FinalModelAllMethods.png}
+      \caption{Parameter estimates (with 95\% confidence/credible) intervals presented for the `final' joint model on the PBC data \eqref{eq:pbc-finalmodel} obtained by the approximate EM algorithm and two existing, established methods \tt{joineRML} and \tt{JMbayes2}. This serves as a graphical companion to the results in Table \ref{tab:pbc-finalmodel}. The results are divided into parameter groups for presentation purposes.}
+      \label{fig:pbc-finalmodel}
+  \end{figure}
+  
+  For the purpose of the exercise undertaken in this chapter, we are content with this final model \eqref{eq:pbc-finalmodel}. There is no need for further reduction, since the longitudinal and survival residuals meet typical assumptions, and our parameter estimates align closely with those obtained using existing software. We can now turn our attention towards establishing measures of prognostic performance by implementation of the methods outlined in Section \ref{sec:posthoc-prognostics}.
+
+  \subsection{Example dynamic predictions}\label{sec:pbc-final-model-dynpreds}
+  We focus-in on a few subjects in the PBC data who `fit' different archetypes of longitudinal follow-up. For the full data, the lower and upper quartiles of follow-up length are three and nine time-points. One profile we want to generate predictions for is failure within the first quartile: Investigating whether the model \eqref{eq:pbc-finalmodel} adequately `dampens' the survival probability $\Pr\big( T_i^*> u_j|T_i^*>t,\mathcal{D}_i(t),\mathcal{D};\hbO\big)\ \forall\ u_j > t$. We also want to investigate such predictions for a profile who survives until the third quantile $t\approx9$, but fails in the final quantile of follow-up, \ie they appear to be following the protective trajectory of bilirubin and/or albumin, but fail `at the final hurdle'. Finally, we investigate these predictions for subjects censored during follow-up.
+  
+  In each case we set $\mathcal{D}_i\lb t\rb$ to be the available data at the last observed longitudinal time $t$, and obtain the estimates $\hat{\bm{\pi}}_i=\lb\hat{\pi}(u_1|t),\dots,\hat{\pi}(u_f|t)\rb^\top,\ u_j>t\ \forall\ j=1,\dots,f$ by the Monte Carlo scheme outlined (on a time-by-time basis) in Section \ref{sec:posthoc-dynpreds-estimation-MC} with 200 simulated draws. The acceptance rate is controlled to be approximately 23\% in all cases.
+
+  \rmtoc
+  \subsubsection{Case study: Almost immediate failure}
+  In the PBC data, the subject \tt{id} 1 dies after approximately 1.1 years of follow-up. They had \tt{histologic} stage 4 (\ie cirrhosis of the liver) at commencement of the study were older than average ($\tt{age}=0.83$). They have two observed longitudinal measurements, with final observed $t = 0.53$. Their estimated random effects were $\hb{_1}=\lb2.05,0.73,1.52,0.87\rb^\top$ and $\hb{_2}=\lb-0.52,-0.04\rb^\top$; the directionality of these random effects indicate an increased hazard for the subject ($\hat{\gamma}_1=1.090$, $\hat{\gamma}_2=-2.084$). There were 126 observed mortalities after time $t$.
+
+  In Figure \ref{fig:pbc-final-model-dynpreds-immediatefail} we observe that the estimated survival probabilities leading up to the true survival time, $\hat{\pi}_i\lb u_j|t\rb\ \forall\ u_j<T_i^*$, are sharply decreasing as  $u_j\rightarrow T_i^*$, with $\hat{\pi}_i\lb T_i^*|t\rb=0.402$ \ie given this subject's baseline characteristics and estimates for random effects $\hb$ we predict a 60\% chance of failure at their actual failure time. Additionally, the predicted probabilities $\hat{\pi}_i\lb u_j|t\rb\ \forall\ u_j>T_i^*$ continue in sharp decrease towards zero; within a year of $T_i^*$ we assign a 90\% chance of failure.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/immediatefail.png}
+      \caption{Estimated survival probabilities $\hat{\pi}_i\lb u|t\rb$ for subject \tt{id} 1 who failed after 1.10 years of follow-up (denoted by the orange `X'). The 95\% confidence interval for the estimate is signified by the shaded orange band. The $x$-axis is truncated at $u=5$. Due to \tt{plotmath} restrictions in \tt{R} $\hbO$ is displayed as $\bO$.}
+      \label{fig:pbc-final-model-dynpreds-immediatefail}
+  \end{figure}
+
+  \subsubsection{Case study: Failure in final stages of follow-up}
+  We elect the subject \tt{id} 21, who fails at time $T_i^*=10.02$, approximately one year after their last recorded longitudinal follow-up time $t=9.01$. Like subject \tt{id} 1 in the previous case study, this subject has \tt{histologic} stage 4 indicating cirrhosis but is slightly older with $\tt{age}=1.34$. The subject's estimated random effects $\hb{_1}=\lb-1.33,0.84,0.91,0.24\rb^\top$ and $\hb{_2}=\lb0.28,-0.05\rb^\top$ are protective for both serum bilirubin and albumin at the start of the clinical trial, but have since progressed unfavourably, increasing the hazard.
+
+  Figure \ref{fig:pbc-final-model-dynpreds-laterfail} shows the estimates for the probability $\hat{\pi}_i\lb u|t\rb$. We see that we obtain the estimate $\hat{\pi}_i\lb T_i^*|t\rb=0.50$; within half a year of further follow-up the point-estimate approximately halves and we obtain $\hat{\pi}_i\lb 10.51|t\rb=0.27$. Clearly, after initially protective values, the subject's estimated increased trajectory (given by $\hb$) rapidly increases the hazard for $u_j>t$.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/laterfail.png}
+      \caption{Estimated survival probabilities $\hat{\pi}_i\lb u|t\rb$ for subject \tt{id} 21 who failed after 10.02 years of follow-up (denoted by the orange `X'). The 95\% confidence interval for the estimate is signified by the shaded orange band. Due to \tt{plotmath} restrictions in \tt{R} $\hbO$ is displayed as $\bO$.}
+      \label{fig:pbc-final-model-dynpreds-laterfail}
+  \end{figure}
+  
+  \subsubsection{Case study: Censoring midway through follow-up}
+  We now consider those who did not die during follow-up but instead dropped out of the Mayo clinic study for other reasons \ie were censored. In actuality, as mentioned in Section \ref{sec:PBC-intro-motiv}, in the PBC data \textit{two} clinically relevant endpoints exist: Transplantation \textit{or} mortality. We therefore want to investigate the predicted survival probabilities of those who drop out during follow-up after surviving for differing periods of time. We elect \tt{id} 5, who undergoes transplantation at $T_5=4.12$ years; \tt{id} 7, who drops out of the study at $T_7=6.85$; and \tt{id} 312, who drops out at $T_{312}=3.99$. We are interested in whether the estimated $\hat{\pi}_i\lb u|t\rb$ is poor for those who dropped out of the study/were transplanted, since only those with advanced liver disease \ie poorest disease prognosis undergo transplantation of the liver, or if their leaving the study may not have been related to their disease. 
+
+  The three plots of $\hat{\pi}_i\lb u|t\rb$ in Figure \ref{fig:pbc-final-model-dynpreds-censors} illustrate that the prognosis for these individuals greatly differed. Subject \tt{id} 5 who underwent transplantation almost immediately after their last observed follow-up time shares a similar -- if narrower -- set of predicted survival probabilities to \tt{id} 312, who had their final observed longitudinal follow-up time approximately 1.5 years earlier; both of these subjects have estimated random effects which place them well above (below) average trajectories in bilirubin (albumin) at the start of the study, as well as over its follow-up. Interestingly however, both of these subjects are below the mean \tt{age}, and neither had cirrhosis at their baseline visit; perhaps indicating that these estimated random effects trajectories $\hb$ hold the greatest influence on the subject's prognosis. This is apparently cemented by $\hat{\pi}_7\lb u|t\rb$: Their estimated $\hb$ placing them above (below) the population trajectory for albumin (bilirubin) whilst sharing other patient characteristics with \tt{id} 5. The information carried over time by the biomarkers change prognosis; the longitudinal information is critical to understanding their survival prospects.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/censors.png}
+      \caption{Estimated survival probabilities $\hat{\pi}_i\lb u|t\rb$ for subject \tt{id}s 5 (left pane), 7 (middle pane) and 312. The censor times were $T_5=4.12,\ T_7=6.85,\ T_{312}=3.99$ (denoted by the orange `X' in each pane). The 95\% confidence interval for the estimate is signified by the shaded orange band. Due to \tt{plotmath} restrictions in \tt{R} $\hbO$ is displayed as $\bO$.}
+      \label{fig:pbc-final-model-dynpreds-censors}
+  \end{figure}
+
+  \resettocmain
+  \subsection{ROC and AUC for the final model}\label{sec:pbc-finalmodel-rocauc}
+  It would be exhaustive to carry out, and present, dynamic predictions for all 312 patients in the PBC study; the case studies carried out in the previous section intended to provide an insight into how these may be used in a prognostic predictive setting. Instead, we attempt to estimate measures of discrimination and calibration, as outlined in Sections \ref{sec:posthoc-prognostics-ROC} and \ref{sec:posthoc-prognostics-calibration}, respectively, for our chosen model \eqref{eq:pbc-finalmodel}.
+
+  We elect three time `windows' (following the same definition given in Section \ref{sec:posthoc-prognostics-setup}). We set the first as $w_1=(2,3.5]$, which contains approximately 25\% of all failure times; the next $w_2=(3.5,7]$ containing 30\%; and $w_3=(7,14]$ with 20\%. We don't consider predictions based on the truncated data at $t<2$. The 34 failures occurring in $w_1$ happen, on average, once every 0.04 years; in $w_2$ the 42 failures happen doubly slowly with rate 0.08 years; $w_3$ contains 31 observed failure times occurring in a more staggered fashion with average time between failures 0.22 years.
+  
+  We estimate the survival probabilities $\hat{\pi}_i\lb w\rb$ by the first-order estimate we introduced in Section \ref{sec:posthoc-dynpreds-estimation-FO}, comparing with analogous AUCs for the the joint model fit by the `gold standard' \tt{JMbayes2}, which samples from its MCMC chains to perturb $\hbO$ and an M-H scheme to sample from $\condbh$. For each $w_1,\dots,w_3$ we present the ROC curve, along with the AUC from our implementation as well as \tt{JMbayes2}'s.
+
+  Following the methodology we outlined in Sections \ref{sec:posthoc-prognostics-ROC}--\ref{sec:posthocs-prognostics-correction} we obtain the un/corrected AUCs and prediction errors presented in Table \ref{tab:pbc-auc-PE}, with ROC curves presented in Figure \ref{fig:pbc-final-roc}. The model \eqref{eq:pbc-finalmodel} performs well at distinguishing between those who fail in the elected time windows $w_1,\dots,w_3$ and those who do not since the median corrected $\auc{w{_i}}>0.8, i=1,\dots,3$. The predictive errors inform us that in $w_1$ only 6\% of individuals are misclassified, with a larger portion in $w_3$ ($\approx13\%$). The predictive error increases commensurately with the decreasing AUC as we move `later' in follow-up, indicating that both the model's accuracy and discrimination ability deteriorates slightly as follow-up progresses.
+  
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/FinalROCs.png}
+      \caption{ROC curves for the final model evaluated at three rolling time-windows. The apparent (\ie uncorrected) area under the curve is given in the lower-right hand legend for each window. The dashed vertical line represents the optimal trade-off between the TPR ($y$-axis) and FPR ($x$-axis) as identified by the maximal Youden's $J$ statistic \eqref{eq:posthoc-youden-F1} across probabilistic thresholds.}
+      \label{fig:pbc-final-roc}
+  \end{figure}
+  
+  For reference (\textit{once again noting and emphasising the differences between underlying models}), \tt{JMbayes2} evaluates the AUC to be 0.884, 0.862, and 0.780 for each time window respectively. We note the \tt{JMbayes2} AUC estimate lies within the confidence intervals for all three windows, and in the central tendency (\ie interquartile range) for windows $w_2$ and $w_3$, indicating some agreement here. The factor of performance drop-off $\auc{w{_1}}/\auc{w{_3}}$ is approximately equal between approaches, but we note that the AUCs obtained from \tt{JMbayes2} decrease much more sharply between windows; possibly telling of the current-value parameterisation in later stages of follow-up over-predicting the cumulative risk.
+  \begin{table}[ht]
+      \centering
+      \rowcolors{2}{lightgray!20}{white}
+      \captionsetup{font=scriptsize}
+      %\begingroup
+      \begin{tabular}{c|rrr:rrr}
+        & \multicolumn{3}{c}{$\mathrm{AUC}$} & \multicolumn{3}{c}{$\wPE$}\\
+        {} & Median & IQR & 95\% CI & Median & IQR & 95\% CI\\
+        \hline
+        $w_1$ & 0.910 & [0.895, 0.929] & [0.877, 0.979] & 0.065 & [0.058, 0.072] & [0.046, 0.086]\\
+        $w_2$ & 0.838 & [0.817, 0.866] & [0.777, 0.912] & 0.093 & [0.088, 0.102] & [0.075, 0.119]\\
+        $w_3$ & 0.812 & [0.770, 0.834] & [0.716, 0.907] & 0.131 & [0.119, 0.156] & [0.105, 0.169]\\
+        \hline
+      \end{tabular}
+      %\endgroup
+      \caption{Corrected estimates for $\mathrm{AUC}$ and prediction errors $\wPE$ calculated using the methodology outlined in Section \ref{sec:posthocs-prognostics-correction}.}
+      \label{tab:pbc-auc-PE}
+  \end{table}
+  
+  Attempting now to complete inference on the ROC curves produced by the model fit with approximate EM in Figure \ref{fig:pbc-final-roc}, we turn attention to the maximal Youden indices, $J_Y$ \eqref{eq:posthoc-youden-F1}, for each window investigated.
+  
+  For $w_1$ we obtain maximal $J_Y$ at the probability threshold $c_{w{_1}}=0.91$, with resultant $\mathrm{TPR}_{w{_1}}=0.94$ and $\mathrm{FPR}_{w{_1}}=0.20$. Using the probabilistic threshold $c_{w_1}$ on the predicted survival probabilities, $\hat{\pi}_i\lb w_1\rb<0.91$, demonstrates a strong ability to identify individuals who experience mortality within $w_1$ (indicated by the high TPR). The low FPR observed is largely due to this high threshold: The prognostic model is conservative in labelling instances as negative thereby reducing the risk of incorrectly labelling true negatives as false positives. Four example true/false positives and true/false negatives for this window -- with the same idea extending to all windows -- are given in Figure \ref{fig:pbc-final-model-4examples}.
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_PBCApplication/four_example_dynpreds.png}
+      \caption{Four example $\hat{\pi}_i\lb u_j|\Tstart\rb\ \forall\ u_j\in \bm{u}_{w{_1}}$. Clockwise from top-left: True positive, true negative, false negative, and false positive. An orange band represents the 95\% confidence interval. An orange `X' displays their true event time $\Tstart<T_i^*<h$ and blue one  $T_i>h$.}
+      \label{fig:pbc-final-model-4examples}
+  \end{figure}
+  Performing the same investigation in $w_2$ and $w_3$, we obtain $c_{w{_2}}=0.84$ and $c_{w{_3}}=0.71$ based on the maximal $J_Y$. These thresholds produce similar levels of sensitivity $\mathrm{TPR}_{w{_2}}=0.80,\ \mathrm{TPR}_{w{_3}}=0.83$ whilst returning FPRs as low as we observed in $w_1$, $\mathrm{FPR}_{w{_2}}=0.24,\ \mathrm{FPR}_{w{_3}}=0.23$.
+
+  We note for the model \eqref{eq:pbc-finalmodel} we obtain a consistent trade-off between TPR and FPR: The model performs well over time in terms of its ability to correctly identify those who fail, and provides constant trade-off between true and false positives. The decreasing threshold identified by $J_Y$ in each window implies adaptability in identification of those we deem to require intervention (\eg $\hat{\pi}_i\lb w_x\rb\le c_{w{_x}}$) over follow-up, specifically that we become more lenient (\ie less ready) in declaring failures over time.
+  
+  Finally, we examine the extra accuracy \eqref{eq:posthocs-Rvalue} gained by jointly modelling albumin with serum bilirubin. In Table \ref{tab:pbc-finalmodel} although both biomarkers are strongly associated with mortality, one notes $\big|\frac{\hat{\gamma}_1}{\mathrm{SE}\lb\hat{\gamma}_1\rb}\big|>\big|\frac{\hat{\gamma}_2}{\mathrm{SE}\lb\hat{\gamma}_2\rb}\big|$. We therefore investigate the impact of `dropping' albumin -- \ie recovering the univariate joint model fit to serum bilirubin in Section \ref{sec:pbc-jointmodelling-univs} -- and establish the improvement to model accuracy gained by its inclusion. We denote the model \eqref{eq:pbc-finalmodel} $\mathcal{M}_1$ and the univariate bilirubin joint model $\mathcal{M}_0$. In the same manner that Table \ref{tab:pbc-auc-PE} presents the performance measures for $\mathcal{M}_1$, Table \ref{tab:pbc-auc-PE-M0} presents these measures for $\mathcal{M}_0$. Briefly comparing we do not note any difference in median $\mathrm{AUC}$ estimates, but that the prediction error appears to increase as follow-up progresses more sharply under $\mathcal{M}_0$. That is, the two models are able to offer similar discrimination between non-/failures, but the actual predicted probabilities are systemically higher/lower than the `true' probabilities under $\mathcal{M}_0$, perhaps indicating that albumin `tempers' the increased hazard from serum bilirubin.
+  
+  The presence of albumin in the joint model does not appear to contribute to prediction accuracy at all in $w_1$, with (median [IQR]) $R\lb w_1\rb=-0.023\ [-0.063,\ 0.007]$. However, its inclusion significantly improves prediction accuracy with $R\lb w_2\rb=0.085\ [0.063,\ 0.116]$ and $R\lb w_3\rb= 0.142\ [0.110,\ 0.182]$. This appears to indicate that albumin does \textit{not} improve prediction accuracy in the study's infancy, but aspects of its trajectory in the later stages of follow-up account for approximately 6--11\% `extra' accuracy in the `middle' of follow-up and 11--18\% in the last half of follow-up. This gain in accuracy may be useful to practitioners, outweighing the cost of a slightly more complex model.
+
+  Visual representation of the $\mathrm{AUC}$, $\wPE$ and $R$ measures discussed in this exercise is provided in Figure \ref{fig:pbc-compare-roc} for greater ease of comparison. The measures are found following the methodology in Section \ref{sec:posthocs-prognostics-correction} expanded to \textit{two} models per bootstrapped data set. 
+
+  \begin{table}[ht]
+      \centering
+      \rowcolors{2}{lightgray!20}{white}
+      \captionsetup{font=scriptsize}
+      \begin{tabular}{c|rrr:rrr}
+        & \multicolumn{3}{c}{$\mathrm{AUC}$} & \multicolumn{3}{c}{$\wPE$}\\
+        & Median & IQR & 95\% CI & Median & IQR & 95\% CI\\
+        \hline
+        $w_1$  & 0.912 & [0.892, 0.935] & [0.877, 0.979] & 0.064 & [0.056, 0.071] & [0.046, 0.086] \\
+        $w_2$  & 0.830 & [0.811, 0.853] & [0.771, 0.894] & 0.104 & [0.096, 0.112] & [0.085, 0.130] \\
+        $w_3$  & 0.813 & [0.788, 0.850] & [0.731, 0.902] & 0.152 & [0.141, 0.167] & [0.121, 0.188] \\
+        \hline
+      \end{tabular}
+      \caption{Corrected estimates for $\mathrm{AUC}$ and prediction errors $\wPE$ calculated using the methodology outlined in Section \ref{sec:posthocs-prognostics-correction} for $\mathcal{M}_0$.}
+      \label{tab:pbc-auc-PE-M0}
+  \end{table}
+
+  \section{Conclusions}\label{sec:pbc-conclusions}
+  In this chapter, we undertook a comprehensive application to the oft-used primary biliary cirrhosis data set. We began with setting-out our motivations and described the data at hand, with attention placed on available longitudinal biomarkers we believed to be associated with mortality and baseline information. We developed a survival sub-model and meticulously crafted multiple longitudinal GLMMs independently at the outset before undertaking univariate joint modelling to establish association between each biomarker and mortality. This was followed by multivariate joint modelling, where we grouped together biomarkers into broad groups of liver function in order to whittle down to, at first a trivariate joint model, and then in proceeding to our final joint model. 
+  
+  When considering candidate `final' models in the latter stages of model building, we compared the estimated $\hbO$ across existing established software \tt{joineRML} and \tt{JMbayes2} as well as the approximate EM algorithm. We noted good agreement across approaches, with the approximate EM algorithm achieving relatively quicker model convergence. 
+  
+  With our final model \eqref{eq:pbc-finalmodel} in hand, we applied post-hoc analyses from Chapter \ref{cha:posthoc} and determined the prognostic accuracy and discriminatory power of our final model. The final model \eqref{eq:pbc-finalmodel} appears to be in accordance with the long-standing result of serum bilirubin being considered a strong indicator of liver disease progression \citep{PBCarticle, Rizopoulos2012}.
+
+  Throughout the joint modelling processes we utilised the methodologies delineated in Chapters \ref{cha:approx} and \ref{cha:flexible}, namely through use of the \tt{R} package \tt{gmvjoint} (for more information see Appendix \ref{cha:appendix-gmvjoint}). When we compared results with those from \tt{JMbayes2}, which operates under the Bayesian paradigm, we alluded to the differences between maximum likelihood and MCMC approaches. Generally, one expects parameter estimates, along with their associated uncertainty, obtained through MCMC methods to surpass those derived from maximum likelihood estimation: The sampling technique employed by MCMC explores a wider range of the parameter space, potentially revealing complex interactions that may go unnoticed by the MLE approach; additionally, the symmetric distribution of errors assumed by MLE may be unrealistic when compared to the true posterior distribution sampled by MCMC. Results in Tables \ref{tab:pbc-trivmodel}--\ref{tab:pbc-finalmodel} may have agreed (\ie across MLE and MCMC approaches) to a larger extent by \eg using a different choice of priors, or analogously defining an unspecified baseline hazard in the Bayesian fit for greater model parity.
+
+  % \TODO{WRITE ML BIT} % cant think of what to write so parked for now.
+
+  \begin{figure}
+      \centering
+      \includegraphics{Figures_PBCApplication/CompareROCs.png}
+      \caption{Boxplots of corrected $\mathrm{AUC}$, $\wPE$ and $R$ for the univariate joint model $\mathcal{M}_0$ (orange), and the bivariate $\mathcal{M}_1$ (red). The subscript $c$ denotes that these are corrected measures. This provides visual comparison of the performance measures provided in Tables \ref{tab:pbc-auc-PE} and \ref{tab:pbc-auc-PE-M0} along with resultant measure of the `extra' accuracy gained \eqref{eq:posthocs-Rvalue}, wherein the boxplots are blue since they do not belong to \textit{one} model.}
+      \label{fig:pbc-compare-roc}
+  \end{figure}
+
+\end{chapter}

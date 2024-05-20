@@ -1,0 +1,413 @@
+\documentclass[10pt]{beamer}
+\input{PresentationPreamble}
+% Theme -----------------------------
+\usetheme{default}
+\usecolortheme{beaver}
+
+% Title page ------------------------
+\title{Fast fitting for joint models of survival and multivariate longitudinal data} 
+\author{James Murray}
+\date{PhD Viva, $1^{\mathrm{st}}$ May 2024}
+\titlegraphic{\includegraphics[width = 0.5\textwidth]{logo.jpg}}
+ 
+% Customise captions ---------------
+\setbeamerfont{caption}{size=\tiny}
+\def\vfilll{\vskip 0pt plus 1filll minus 0pt }
+% Bib
+\addbibresource{refs.bib}
+
+% Start presentation
+\begin{document}
+
+\begin{frame}
+    \vfilll
+    \titlepage
+    \vfilll
+    \small
+    Supervisor: Dr.\ Pete Philipson
+\end{frame}
+
+% Outline
+\begin{frame}{Outline}
+A whistle-stop tour...
+
+\begin{itemize}
+    \item Introduction: Joint models, motivation
+    \vspace{2mm}
+    \item ``Classic'' multivariate joint models
+    \vspace{2mm}
+    \item \textblue{An approximate EM algorithm}
+    \vspace{2mm}
+    \item \textblue{Flexible joint models}
+    \vspace{2mm}
+    \item Justification for approximation used
+    \vspace{2mm}
+    \item Post-hoc analysis; prediction
+    \vspace{2mm}
+    \item Application to PBC
+    \vspace{2mm}
+    \item Discussion; future avenues for research
+\end{itemize}
+    
+\end{frame}
+
+% Introduction
+\section{Introduction}
+\begin{frame}{Background: Joint modelling}
+    Initially arose as a solution to answer analytical challenges in HIV/AIDS research.\\
+
+    \vspace*{5mm}
+
+    Predated by both na\"{i}ve and ``two-stage'' methods, both of which don't provide wholly efficient use of available data.\\
+
+    \vspace*{5mm}
+
+    Joint models as they appear in the thesis first given in Wulfsohn \& Tsiatis (1997) \cite{Wulfsohn97}.\\
+
+    \vspace*{5mm}
+    Joint models typically consists of (at least) two sub-models linked together by shared random effects.\\
+    Models for the longitudinal and survival parts are `joined' together.
+\end{frame}
+
+\begin{frame}{Evolution}
+    Since their first (basic) formal presentation in Wulfsohn \& Tsiatis, joint models have been expanded and extended in numerous ways:
+    \begin{itemize}
+        \item Multivariate case:\\
+        $\hookrightarrow$ Measuring association of $\ge2$ longitudinal responses with survival, accounting for correlations.
+        \item Random effects:\\
+        $\hookrightarrow$ More complex (\eg splines); more longitudinal sub-models
+        \item Alternative sub-models:\\
+        $\hookrightarrow$ Replacing the Cox PH or the longitudinal model by something more appropriate.
+    \end{itemize}
+    \vspace*{5mm}
+    Each serve to increase complexity in the joint model and introduce issues in standard fitting routines; reflected in lack-of software for many cases.
+\end{frame}
+
+\section{Motivation: PBC}
+\begin{frame}{Motivating data}
+One popular application is to primary biliary cirrhosis (PBC).
+\vspace*{5mm}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.975\textwidth]{Figures_Chapter1/PBCtrajectories.png}
+    \caption{Patient trajectories for three biomarkers measured during Mayo Clinic trial \cite{PBCarticle}.}
+    \label{fig:pbc-trajectories}
+\end{figure}
+    
+\end{frame}
+
+\begin{frame}{Motivating data}
+One popular application is to primary biliary cirrhosis (PBC).\\
+\vspace*{5mm}
+A joint analysis allows researchers to \textit{simultaneously} answer:
+
+\begin{enumerate}
+    \item How do these biomarkers evolve through time and differ in terms of covariates collected at baseline (\eg drug allocation, sex, age)?
+    \item How does the hazard of interest evolve through time an differ in terms of covariates collected at baseline?
+    \item How is the hazard affected by underlying biomarker values?
+\end{enumerate}
+    
+\end{frame}
+
+\section{Classic Joint Models}
+\begin{frame}{Joint modelling framework: Notation}
+For each $i=1,\ldots,n$ we observe the $\kth, k=1,\ldots,K$ longitudinal response $\Y{_k}=\lb y_{i1k},\ldots,y_{i{m_i}k}\rb^\top$.\\
+
+\vspace*{2mm}
+
+Event time $T_i=\min\lb T_i^*, C_i\rb$ and $\Delta_i=1$ if $T_i^*<C_i$ and $\Delta_i=0$ otherwise.\\
+
+\vspace*{2mm}
+
+Form a joint model by inducing an association between the $K$ longitudinal trajectories and the hazard $\lambda_i$:
+  \begin{equation*}
+    \begin{aligned}
+    \begin{cases}
+      \Y{_k} &\!\!\!\!\!\!\!\!\!\!\!\!\!\!= \X_{ik}\lb t\rb\bb_{k} + \Z_{ik}\lb t\rb\textblue{\b{_k}} + \bm{\varepsilon}_{ik}\\
+      \ \ \ \ \ \ \ \b{_k} &\!\!\!\!\!\sim N_{q_k}\lb 0, \mathrm{D}_k\rb, \quad \bm{\varepsilon}_{ik}\sim N\lb0, \sigma^2_{\varepsilon_k}\rb,\quad \b{_k}\indep\bm{\varepsilon}_{ik}\\
+      \lambda_i(t)&\!\!\!\!\!\!\!\!\!\!\!\!\!\!=\lambda_0(t)\exp\lbr\bm{S}_i^\top\bm{\zeta} + \Sk\textblue{\gamma_k\bm{W}_k(t)^\top\b{_k}}\rbr.  
+    \end{cases}
+    \end{aligned}
+  \label{eq:methods-lmm}
+  \end{equation*}
+  where the association parameter \textblue{$\gamma_k$} captures association between  $\b{_k}$ on the hazard.
+    
+\end{frame}
+
+\begin{frame}{Estimation}
+    Want to estimate the following parameters:
+    \begin{align*}
+    \bO=\lb\vD^\top,\bb^\top,\sigma^2_{\varepsilon_1},\ldots,\sigma^2_{\varepsilon_K},\bg^\top,\bz^\top\rb^\top
+    \end{align*}
+    which we do my maximising the observed data likelihood via an EM algorithm.\\
+    \vspace{2mm}
+    \textbf{E-step} at iteration $(m+1)$:
+    \begin{equation*}
+    \begin{aligned}
+      \Si \Exp_i\!\bigg[&\log f\lb\Y|\b;\bO^{(m)}\rb + \log f\lb T_i,\Delta_i|\b;\bO^{(m)}\rb+\log f\lb\b|\bO^{(m)}\rb\bigg].
+    \end{aligned}
+  \label{eq:methods-E-step}
+  \end{equation*}
+  calculated against $f\lb\b|T_i,\Delta_i,\Y;\bO^{(m)}\rb$\\
+  \vspace{2mm}
+  \textbf{M-step}: Formed by maximising $n$ \textit{sets} of conditional expectations.
+    
+\end{frame}
+
+\begin{frame}{Estimation}
+    All required expectations necessary in each EM iteration are of form:
+    \begin{align*}
+        \Exp_i\ls g\lb\b\rb|T_i,\Delta_i,\Y;\bO\rs=
+        \frac{\int_{-\infty}^\infty g\lb\b\rb f\lb T_i,\Delta_i|\b;\bO\rb f\lb\b|\Y;\bO\rb d\b}{\int_{-\infty}^\infty f\lb T_i,\Delta_i|\b;\bO\rb f\lb\b|\Y;\bO\rb d\b}
+    \end{align*}
+    where $f\lb\b|\Y;\bO\rb$ enjoys tractable form under MVN $\Y$ \cite{Wulfsohn97, Hickey2018}.\\
+    \vspace{5mm}
+    Numerical methods used to evaluate these multi-dimensional integrals.\\
+    \vspace{5mm}
+    Main source of computation burden -- especially with \textit{more complex} model specifications -- potentially precluding uptake.
+\end{frame}
+
+\section{Approximate EM}
+\begin{frame}{An approximate EM algorithm}
+Key issue is that $\condb$ is potentially high dimensioned.\\
+
+\vspace{5mm}
+
+Bernhardt \textit{et al}.\ (2015) \cite{Bernhardt15} propose
+\begin{align*}
+    \b|T_i,\Delta_i,\Y;\bO^{(m)}\appx N\big(\hb,\hS\big)
+\end{align*}
+Thereby allowing all requisite expectations $\Exp_i\ls g\lb\b\rb|T_i,\Delta_i,\Y;\bO^{(m)}\rs$ to be taken against a univariate normal distribution.\\
+
+\vspace{5mm}
+Originally proposed in context of a multivariate joint model with a logistic regression model in place of the Cox PH.\\
+
+\vspace{5mm}
+
+Novel contribution then the extension to more `traditional' joint models.
+\end{frame}
+
+\begin{frame}{An approximate EM algorithm}
+
+\begin{enumerate}
+    \item Obtain initial conditions $\bO^{(0)}$
+    \vspace{2mm}
+    \item For \textit{any} iteration $(m+1)$:
+    \begin{enumerate}
+        \item Obtain $\hb$ and $\hS$ by maximising $\log f\lb\b,T_i,\Delta_i,\Y;\bO^{(m)}\rb$ using \tt{optim}
+        \item Use the normal approximation to update the parameter vector $\bO^{(m)}\rightarrow\bO^{(m+1)}$.
+    \end{enumerate}
+    \vspace{2mm}
+    \item Check for convergence
+    \vspace{2mm}
+    \item Repeat steps 2.\ and 3.\ for at least four iterations, then exit when 3.\ satisfied.
+\end{enumerate}
+    
+\end{frame}
+
+\begin{frame}{An approximate EM algorithm: Results}
+
+Many simulation studies carried out to ascertain performance.
+
+\begin{itemize}
+    \item Sample size;
+    \item Length of follow-up;
+    \item Number of responses \etc
+\end{itemize}
+All studies tabulated and presented graphically.
+
+\vspace{3mm}
+
+Good performance across all simulations considered as well as sensitivity analyses.\\
+
+\vspace{3mm}
+
+Compared with \tt{joineRML} \cite{Hickey2018} where results were very similar.\\
+
+\vspace{3mm}
+
+Non-exponential increase in computation time observed.
+    
+\end{frame}
+
+\section{Flexible joint models}
+\begin{frame}{Flexible specifications}
+    Gaussian assumption ubiquitous but may not best represent data\\
+
+    \vspace{1mm}
+
+    $\hookrightarrow$ Important to accommodate (range of) response types\\
+
+    \vspace{5mm}
+
+    If $\Y|\b$ assumed normal, $f\lb\b|T_i,\Delta_i,\Y;\bO\rb$ is tractable\\
+
+    \vspace{5mm}
+
+    Issues arise when this assumption isn't met and the above thereby not tractable.\\
+    \vspace{1mm}
+    $\hookrightarrow$ Led to predominantly Bayesian approaches to inference in the literature.\\
+
+    \vspace{5mm}
+
+    Promising then that the normal approximation eschews consideration of $\Y|\b$, instead collapsing down $f\lb\b|T_i,\Delta_i,\Y;\bO\rb$ to $\Napprox$
+    
+\end{frame}
+
+\begin{frame}{Flexible specifications}
+    Considered six exponential families for GLMMs:
+    \begin{table}[h]
+        \centering
+        \begin{tabular}{ccc}
+            (Gaussian) & Poisson & Binomial \\
+            Negative binomial & Generalised Poisson & Gamma
+        \end{tabular}
+    \end{table}
+    \vspace{3.75mm}
+    Estimation of $\bO$ (potentially with dispersion parameters) via approximate EM algorithm.\\
+
+    \vspace{5mm}
+
+    Simulations chosen to reflect possible modelling scenarios and investigate performance in `non-standard' scenarios.\\
+    \vspace{1mm}
+    $\hookrightarrow$ 
+    Performance good overall, worst performance for binomial.\\
+    \vspace{1mm}
+    $\hookrightarrow$
+    No obvious deterioration in performance in terms of estimation or computation time
+    
+\end{frame}
+
+\begin{frame}{Justification for normal approximation}
+    Approximating $\b|T_i,\Delta_i,\Y;\bO\sim\Napprox$ throughout\\
+    
+    \vspace{1mm}
+    
+    $\hookrightarrow$ Good idea to investigate and justify this!\\
+    
+    \vspace{5mm}
+    
+    Compared the `true' posterior for given scenario $f\big(\b|T_i,\Delta_i,\Y;\bOT\big)$\\to $\Napprox$ visually and via `coverage' of the approximation.\\
+
+    \vspace{5mm}
+
+    Overall the approximation does appear reasonable, but evidence to suggest it's over-confident (\ie $\hS$ overestimated slightly).\\
+
+    \vspace{5mm}
+
+    Additionally investigated differences in $\Napprox$ when $\hb, \hS$ obtained with/out $\lbr T_i, \Delta_i\rbr$.\\
+
+    \vspace{5mm}
+
+    Non-exhaustive, but allow us to get a handle on $\Napprox$.
+    
+\end{frame}
+
+\section{Post Hocs}
+\begin{frame}{Model diagnostics \& prediction}
+    In lieu of a `joint' residual, consider one for each sub-model.\\
+
+    \vspace{5mm}
+
+    Hypothesis testing: Wald tests, AIC, BIC.\\
+
+    \vspace{5mm}
+
+    Dynamic predictions \cite{Rizopoulos2011}, future survival to time $u$ given data up-to $t$:
+    \vspace{1mm}
+    \begin{itemize}
+        \item Estimation of $\pi_i\lb u|t\rb$ involves $\b|T_i^*>t,\Y{_1}\lb t\rb,\ldots,\Y{_K}\lb t\rb; \hbO$.\\Either by empirical Bayes or Monte Carlo scheme.
+        \vspace{1mm}
+        \item Ascertain predictive performance across `windows' $w=(\Tstart,h]$\\
+        $\uparrow\Tstart\implies$ more information available$\implies$ better performance?
+        \vspace{1mm}
+        \item Set out performance measures $\mathrm{AUC}\lb w\rb$ and $\widehat{\mathrm{PE}}\lb w\rb$
+        \vspace{1mm}
+        \item Comparing nested models
+        \vspace{1mm}
+        \item Correcting for optimism in these estimates.
+    \end{itemize}
+
+    \vspace{5mm}
+
+    Basically, setting out metrics to use in an application...
+    
+\end{frame}
+
+\section{Application}
+\begin{frame}{Application: Primary biliary cirrhosis}
+    Aim was to present a start-to-finish model building process utilising approximate EM for joint model portion:
+    \vspace{1mm}
+    \begin{itemize}
+        \item Exploratory analysis and data description:\\
+        Clinical outcome, baseline covariates, candidate longitudinal markers.
+        \vspace{0.5mm}
+        \item Survival sub-model selection 
+        \vspace{0.5mm}
+        \item Longitudinal sub-model selection for each biomarker:\\
+        Combinations of fixed effects, time specification
+        \vspace{0.5mm}
+        \item Strength of \textit{univariate} associations
+        \vspace{0.5mm}
+        \item `Groups' of markers defining separate multivariate fits
+        \vspace{0.5mm}
+        \item Trivariate model $\rightarrow$ bivariate model containing serum bilirubin and serum albumin.
+        \vspace{0.5mm}
+        \item Compared with existing software.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Application: Primary biliary cirrhosis}
+    \begin{figure}
+        \centering
+        \includegraphics[width = 0.975\textwidth]{Figures_PBCApplication/FinalModelAllMethods.png}
+    \end{figure}
+\end{frame}
+
+\section{Future work}
+
+\begin{frame}{Conclusions \& future work}
+     Vested interest in multivariate joint models:
+     \begin{itemize}
+         \item Likely better prediction capabilities;
+         \item Use more available information;
+         \item (Series of) univariate fits serves to ignore potential correlations.
+     \end{itemize}
+     However bring with them multidimensional integration, presenting significant computational challenge\\
+     \vspace{5mm}
+     Aim was to investigate alternative approaches enabling faster fitting\\
+     \vspace{5mm}
+     Repurposed an approximate EM algorithm to lessen computational burden felt in fitting these models\\
+     \vspace{5mm}
+     Extended beyond the typically Gaussian paradigm
+\end{frame}
+
+\begin{frame}{Conclusions \& future work}
+     Avenues for future work\\
+     \vspace{5mm}
+     Survival sub-model:
+     \begin{itemize}
+         \item Competing risks: Patients can experience multiple events
+         \item Accelerated failure time models
+     \end{itemize}
+     \vspace{5mm}
+     Further exponential family members, \eg:
+     \begin{itemize}
+         \item Lots of potential count models
+         \item Zero-inflation and zero-truncation
+     \end{itemize}
+     \vspace{5mm}
+     Potential methods for faster computation:
+     \begin{itemize}
+         \item Linear scan algorithm
+         \item Functional principal components
+         \item Automatic differentiation
+     \end{itemize}
+     
+\end{frame}
+
+\begin{frame}{Bibliography}
+    \printbibliography
+\end{frame}
+
+\end{document}
