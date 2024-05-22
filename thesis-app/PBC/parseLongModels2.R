@@ -108,7 +108,8 @@ ggplot(bics[bics$response!="Spiders",],
   guides(shape = F) + 
   # scale_colour_brewer(palette = "YlOrRd") + 
   # Shift YlOrRd because hard to see!
-  scale_colour_manual(values = c("#FECC5C", "#FD8D3C", "#F03B20", "#BD0026")) + 
+  # scale_colour_manual(values = c("#FECC5C", "#FD8D3C", "#F03B20", "#BD0026")) + 
+  scale_color_brewer(palette = 'Dark2') +
   labs(x = "", y = "BIC", colour = "Time specification:") + 
   theme(
     legend.position = "bottom",
@@ -119,4 +120,4 @@ ggplot(bics[bics$response!="Spiders",],
     strip.text = element_text(size=6,vjust=1)
   )
 
-ggsave("./allLongmodels.png", width = 140, height = 90, units = "mm")
+ggsave("./allLongmodels-corrections.png", width = 140, height = 90, units = "mm")

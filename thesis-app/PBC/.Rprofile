@@ -10,7 +10,7 @@ options(
 )
 
 save.dir <- ifelse(grepl("macOS", utils::sessionInfo()$running),
-                   '../macresultsPBC.nosync',
+                   '~/Documents/thesis/thesis-app/PBC/output',
                    '/data/c0061461/THESIS/PBC')
 save.dir.file.path <- function(x, LHS = save.dir) file.path(LHS, x)
 
