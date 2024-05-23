@@ -5,17 +5,15 @@ library(dplyr)
 library(ggplot2)
 log.dir <- save.dir.file.path("Joint/Multivs")
 (to.load <- dir(log.dir, pattern = "\\.RData"))
-to.load <- to.load[!to.load%in%c("OneBigModel.RData", "biv.RData", "triv.RData")]
-load(save.dir.file.path("../Univs/AllUnivs.RData", log.dir)) # For comparing?
+to.load <- to.load[!to.load%in%c("biv2.RData")]
 
 # Establish "clean names" ----
 names.lookup <- data.frame(file.name = gsub("\\.RData$", "", to.load),
-                           clean = c("Binary", "Blood clotting and flow",
-                                     "Continuous", "Counts", "Liver enzymes",
+                           clean = c("Blood clotting and flow*",
+                                     "Liver enzymes",
                                      "Liver health and function"))
 names.lookup$clean <- factor(names.lookup$clean, 
-                             c("Continuous", "Counts", "Binary",
-                               "Blood clotting and flow", "Liver enzymes",
+                             c("Blood clotting and flow*", "Liver enzymes",
                                "Liver health and function"))
 
 
@@ -68,9 +66,22 @@ out.all %>%
     strip.text = element_text(size=6,vjust=1)
   )
 
+sf.prot <- unname(quantile(rowSums(joint.bloods$REs[,1:2]),.8))
+sf.plat <- unname(quantile(rowSums(joint.bloods$REs[,-c(1:2)]),.8))
+
 out.all %>% 
-  filter(model %in% c("Blood clotting and flow", 
+  filter(model %in% c("Blood clotting and flow*", 
                       "Liver enzymes", "Liver health and function")) %>% 
+  mutate(
+    Estimate = ifelse(parameter == 'gamma_prothrombin', sf.prot * Estimate, Estimate),
+    `2.5%` = ifelse(parameter == 'gamma_prothrombin', sf.prot * `2.5%`, `2.5%`),
+    `97.5%` = ifelse(parameter == 'gamma_prothrombin', sf.prot * `97.5%`, `97.5%`)
+  ) %>% 
+  mutate(
+    Estimate = ifelse(parameter == 'gamma_platelets', sf.plat * Estimate, Estimate),
+    `2.5%` = ifelse(parameter == 'gamma_platelets', sf.plat * `2.5%`, `2.5%`),
+    `97.5%` = ifelse(parameter == 'gamma_platelets', sf.plat * `97.5%`, `97.5%`)
+  ) %>% 
   ggplot(aes(x = parameter2, y = Estimate)) + 
   geom_hline(aes(yintercept=0), lwd = .25, lty = 3) +
   geom_point(size=.5) + 
@@ -86,7 +97,7 @@ out.all %>%
     strip.text = element_text(size=6,vjust=1)
   )
   
-ggsave("IntermediateMultivs.png",
+ggsave("IntermediateMultivs-corrected.png",
        width = 140, height = 60, units = "mm")
 
 # Printing `xtables` for appendix -----------------------------------------

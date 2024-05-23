@@ -33,7 +33,17 @@ ests <- ests %>%
     )
   )
 
-ggplot(ests, aes(x = parameter2, y = Estimate)) + 
+# Prothrombin fix:
+sf.prot <- unname(quantile(rowSums(joints$prothrombin$REs),.8))
+ests2 <- ests %>% 
+  mutate(
+    `97.5%` = ifelse(parameter == 'gamma_prothrombin', sf.prot * `97.5%`, `97.5%`),
+    `2.5%` = ifelse(parameter == 'gamma_prothrombin', sf.prot * `2.5%`, `2.5%`),
+    `Estimate` = ifelse(parameter == 'gamma_prothrombin', sf.prot * `Estimate`, `Estimate`),
+    response = ifelse(response == 'Prothrombin', 'Prothrombin*', response)
+  )
+
+ggplot(ests2, aes(x = parameter2, y = Estimate)) + 
   geom_hline(aes(yintercept=0), lwd = .25, lty = 3) +
   geom_point(size=.5) + 
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.2, lwd = .25) + 
@@ -48,7 +58,7 @@ ggplot(ests, aes(x = parameter2, y = Estimate)) +
     strip.text = element_text(size=6,vjust=1)
   )
 
-ggsave("./UnivSurvModels.png", width = 140, height = 90, units = "mm")
+ggsave("./UnivSurvModels-corrected.png", width = 140, height = 90, units = "mm")
 
 
 # Elapsed times -----------------------------------------------------------
