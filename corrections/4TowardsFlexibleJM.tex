@@ -1,0 +1,732 @@
+\begin{chapter}{\label{cha:flexible}Faster Fitting: Towards Fast \& Flexible Joint Models}
+\vfill
+\begin{center}
+    \begin{bluebox}
+    The work presented in this chapter is based on the publication:\\Murray, J., Philipson, P., 2023. \textit{Fast estimation for generalised multivariate joint models using an approximate EM algorithm}. Computational Statistics \& Data Analysis 187, 107819. doi: \href{https://doi.org/10.1016/j.csda.2023.107819}{\tt{10.1016/j.csda.2023.107819}}.
+    \end{bluebox}
+\end{center}
+\vfill
+\clearpage
+
+\section{Generalised linear mixed models}\label{sec:flexible-glmm-overview}
+ Hitherto, we have solely considered joint models under the `classic' framework of longitudinal outcomes and an event-time process in Chapters \ref{cha:methods-classic} and \ref{cha:approx} which are ubiquitous in literature. The key assumption therein being that the (typically continuous) longitudinal responses are Gaussian, or their transformations. However, this assumption may be unrealistic in clinical settings, where transformations may complicate interpretation. 
+ 
+ We consider an alternative modelling approach: Seeking to remove the Gaussian restriction on the model for the longitudinal process \eqref{eq:methods-lmm}. In this section, we vacate the joint modelling landscape habituated up to this point as we introduce such an extension; namely generalised linear mixed models (GLMMs). 
+ 
+ \subsection{Formulation of GLMMs}\label{sec:flexible-glmm-formulation}
+ Instead of the LMM presented in \eqref{eq:methods-lmm}, we now model the expected value of the response conditioned on the random effects
+ \begin{equation}
+     h\lb\Exp\ls\Y|\b\rs\rb = \linp = \linpRHS,
+ \label{eq:flexible-glmm}    
+ \end{equation}
+ where $h\lb\cdot\rb$ is a known, monotonic link function providing the relationship between the conditional distribution of the response $\Y$ and the linear predictor $\linp$. In \eqref{eq:flexible-glmm}, $\X_i$ and $\Z_i$ share the same definition as previously seen in \eqref{eq:methods-lmm} in Section \ref{sec:methods-notation}. We note that the LMM \eqref{eq:methods-lmm} is captured by the GLMM framework \eqref{eq:flexible-glmm} with $h\lb\cdot\rb$ set as the identity function.
+ 
+ To estimate parameters and make inference under a GLMM we require the marginal likelihood $f\lb\Y|\bO\rb$, since it represents the probability of observing $\Y$ given parameters $\bO$. Furthermore, this quantity \textit{allows} us to proceed by maximum likelihood (\ie since we iteratively find the set of parameters which maximise it), or indeed by Bayesian methods since the marginal likelihood is present in the posterior sampled. The log-likelihood (marginal over the random effects) can be written as
+ \begin{equation}
+     \ell(\bO)=\Si\log f\lb\Y|\bO\rb = \log\int f\lb\Y|\b;\bO\rb f\lb\b|\bO\rb d\b.
+ \label{eq:flexible-marginal-likelihood}
+ \end{equation}
+ For explicitness' sake, in the above, $f\lb\Y|\b;\bO\rb$ is the conditional likelihood of the response given the random effects and parameters $\bO$, and is `decided' based on the specification of the model (i.e. the conditional distribution $\Y|\b$); the next term $f\lb\b|\bO\rb$ is the conditional likelihood of the random effects, which as previously circumscribed in \eqref{eq:methods-lmm} are \textit{always}  multivariate normal. Overall, the right hand side of \eqref{eq:flexible-marginal-likelihood} simply averages the response over all values of the random effects given the model parameters. 
+ 
+Owing to this integral, no closed form solution exists, instead requiring the use of numerical integration techniques such as those surveyed (albeit under the setting of joint models) in Sections \ref{sec:numint-GH}--\ref{sec:numint-MC}.
+
+\subsection{Advantages of GLMMs}\label{sec:flexible-glmm-advantages}
+Modelling a response of interest by a GLMM instead of employing an LMM on a transformed version of said response is likely advantageous. As we previously outlined in Section \ref{sec:intro-evolution-glmm}, a biomarker of interest may come in the form of a binary presence/absence; questionnaire scores, for instance, will manifest as counts; skewed continuous data \eg waiting times will most likely not be Gaussian; and Likert-type responses are frequently used in clinical trials \eg pain scores. In these cases, the practitioner can consider the `most natural' distribution for the data at hand. 
+
+In addition to the greater breadth of response distributions one can consider for a response, GLMMs for count models can be extended to accommodate an undue excess of zeroes in the data (zero-inflation), or structural absence of zeroes (zero-truncation). Furthermore, the dispersion defined as the ratio of variance to the mean of the response can also be modelled, potentially improving the model's goodness of fit. GLMMs therefore provide a flexible modelling framework which arms the statistician with a great many `levers to pull'. 
+
+However, whilst there are numerous advantages to this modelling route, there is an accompanying uptake in computational demand. The introduction of many model extensions in addition to the already-present random effects specification may lead to more frequent model over-fitting\footnote{In the context of a GLMM, over-fitting usually occurs due to fitting too many random effects, which in actuality capture noise in the data, the model then attributing this to purported variance amongst the random effects, such that the resultant model is not generalisable. Given then the additional inclusion of a dispersion model which alters the variance structure, over-fitting may occur more readily owing to the presence of less variation given the dispersion model, which the model still attempts to attribute to the random effects}. Indeed, one may feel overwhelmed by choice; choosing a complex, computationally expensive model which does not significantly outperform a simpler one and so on.
+
+\section{Beyond Gaussian assumptions and the Bayesian paradigm in joint modelling}\label{sec:flexible-intro}
+With GLMMs established in Section \ref{sec:flexible-glmm-overview}, we turn attention now to their inclusion in a joint model. We note the relatively rapid emergence of joint models with (at least one) GLMM sub-model in Section \ref{sec:intro-evolution-glmm}, given the onus of accommodating diverse response types. 
+
+We now proceed by describing the exclusive use of the Bayesian paradigm for fitting these `generalised' joint models, before re-introducing the approximation used in Chapter \ref{cha:approx} to return to the maximum likelihood framework utilised throughout.
+
+\subsection{Beyond the Gaussian assumption: Accommodating diverse longitudinal outcomes}\label{sec:flexible-intro-gaussian}
+The assumption that the longitudinal response(s) of interest are Gaussian may be for convenience of implementation: It allows for us to consider run-of-the-mill software to fit LMMs, as well as allowing for closed-form updates to the fixed effect and dispersion parameters we outlined in \eqref{eq:methods-classicMstep}, and shown under the approximate EM algorithm in Sections \ref{sec:approx-Mstep-betagauss} and \ref{sec:approx-Mstep-sigma2}, which compound said relative computational ease.
+
+Clearly then, there exists something of a `market' to be able to support joint models whose longitudinal sub-models are of differing types; with burgeoning examples in literature -- as well as software availability -- surrounding them. Advantages of this modelling approach was outlined in Section \ref{sec:flexible-glmm-advantages}. We note that these \textit{exclusively exist} in the Bayesian framework, to the best of the author's knowledge.
+
+\subsection{Reliance on Bayesian approaches}\label{sec:flexible-intro-bayes}
+Hitherto, implementations of GLMM sub-models in a multivariate joint model setting have been predicated on the aforementioned Bayesian paradigm -- to the best of the author's knowledge -- with no implementation via maximum likelihood, which is closer in spirit to well-established methods for analysing clinical data such as the Cox model and linear mixed effects model for survival and longitudinal data respectively; with disquisition given in Chapter \ref{cha:methods-classic} in addition to classic treatise by \citet{JMOverview}. If MVJMs are to find their way into routine clinical use in a manner akin to Cox PH and LMMs it is important to at least have the \textit{option} of a non-Bayesian implementation; the work presented in this Chapter attempts to fill this current void. 
+
+Ostensibly, up to this point in joint modelling literature, only MCMC (or indeed, approximate Bayesian inference in the case of \tt{INLA}) can accommodate the joint models described in the previous section. Said reliance on MCMC methods harkens back to the `expanded form' taken by the conditional expectations required by the semiparametric maximum likelihood approach undertaken in Sections \ref{sec:methods-estimation-EM} and \ref{sec:methods-Estepdetails}. Namely, we noted that the conditional density $\condb$ takes the form \eqref{eq:numint-expandtarget}
+\begin{equation*}
+    \condb=\frac{\sfT\bY}{\int_{-\infty}^\infty\sfT\bY d\b}.
+\end{equation*}
+Recall additionally, we previously enjoyed -- under the assumed (multivariate) normality of the response $\Y|\b$ -- a \textit{tractable} expression for the density $\bY$ given by multivariate normal theory \eqref{eq:b-cond-mvn}, which acted as a foundation for \textit{nearly all} maximum likelihood implementations of the `classic' joint model, since it allowed for evaluation of expectations against the target density \eqref{eq:numint-target} whose expression existed in closed-form via \eg quadrature methods \citep{Wulfsohn97}, as described in Sections \ref{sec:numint-intro}--\ref{sec:numint-paGH}.
+
+Issues arise under maximum likelihood then in circumstances where the density $\bY$ \textit{doesn't} enjoy a neat, tractable expression. Instead, one must evaluate the density \eqref{eq:numint-problem}, wherein the marginal $f\lb\Y|\bO\rb$ involves integration over the random effects; at best some workable expression may well exist for certain exponential families, but perhaps owing to the wider use of the multivariate normal, they remain comparatively buried. 
+
+\subsection{Maximum likelihood approach via the approximate EM algorithm}\label{sec:flexible-intro-bernhardt}
+In Chapter \ref{cha:approx} we demonstrated use of an approximation on the conditional distribution of the random effects \citep{Bernhardt15, Murray2022}. This approximation \eqref{eq:approx-approx} effectively `collapses' down the \textit{entire} conditional density $\condb$ to the approximate normal distribution $\Napprox$, with $\hb$ and $\hS$ given in \eqref{eq:approx-bhat} and \eqref{eq:approx-Sigmahat}, respectively. Use of this approximation inherently then eschews \textit{any} consideration of the form of $\bY$, the density causing consternation around any possible non-Gaussian response $\Y|\b$ in the previous section, instead allowing us to consider $\condb$ by the same approximation, with a non-Gaussian model for $\Expi{\Y|\b}$. 
+
+Use of the approximation \eqref{eq:approx-approx} here, since we considered GLMMs at large, additionally then calls on results outside of joint modelling, where the random effects for \textit{any} GLMM are shown to be asymptotically normal \citep{baghishani2012}, something we appeal to here as we consider diverse longitudinal responses whose constituent sub-model is defined by \eqref{eq:flexible-glmm}.
+
+\section{Generalised multivariate joint models}\label{sec:flexible-gmvjm}
+\subsection{A flexible longitudinal specification}\label{sec:flexible-gmvjm-formulation}
+Revisiting the formulation laid-out in Section \ref{sec:methods-jm}, we now consider the case where we assume the conditional distribution of the $\kth$ response belongs to a member of the exponential family, such that it is modelled by the GLMM \eqref{eq:flexible-glmm}, introduced in Section \ref{sec:flexible-glmm-formulation}. The linear mixed model in \eqref{eq:methods-lmm} is replaced by a GLMM for each $\Y{_k}$ with linear predictor $\linpk$
+\begin{align}
+    h_k\lb \Expi{\Y{_k}|\b{_k}}\rb=\linpk=\X_{ik}\bb_k+\Z_{ik}\b{_k},
+\label{eq:flexible-jm-glmm}
+\end{align}
+where $h_k(\cdot)$ denotes the known monotonic link function imposed on the $\kth$ response. We then form the joint model previously outlined in Section \ref{sec:methods-notation} by inducing an association between the random effects present in linear predictor $\linpk$ and the hazard $\lambda_i(t)$ as previously defined in \eqref{eq:methods-survival}. The observed likelihood function for subject $i$ is altered slightly to
+\begin{align}
+    f\lb T_i, \Delta_i, \Y; \bO\rb &= \int_{-\infty}^\infty f\lb T_i, \Delta_i, \Y, \b; \bO\rb d\b \nonumber \\
+    &= \int_{-\infty}^\infty\ls\prod_{k=1}^K f\lb\Y{_k}|\b{_k};\bb_k,\bs_k\rb\rs f\lb T_i,\Delta_i|\b;\bg,\bm{\zeta}\rb f\lb\b|\mathrm{D}\rb d\b,
+    \label{eq:flexible-likelihood-glmm}
+\end{align}
+wherein $f\lb\Y{_k}|\cdot\rb$ now corresponds to an appropriate probability density function for the $\kth$ longitudinal response with dispersion parameters (if applicable) $\bs_k$. We explicitly note that the survival sub-model \eqref{eq:methods-survival} remains unchanged. 
+
+As was the case under the `classic' setting in Section \ref{sec:methods-likelihood}, we once more collate random effects $\b=\lb\b{_1}^\top,\dots,\b{_K}^\top\rb^\top$ for subject $i$; fixed effects $\bb=\lb\bb_1^\top,\dots,\bb_K^\top\rb^\top$; association parameters $\bg=\lb\gamma_1,\dots,\gamma_K\rb^\top$; and now dispersion parameters $\bs=\lb\bs_1^\top,\dots,\bs_K^\top\rb^\top$. If the $\kth$ sub-model does \textit{not} have a dispersion model (which we describe in the next section), its element is simply set to zero and ignored. The vector notation used for the dispersion parameter $\bs_k$ is also the simply general case; for \eg the Gaussian we considered in Chapters \ref{cha:methods-classic} and \ref{cha:approx}, this quantity simply represents (lazily) the scalar residual variance $\bs=\se$.
+
+We then construct the parameter vector $\bO=\lb\vech\lb\D\rb^\top,\bb^\top,\bs^\top,\bg^\top,\bm{\zeta}^\top\rb^\top$ for what we term the ``generalised'' multivariate joint model \eqref{eq:flexible-likelihood-glmm} (`GMVJM').
+
+\subsection{Dispersion models}\label{sec:flexible-gmvjm-disp}
+As alluded to in the previous section, if $\Y{_k}|\b{_k}$ is assumed to be distributed by (and subsequently modelled with) an exponential family member with dispersion parameter(s) $\bs_k$, then it is pertinent to be able to appropriately model this dispersion `within' the $\kth$ longitudinal sub-model. That is, allowing for the practitioner to impose beliefs on the nature of this dispersion as part of the joint model; doing so may affect the random effects $\b{_k}$, thereby affecting $\bg$ and possibly inference as a whole. Note we explicitly state which distributions we consider in the upcoming Section \ref{sec:flexible-gmvjm-distribs}, whilst in this short section we simply describe this dispersion model formulation. We introduce
+\begin{align}
+    \tilde{h}_k\lb\bphi{_k}\rb=\tilde{\bm{\eta}}_{ik}=\W{_k}\bs_k,
+\label{eq:flexible-dispmodel}
+\end{align}
+where $\W{_k}$ is the design matrix associated with the $\kth$ response for subject $i$, and $\tilde{h}_k\lb\cdot\rb$ is the known, monotonic, link function imposed on this linear predictor for the dispersion model for the $\kth$ longitudinal sub-model, $\tilde{\bm{\eta}}_{ik}$.
+
+We note a few special cases. In circumstances where dispersion is defined by an `intercept only' specification, $\W{_k}$ takes the form of a column vector of ones such that $\W{_k}\bs_k$ resolves to a scalar quantity; if there is no dispersion associated with the model then an empty matrix is used (since the corresponding  $\sigma_k\in\bs$ is zero and ignored); in the Gaussian case, $\W{_k}$ is set to one, such that one obtains the residual variance $\sek$.
+
+We note that the notation used here is a little confusing, mostly in its use across all GLMMs, but we believe it serves as a neat `catch-all', with its special cases written above.
+
+\subsection{Considered distributions for the longitudinal response}\label{sec:flexible-gmvjm-distribs}
+\rmtoc
+With the formulation of the longitudinal process, and optional dispersion models laid out in Sections \ref{sec:flexible-gmvjm-formulation} and \ref{sec:flexible-gmvjm-disp}, respectively, we now state candidate exponential families for the longitudinal response. Table \ref{tab:flexible-distribs} provides an overview for these candidate distributions, with following small sections seeking to provide more detail. Note in both Table \ref{tab:flexible-distribs} and the subsequent sections, we eschew the $k$ subscript for notational convenience.
+
+\begin{remark}
+    In log-likelihoods (and following calculations upon them), the element-wise product of two vectors $\bm{x}$ and $\bm{y}$ is written simply as $\bm{x}\bm{y}$ instead of the perhaps more correct $\bm{x}\odot\bm{y}$. This is simply due to formatting/space constraints (and secondarily due to the author's personal preference).
+\end{remark}
+
+\begin{table}[t]
+\begin{center}
+    \begin{tblr}{
+        colspec = {Q[c,l] Q[c,m] Q[c,m] Q[c,m]},
+        columns = {leftsep = 3pt, rightsep = 3pt},
+        row{odd[2]} = {bg=lightgray!20},
+        %row{2-Z} = {font=\small},
+        width=\textwidth
+    }
+    \SetRow{}
+    Distribution & Link & Domain & $f\lb\Y|\b;\ \cdot\rb$\\ 
+    \hline 
+    % Gaussian
+    $\Y|\b,\sigma^2\sim N\lb\bmu,\mathrm{V}_i\rb$ & % Distribution
+    {$h$: $\Exp[\Y]$} & % Link functions
+    {$\Y\in\mathbb{R};$\\ $\bmu\in\mathbb{R}$} & % Domains
+    {$-\frac{m_i}{2}\log2\pi-\frac{1}{2}\log|\mathrm{V}_i|$\\$-\frac{1}{2}\lb\Y-\bmu\rb^\top\mathrm{V}_i^{-1}\lb\Y-\bmu\rb$} \\ % PDF 
+    % Poisson
+    $\Y|\b\sim\mathrm{Po}\lb\bmu\rb$ &                                  % Distribution
+    {$h$: $\log\lb\Exp[\Y]\rb$;\\$\tilde{h}$: N/A} &            % Link functions
+    {$\Y\in\mathbb{N}_0;$\\ $\bmu\in\mathbb{R}^+$} &                    % Domain
+    {$\exp\{\bmu\}\bmu^{\Y}/\Y!$} \\                                    % PMF
+    % Binomial
+    $\Y|\b\sim\mathrm{Bin}\lb\bmu\rb$ & 
+    {$h$: $\mathrm{logit}\lb\Exp[\Y]\rb$;\\$\tilde{h}$: N/A} & 
+    {$\Y\in\lbr0,1\rbr$;\\$\bmu\in\ls0,1\rs$} & 
+    {$\bmu^{\Y}\lb\bone-\bmu\rb^{\lb\bone-\Y\rb}$} \\
+    % Negative binomial (glmmTMB::nbinom2)
+    $\Y|\b;\bs\sim\mathrm{NB}\lb\bmu,\bphi\rb$ &
+    {$h$: $\log\lb\Exp[\Y]\rb$;\\$\tilde{h}$: $\log\lb\bphi\rb$} &
+    {$\Y\in\mathbb{N}_0;$\\ $\bmu\in\mathbb{R}^+$}  &
+    {$\frac{\gam{\Y+\bphi}\bphi^{\bphi}\bmu^{\Y}}{\gam{\bphi}\gam{\Y+1}\lb\bmu+\bphi\rb^{\bphi+\Y}}$}\\
+    % Generalised Poisson (GP-1)
+    $\Y|\b;\bs\sim\mathrm{GP}\lb\bmu,\bphi\rb$ & 
+    {$h$: $\log\lb\Exp[\Y]\rb$;\\$\tilde{h}$: $\bphi$} &
+    {$\Y\in\mathbb{N}_0;$\\ $\bmu\in\mathbb{R}^+$}  &
+    {$\frac{\bmu\lb\bmu+\Y\bphi\rb^{\Y-1}}{\lb1+\bphi\rb^{\Y}\Y!}\exp\lbr-\frac{\bmu+\bphi\Y}{1+\bphi}\rbr$}\\
+    % Gamma
+    {$\Y|\b;\bs\sim\mathrm{Ga}\lb\bm{\vartheta}_i,\bphi\rb$\\$\bm{\vartheta}_i=\bmu/\bphi$} & 
+    {$h$: $\log\lb\Exp[\Y]\rb$;\\$\tilde{h}$: $\log\lb\bphi\rb$} &
+    {$\Y\in\mathbb{R}^+;$\\ $\bmu\in\mathbb{R}^+$}  &
+    {$\frac{\Y^{\bphi-1}}{\gam{\bphi}\bm{\vartheta}_i^{\bm{\vartheta}_i}}\exp\lbr-\frac{\Y}{\bm{\vartheta}_i}\rbr$}
+    \end{tblr}
+\end{center}
+\caption{Candidate exponential distributions conditioned on the random effects; the link functions as used in \eqref{eq:flexible-jm-glmm} and \eqref{eq:flexible-dispmodel}; the domain occupied by the response $\Y$ and the mean $\bmu=h^{-1}\lb\be\rb$; and the PMF/PDF. `Po': Poisson; `Bin': Binomial; `NB': Negative binomial; `GP': Generalised Poisson; `Ga': Gamma. Explanation for terms in the Gaussian case are given in Section \ref{sec:methods-likelihood}. $\mathbb{N}_0$ denotes the set of natural numbers with zero included. $\Gamma\lb\cdot\rb$ is the Gamma function. The linear predictor is invariably defined as $\be=\X_i\bb+\Z_i\b$.}
+\label{tab:flexible-distribs}
+\end{table}
+
+\subsubsection*{Poisson}
+The most obvious distribution for count data. The expectation and variance of the (conditionally) Poisson distributed response is given by $\Exp\ls\Y\rs=\Var\ls\Y\rs=\bmu$. No dispersion is considered in the Poisson case. The log-likelihood contribution from subject $i$, $\ell_i$, under the Poisson GLMM is
+\begin{equation}
+    \ell_i=\log f\lb\Y|\b;\bO\rb=\Y^\top\log\bmu-\boneT\bmu-\boneT\log\Y!
+\label{eq:flexible-poisson-ll}
+\end{equation}
+here $\bm{1}$ represents an $m_i$-vector of ones, such that e.g. $\boneT\bm{x}$ resolves to a scalar containing the sum of vector $\bm{x}$. The above assumption of equal mean and variance (\textit{equidispersion}) is, in actuality, a strong assumption. In fact, some classic texts admonish that equidispersion is the \textit{exception} in practise, and quite often violated \citep{McCullaghNelder89}.
+
+\subsubsection*{Binomial}
+The sole distribution considered for a binary response which takes values 0 or 1, with mean $\bmu=\exp\lbr\linp\rbr/\lb\bone+\exp\lbr\linp\rbr\rb\in[0,1]$. The expectation of the binomially distributed response is $\Exp\ls\Y\rs=\bmu$ (\ie the probability) with variance $\Var\ls\Y\rs=\bmu\lb\bone-\bmu\rb$. No dispersion is modelled. The log-likelihood of the binomial GLMM is 
+% \begin{equation}
+%     \ell_i=\log f\lb\Y|\b;\bO\rb = \Y^\top\log\bmu+\lb\bm{1}-\Y\rb^\top\log\lb\bm{1}-\bmu\rb.
+% \label{eq:flexible-binomial-ll}
+% \end{equation}
+\begin{equation*}
+    \ell_i=\log f\lb\Y|\b;\bO\rb = \Y^\top\log\bmu+\lb\bone-\Y\rb^\top\log\lb\bone-\bmu\rb,
+\end{equation*}
+which we rewrite in terms of the linear predictor $\linp$
+\begin{align*}
+    \ell_i&=\Y^\top\log\lb\frac{\exp\lbr\linp\rbr}{\bone+\exp\lbr\linp\rbr}\rb+\lb\bone-\Y\rb^\top\log\lb\bone-\frac{\exp\lbr\linp\rbr}{\bone+\exp\lbr\linp\rbr}\rb,\\
+    &=\Y^\top\log\lb\exp\lbr\linp\rbr\rb-\Y^\top\log\lb\bone+\exp\lbr\linp\rbr\rb+\lb\bone-\Y\rb^\top\lb-\log\lb\bone+\exp\lbr\linp\rbr\rb\rb,
+\end{align*}
+which is equivalent to 
+\begin{equation}
+    \ell_i=\Y^\top\linp-\boneT\log\lb\bone+\exp\lbr\linp\rbr\rb.
+\label{eq:flexible-binomial-ll}
+\end{equation}
+
+\subsubsection*{Negative binomial}
+As explained previously, the Poisson distribution's assumption of equal mean and variance is, in fact, quite a stringent one, which may be unrealistic in practise. If the variance is greater than the mean for some data, $\Var\ls\Y\rs>\Exp\ls\Y\rs$, then the data is \textit{over}dispersed. Note that in the case of grouped (\eg longitudinal) data, dispersion can also be measured within-group. Imposition of the Poisson in presence of overdispersion may underestimate standard errors of parameters; potentially prematurely declaring significance of its parameters. 
+
+A popular distribution for modelling overdispersed count data is the negative binomial. The log-likelihood for the negative binomial GLMM is
+\begin{equation}
+    \begin{aligned}
+        \ell_i=\log f\lb\Y|\b;\bO\rb=&\boneT\lbr\lgam{\Y+\bphi}-\lgam{\bphi}-\lgam{\Y+\bm{1}}\rbr\\
+        &+\bphi^\top\log\bphi-\bphi^\top\log\lb\bmu+\bphi\rb+\Y^\top\ls\log\bmu-\log\lb\bmu+\bphi\rb\rs.
+    \end{aligned}
+\label{eq:flexible-negbin-ll}
+\end{equation}
+In literature, the above parameterisation of the negative binomial is referred to as the Type 1 negative binomial (`NB-1', etc.\!). Under this parameterisation, the expected value of the response is $\Exp\ls\Y\rs=\bmu$ with variance $\Var\ls\Y\rs=\bmu+\bmu^2/\bphi$. 
+
+For completeness' sake, we note that these NB models are sometimes (collectively) called Poisson-Gamma models, since they combine the Poisson distribution for modelling counts with a Gamma distribution, which accounts for the variability in the underlying rate parameter \citep{Ismal2007}.
+\subsubsection*{Generalised Poisson (`GP-1')}
+Although the previously seen negative binomial model accounts for overdispersion in the rate of a Poisson distribution, it is also possible for some given data to exhibit the opposite, $\Var\ls\Y\rs<\Exp\ls\Y\rs$, \textit{under}dispersion. One popular approach for modelling \textit{both} underdispersed \textit{and} overdispersed count data is the generalised Poisson (`GP'). As with the NB approach, several parameterisations of the distribution exist. We opt for one introduced in \citet{Zamani2012}, referred to therein as the `GP-1' parameterisation. The log-likelihood of the GP-1 GLMM is  
+\begin{equation}
+  \begin{aligned}
+        \ell_i=\log f\lb\Y|\b;\bO\rb=&\boneT\log\bmu+\lb\Y-\bm{1}\rb^\top\log\lb\bmu+\bphi\Y\rb-\Y^\top\log\lb\bm{1}+\bphi\rb\\
+        &\qquad\qquad-\boneT\log\Y!-\boneT\lbr\frac{\bmu+\bphi\Y}{\bm{1}+\bphi}\rbr.
+  \end{aligned}
+\label{eq:flexible-genpois-ll}    
+\end{equation}
+The expectation of the GP-1 distributed response is simply the mean $\Exp\ls\Y\rs=\bmu$ with variance $\Var\ls\Y\rs=\lb\bm{1}+\bphi\rb^2\bmu$. \citet{Zamani2012} point out that the dispersion parameter $\bphi$ (the item we want to estimate) informs the dispersion \textit{factor} $\lb\bm{1}+\bphi\rb^2$, which tells us the multiplicative factor of difference between the mean and variance. Overdispersion occurs when $\bphi>0$ and underdispersion when $\bphi<0$; interestingly \eqref{eq:flexible-genpois-ll} reduces to the Poisson \eqref{eq:flexible-poisson-ll} when $\bphi=\bm{0}$, trivial proof is provided in Appendix \ref{sec:appendix-gp2poiss-proof}. One drawback with this GP-1 model is that the dispersion parameter $\bphi$ exists on a bounded scale
+\begin{equation}
+    \max\lb-1,-\bmu/4\rb<\frac{\bphi}{\bone+\bphi}<1,
+\label{eq:flexible-genpois-phibound}
+\end{equation}
+which could make estimation, as well as data generation, a tricky feat.
+\subsubsection*{Gamma}
+The Gamma distribution is a worthy candidate for instances where the data is continuous, but imposing the normal distribution would be inappropriate, an example of this could be waiting times (or indeed anything time-related, as these distributions tend to be skew). The Gamma is parameterised by the shape $\bphi\in\mathbb{R}^+$ and scale $\bm{\vartheta}_i=\bmu/\bphi$ parameters. The log link is used instead of the canonical inverse link due to the latter option here being problematic \citep{BolkerGLMMFAQ}; the Gamma then being used when \eg the log-normal distribution would also be a good candidate. The log-likelihood for the Gamma GLMM is
+\begin{align}
+        \ell_i=\log f\lb\Y|\b;\bO\rb &= \lb\bphi-\bm{1}\rb^\top\Y-\boneT\lb\frac{\Y}{\bm{\vartheta}_i}\rb-\boneT\lgam{\bphi}-\bphi^\top\log\bm{\vartheta}_i \nonumber \\
+        &=\lb\bphi-\bm{1}\rb^\top\Y-\boneT\lb\frac{\Y\bphi}{\bmu}\rb-\boneT\lgam{\bphi}-\bphi^\top\log\lb\frac{\bmu}{\bphi}\rb.
+\label{eq:flexible-Gamma-ll}
+\end{align}
+The shape parameter $\bphi$ determines (as the name suggests) the shape of the resulting Gamma distribution, encapsulating the resulting skewness (\ie how `quickly' or `sharply' the pdf decays). By estimating this, we may better capture the characteristics of the conditional distribution of the response, thereby better ascertaining its variability (over \eg assuming log normality, as previously suggested).
+\resettocmain
+\section{Estimation for generalised multivariate joint models}
+With the observed data likelihood \eqref{eq:flexible-likelihood-glmm} established along with the candidate exponential family distributions we consider in this chapter, we can turn our attention toward estimation of the parameter vector $\bO$. As was described in Section \ref{sec:flexible-intro-bayes}, estimation of $\bO$ is exclusively done under a Bayesian framework in existing literature, with the following approach via maximum likelihood being a novel methodology to the best of the author's knowledge. 
+
+Following the necessary update to the observed data likelihood \eqref{eq:flexible-jm-glmm}, we additionally need to slightly alter the E-step \eqref{eq:methods-E-step} to account for the $K$ potentially different response families. At the EM step at iteration $(m+1)$ we seek to maximise 
+\begin{equation}
+    \begin{aligned}
+        Q\lb\bO;\bO^{(m)}\rb=\Si\Exp_i\Bigg[&\lbr\Sk\log     f\lb\Y{_k}|\b{_k};\bO^{(m)}\rb\rbr+
+        \log f\lb T_i,\Delta_i|\b;\bO^{(m)}\rb \\&\qquad+ 
+        \log f\lb\b|\bO^{(m)}\rb\Bigg],
+    \end{aligned}
+\label{eq:flexible-Estep}
+\end{equation}
+wherein the log densities for the survival process and random effects are the \textit{same} as previously defined in \eqref{eq:methods-loglik-survival} and \eqref{eq:methods-loglik-ranefs}, respectively, and the $\kth$ longitudinal density is defined by either the Gaussian \eqref{eq:methods-lmm} or other candidate members of the exponential family \eqref{eq:flexible-poisson-ll}--\eqref{eq:flexible-Gamma-ll}.
+
+The M-step at iteration $(m+1)$ is equivalently formed by maximising the sum of $n$ sets of conditional expectations $\Exp\ls g\lb\b\rb|T_i,\Delta_i,\Y;\bO^{(m)}\rs$, which are evaluated against the conditional distribution $f\big(\b|T_i,\Delta_i,\Y;\bO^{(m)}\big)$. 
+
+\subsection{Parameter estimation via the approximate EM algorithm}
+As was outlined in Sections \ref{sec:flexible-intro-bayes}--\ref{sec:flexible-intro-bernhardt}, we proceed with the approximation \eqref{eq:approx-approx} since this allows us to steer clear of the (potentially) problematic density $\bY$, which has intractable form outside of the multivariate normal case \eqref{eq:b-cond-mvn}.
+
+The approximate EM algorithm follows the same steps taken in Section \ref{sec:approx-approx-specificbit}, save for the starting values by \tt{glmmTMB} \citep{R-glmmTMB} now returning the starting values for dispersion parameter $\bs^{(0)}=\lb\bs^{(0){^\top}}_1,\dots,\bs^{(0){^\top}}_K\rb^\top$, as the user can supply the `\tt{dispformula}' argument here to specify the dispersion model \eqref{eq:flexible-dispmodel} for each of the $k=1,\dots,K$ sub-models.
+
+Now, we consider the update to the parameter vector from iteration $(m)$ to iteration $(m+1)$. We note that said update contains elements whose contribution to \eqref{eq:flexible-Estep} (thereby their subsequent parameter update) does \textit{not} change as we consider the more flexible case. Namely, the covariance matrix of the random effects $\D$ (whose update we outlined in Section \ref{sec:approx-Mstep-D}); the baseline hazard $\lo\lb\cdot\rb$ (Section \ref{sec:approx-Mstep-l0}); and survival parameters $\bm{\Phi}$ (Section \ref{sec:approx-Mstep-Phi}). Therefore, we next consider the parameter updates for the fixed effects $\bb^{(m)}\rightarrow\bb^{(m+1)}$, and newly-introduced dispersion parameters $\bs^{(m)}\rightarrow\bs^{(m+1)}$.
+
+% Split these out to get better secdepth -- undecided!!
+\subsection{The M-step for fixed effects \texorpdfstring{$\bb$}{beta}}\label{sec:flexible-Mstep-fixef}
+\rmtoc
+We first consider the parameter update for the $\kth$ response's fixed effects $\bb_k$ for each exponential family we outlined in Section \ref{sec:flexible-gmvjm-distribs}. Irregardless of family chosen, we undertake a one-step Newton-Raphson iteration to update the parameter vector $\bb_k^{(m)}\rightarrow\bb_k^{(m+1)}$ 
+\begin{equation}
+    \bb_k^{(m+1)}=\bb_k^{(m)}-\ls\Si\mathrm{H}_i\lb\bb_k^{(m)}\rb\rs^{-1}\ls\Si s_i\lb\bb_k^{(m)}\rb\rs,
+\label{eq:flexible-NRstep-beta}
+\end{equation}
+where $s_i\lb\bb_k^{(m)}\rb$ is the gradient vector of the conditional expectation taken on the $\kth$ complete data log-likelihood evaluated at the current estimate for the sub-model's fixed effects, and $\mathrm{H}_i\lb\bb_k^{(m)}\rb$ is the Hessian matrix of second derivatives for subject $i$. Hereafter, we drop the subscript $k$ for notational convenience.
+
+In each of the proceeding sections -- where we consider \textit{family specific} parameter updates -- we derive two quantities
+\begin{align}
+    \dotlinp=\frac{\tExpi{\ell_i\lb\linp\rb}}{\pt\linp},\qquad\ddotlinp=\frac{\tExpi{\ell_i\lb\linp\rb}}{\pt\linp\pt\linp}.
+\label{eq:flexible-tExpi-derivs}
+\end{align}
+These two quantities allow us to form the score and Hessian in \eqref{eq:flexible-NRstep-beta},
+\begin{equation}
+    \begin{aligned}
+        s_i\lb\bb^{(m)}\rb &= \X_i^\top\dotlinp,\\
+        \mathrm{H}_i\lb\bb^{(m)}\rb &= \X_i^\top\diag{\ddotlinp}\X_i,
+    \end{aligned}
+\label{eq:flexible-score-hessian-derivs}
+\end{equation}
+where $\diag{\ddotlinp}$ is an $m_{i}\times m_{i}$ matrix with the values of the second derivative on its diagonal. The reason for undertaking this approach is it allows the author to escape more complex vector calculus, whilst achieving the same end result, by simply differentiating the quantity $\tExpi{\ell_i\lb\linp\rb}$ twice with respect to the linear predictor (essentially ignoring it being a vector).
+
+For each family, we make use of the approximation \eqref{eq:approx-Mstep-longitappx}, which we re-write here for convenience's sake:
+\begin{equation}
+    \linp=\X_i\bb+\Z_i\b\appx N\lb\X_i\bb+\Z_i\hb,\Z_i\hS\Z_i^\top\rb=N\lb\hbmu,\mathrm{A}_i\rb.
+\label{eq:flexible-linp-approx}
+\end{equation}
+\subsubsection{Poisson}
+The log-likelihood \eqref{eq:flexible-poisson-ll} w.r.t $\bb$ (housed in linear predictor $\linp$) is
+\begin{equation*}
+    \elli{\linp}\unsetp{\bb}\Y^\top\linp-\boneT\exp\lbr\linp\rbr
+\end{equation*}
+with expectation
+\begin{align*}
+    \Expi{\elli{\linp}}&=\Expi{\Y^\top\linp-\boneT\exp\lbr\linp\rbr}\\
+    &=\Y^\top\Expi{\linp}-\boneT\Expi{\exp\lbr\linp\rbr}.
+\end{align*}
+By \eqref{eq:flexible-linp-approx} we obtain the approximate expectation
+\begin{align*}
+    \tExpi{\elli{\linp}}=\Y^\top\hbmu-\boneT\exp\lbr\hbmu+\btau^2/2\rbr,
+\end{align*}
+since the term $\exp\lbr\hbmu\rbr$ is log-normally distributed by \eqref{eq:flexible-linp-approx}. However, this log-normal term tends to be askew, such that appraisal at the mean 
+$\exp\lbr\hbmu+\btau^2/2\rbr$ is inappropriate; to which end we appraise instead using the median $\exp\lbr\hbmu\rbr$, which tends to be more centered in the peak of the resulting posterior distribution
+\begin{align*}
+    \tExpi{\elli{\linp}}=\Y^\top\hbmu-\boneT\exp\lbr\hbmu\rbr,
+\end{align*}
+with justification given in Section \ref{sec:justification-integrands}. We can then obtain our two quantities of interest
+\begin{align}
+    \dotlinp = \Y-\exp\lbr\hbmu\rbr,\qquad\ddotlinp=-\exp\lbr\hbmu\rbr.
+\label{eq:flexible-Mstep-beta-poisson}
+\end{align}
+
+\subsubsection{Binomial}
+The log-likelihood \eqref{eq:flexible-binomial-ll} w.r.t $\bb$ is 
+\begin{align*}
+    \elli{\linp}\unsetp{\bb}\Y^\top\linp-\boneT\log\lb\bone+\exp\lbr\linp\rbr\rb,
+\end{align*}
+with expectation
+\begin{align*}
+    \Expi{\elli{\linp}}&=\Expi{\Y^\top\linp-\boneT\log\lb\bone+\exp\lbr\linp\rbr\rb}\\
+    &=\Y^\top\Expi{\linp}-\boneT\Expi{\log\lb\bone+\exp\lbr\linp\rbr\rb}.
+\end{align*}
+Applying \eqref{eq:flexible-linp-approx} we obtain the approximate expectation using Gauss-Hermite quadrature with $\varrho$ weights and abscissae, as previously introduced in Section \ref{sec:approx-Mstep-betagauss}
+\begin{align*}
+    \tExpi{\elli{\linp}}&=\Y^\top\hbmu-\boneT\Sl w_l\log\lb\bone+\exp\lbr\hbmu + \btau v_l\rbr\rb.
+\end{align*}
+Finally, we obtain the two quantities of interest:
+\begin{equation}
+    \begin{aligned}
+        \dotlinp &= \Y-\Sl w_l\frac{\exp\lbr\hbmu + \btau v_l\rbr}{\bm{1} + \exp\lbr\hbmu + \btau v_l\rbr},\\
+        \ddotlinp &= -\Sl w_l\frac{\exp\lbr\hbmu + \btau v_l\rbr}{\lb\bm{1} + \exp\lbr\hbmu + \btau v_l\rbr\rb^2}.
+    \end{aligned}
+\label{eq:flexible-Mstep-beta-binomial}    
+\end{equation}
+
+\subsubsection{Negative binomial}
+The log-likelihood \eqref{eq:flexible-negbin-ll} pertaining to $\bb$ is given by
+\begin{equation*}
+    \elli{\linp}\unsetp{\bb}\bphi^\top\log\lb\exp\lbr\linp\rbr+\bphi\rb+\Y^\top\ls\log\exp\lbr\linp\rbr-\log\lb\exp\lbr\linp\rbr+\bphi\rb\rs,
+\end{equation*}
+with expectation
+\begin{align*}
+    \Expi{\elli{\linp}}&=\Expi{\bphi^\top\log\lb\exp\lbr\linp\rbr+\bphi\rb+\Y^\top\linp-\Y^\top\log\lb\exp\lbr\linp\rbr+\bphi\rb}\\
+    &=\bphi^\top\Expi{\log\lb\exp\lbr\linp\rbr+\bphi\rb}+\Y^\top\Expi{\linp}-\Y^\top\Expi{\log\lb\exp\lbr\linp\rbr+\bphi\rb}\\
+    &=\Y^\top\Expi{\linp}+\lb\bphi-\Y\rb^\top\Expi{\log\lb\exp\lbr\linp\rbr+\bphi\rb}.
+\end{align*}
+Next, appraising via \eqref{eq:flexible-linp-approx} we obtain the approximate expectation
+\begin{equation*}
+    \tExpi{\elli{\linp}}=\Y^\top\hbmu + \lb\bphi-\Y\rb^\top\Sl w_l\log\lb\exp\lbr\hbmu+\btau v_l\rbr+\bphi\rb,
+\end{equation*}
+before finally the first and second derivatives with respect to the linear predictor $\linp$,
+\begin{equation}
+    \begin{aligned}
+        \dotlinp&=\Y-\lb\Y+\bphi\rb\Sl w_l\frac{\exp\lbr\hbmu+\btau v_l\rbr}{\bphi + \exp\lbr\hbmu+\btau v_l\rbr},\\
+        \ddotlinp&=-\lb\Y+\bphi\rb\Sl w_l\frac{\bphi\exp\lbr\hbmu+\btau v_l\rbr}{\lb\bphi+\exp\lbr\hbmu+\btau v_l\rbr\rb^2}.
+    \end{aligned}
+\label{eq:flexible-Mstep-negbin}
+\end{equation}
+\subsubsection{Generalised Poisson}
+The log-likelihood \eqref{eq:flexible-genpois-ll} pertaining to $\bb$ is given by
+\begin{equation*}
+    \elli{\linp}\unsetp{\bb}\boneT\linp+\lb\Y-\bm{1}\rb^\top\log\lb\exp\lbr\linp\rbr+\bphi\Y\rb-\boneT\frac{\exp\lbr\linp\rbr}{\bm{1}+\bphi},
+\end{equation*}
+with expectation
+\begin{align*}
+    \Expi{\elli{\linp}}&=\Expi{\boneT\linp+\lb\Y-\bm{1}\rb^\top\log\lb\exp\lbr\linp\rbr+\bphi\Y\rb-\boneT\frac{\exp\lbr\linp\rbr}{\bm{1}+\bphi}}\\
+    &=\boneT\Expi{\linp}+\lb\Y-\bm{1}\rb^\top\Expi{\log\lb\exp\lbr\linp\rbr+\bphi\Y\rb}-\boneT\frac{\Expi{\exp\lbr\linp\rbr}}{\bm{1}+\bphi},
+\end{align*}
+which we evaluate by approximation \eqref{eq:flexible-linp-approx}
+\begin{align*}
+    \tExpi{\elli{\linp}}=\boneT\hbmu-\boneT\frac{\exp\lbr\hbmu\rbr}{\bm{1}+\bphi}+\lb\Y-\bm{1}\rb^\top\Sl w_l\log\lb\exp\lbr\hbmu+\btau v_l\rbr+\bphi\Y\rb.
+\end{align*}
+In this approximate expectation, we once more appraise the expected value of the log-normal quantity, $\Expi{\exp\lbr\hbmu\rbr}$, by the median of the log-normal distribution to escape issues surrounding the mean of the arising log-normal distribution usually being located away from its modal mass, with some justification provided in Section \ref{sec:justification-integrands}. Finally, the two quantities necessary for updating $\bb$ are
+\begin{equation}
+    \begin{aligned}
+        \dotlinp &= \bm{1} - \frac{\exp\lbr\hbmu\rbr}{\bm{1}+\bphi} + \lb\Y-\bm{1}\rb\Sl w_l\frac{\exp\lbr\hbmu+\btau v_l\rbr}{\exp\lbr\hbmu+\btau v_l\rbr + \bphi \Y},\\
+        \ddotlinp &=  - \frac{\exp\lbr\hbmu\rbr}{\bm{1}+\bphi} + \lb\Y-\bm{1}\rb\Sl w_l\frac{\bphi\Y\exp\lbr\hbmu+\btau v_l\rbr}{\lb\exp\lbr\hbmu+\btau v_l\rbr + \bphi \Y\rb^2}
+    \end{aligned}
+\label{eq:flexible-Mstep-genpois}
+\end{equation}
+\subsubsection{Gamma}
+The log-likelihood \eqref{eq:flexible-Gamma-ll} which involves $\bb$ is 
+\begin{align*}
+    \elli{\linp}&\unsetp{\bb}-\boneT\lb\frac{\Y\bphi}{\exp\lbr\linp\rbr}\rb-\bphi^\top\log\lb\frac{\exp\lbr\linp\rbr}{\bphi}\rb,\\
+    &=-\boneT\lb\frac{\Y\bphi}{\exp\lbr\linp\rbr}\rb-\bphi^\top\linp,
+\end{align*}
+with expectation
+\begin{align*}
+    \Expi{\elli{\linp}}&=\Expi{-\boneT\lb\frac{\Y\bphi}{\exp\lbr\linp\rbr}\rb-\bphi^\top\linp}\\
+    &=-\boneT\lb\frac{\Y\bphi}{\Expi{\exp\lbr\linp\rbr}}\rb-\bphi^\top\Expi{\linp},
+\end{align*}
+which we can once more evaluate by using approximation \eqref{eq:flexible-linp-approx}
+\begin{align*}
+    \tExpi{\elli{\linp}}&=-\boneT\lb\frac{\Y\bphi}{\exp\lbr\hbmu\rbr}\rb-\bphi^\top\hbmu.
+\end{align*}
+Fairly trivially then we obtain our two key quantities:
+\begin{equation}
+    \dotlinp = \bphi\lb\exp\lbr-\hbmu\rbr\Y-\bm{1}\rb,\qquad\ddotlinp=-\exp\lbr-\hbmu\rbr\Y\bphi.
+\label{eq:flexible-Mstep-Gamma}
+\end{equation}
+\resettocmain
+\subsection{The M-step for dispersion parameters \texorpdfstring{$\bs$}{sigma}}\label{sec:flexible-Mstep-disp}
+\rmtoc
+We now consider updates to the dispersion parameters where applicable. We note that the residual variance $\sek\in\bs$ for the $\kth$ Gaussian response remains unchanged from Section \ref{sec:approx-Mstep-sigma2}. In proceeding sections, we only present derivations of the quantity $\tExpi{\ell_i\lb\bs_k\rb}$, and note that we obtain $s_i(\bs_k)$ and $\mathrm{H}_i\lb\bs{_k}\rb\ \forall\ i=1,\dots,n$ using central differencing, which we outline in Appendix \ref{sec:appendix-numdiff}. We can use these quantities to form the Newton-Raphson iteration to update $\bs_k^{(m)}\rightarrow\bs_k^{(m+1)}$ in an manner analogous to \eqref{eq:flexible-NRstep-beta}, namely
+\begin{equation}
+    \bs_k^{(m+1)}=\bs_k^{(m)}-\ls\Si\mathrm{H}_i\lb\bs_k^{(m)}\rb\rs^{-1}\ls\Si s_i\lb\bs_k^{(m)}\rb\rs,
+\label{eq:flexible-NRstep-sigma}
+\end{equation}
+if the $\kth$ family is either Negative binomial, Generalised Poisson or Gamma. In the next sub-sections, we present the approximate expectations (sans $k$-notation) upon which we carry out the numerical differentiation routines. The dispersion parameter(s) $\bs$ is included in requisite expressions by $\bphi$ through some known link function $\tilde{h}\lb\cdot\rb$ given in Table \ref{tab:flexible-distribs}.
+\subsubsection{Negative binomial}
+The contribution of dispersion parameter $\bs$ to the negative binomial log-likelihood \eqref{eq:flexible-negbin-ll} is given by
+\begin{align*}
+    \elli{\bs}&\unsetp{\bs}\boneT\lbr\lgam{\Y+\bphi}-\lgam{\bphi}\rbr + \bphi^\top\log\bphi-\lb\bphi+\Y\rb^\top\log\lb\exp\lbr\linp\rbr+\bphi\rb,
+\end{align*}
+which has expectation 
+\begin{align*}
+    \Expi{\elli{\bs}}&=\boneT\lbr\lgam{\Y+\bphi}-\lgam{\bphi}\rbr + \bphi^\top\log\bphi\\&\qquad\qquad\qquad\qquad-\lb\bphi+\Y\rb^\top\Expi{\log\lb\exp\lbr\linp\rbr+\bphi\rb},
+\end{align*}
+which can be appraised using the approximation \eqref{eq:flexible-linp-approx}, resulting in the required expectation 
+\begin{equation}
+    \begin{aligned}
+        \tExpi{\elli{\bs}}&=\boneT\lbr\lgam{\Y+\bphi}-\lgam{\bphi}\rbr + \bphi^\top\log\bphi\\&\qquad\qquad\qquad-\lb\bphi+\Y\rb^\top\Sl w_l\log\lb\exp\lbr\hbmu+\btau v_l\rbr+\bphi\rb.
+    \end{aligned}
+\label{eq:flexible-Mstep-sigma-negbin}
+\end{equation}
+\subsubsection{Generalised Poisson}
+The corresponding portion of the log-likelihood \eqref{eq:flexible-genpois-ll} is 
+\begin{align*}
+    \elli{\bs}\unsetp{\bs}\lb\Y-\bm{1}\rb^\top\log\lb\exp\lbr\linp\rbr+\bphi\Y\rb-\Y^\top\log\lb\bm{1}+\bphi\rb-\boneT\lb\frac{\exp\lbr\linp\rbr+\bphi\Y}{\bm{1}+\bphi}\rb,
+\end{align*}
+with expectation
+\begin{align*}
+    \Expi{\elli{\bs}}&=\lb\Y-\bm{1}\rb^\top\Expi{\log\lb\exp\lbr\linp\rbr+\bphi\Y\rb}-\Y^\top\log\lb\bm{1}+\bphi\rb\\&\qquad\qquad\qquad-\lb\frac{\bm{1}}{\bm{1}+\bphi}\rb^\top \big(\Expi{\exp\lbr\linp\rbr}+\bphi\Y\big).
+\end{align*}
+Finally, applying the approximation on the linear predictor \eqref{eq:flexible-linp-approx} to obtain the approximated expectation
+\begin{equation}
+    \begin{aligned}
+        \tExpi{\elli{\bs}}&=\lb\Y-\bm{1}\rb^\top\Sl w_l\log\lb\exp\lbr\hbmu+\btau v_l\rbr+\bphi\Y\rb-\Y^\top\log\lb\bm{1}+\bphi\rb\\&\qquad\qquad\qquad\qquad-\lb\frac{\bm{1}}{\bm{1}+\bphi}\rb^\top \big(\exp\lbr\hbmu\rbr+\bphi\Y\big).
+    \end{aligned}
+\label{eq:flexible-Mstep-sigma-genpois}
+\end{equation}
+\subsubsection{Gamma}
+The requisite part of the log-likelihood \eqref{eq:flexible-Gamma-ll} is
+\begin{align*}
+    \elli{\bs}\unsetp{\bs}\lb\bphi-\bm{1}\rb^\top\Y-\boneT\lb\frac{\Y\bphi}{\exp\lbr\linp\rbr}\rb-\boneT\lgam{\bphi}+\bphi^\top\log\bphi,
+\end{align*}
+with expectation
+\begin{align*}
+    \Expi{\elli{\bs}}&=\lb\bphi-\bm{1}\rb^\top\Y-\boneT\lb\frac{\Y\bphi}{\Expi{\exp\lbr\linp\rbr}}\rb-\boneT\lgam{\bphi}+\bphi^\top\log\bphi,
+\end{align*}
+which we appraise using \eqref{eq:flexible-linp-approx}
+\begin{equation}
+    \begin{aligned}
+        \tExpi{\elli{\bs}}&=\lb\bphi-\bm{1}\rb^\top\Y-\boneT\lb\frac{\Y\bphi}{\exp\lbr\hbmu\rbr}\rb-\boneT\lgam{\bphi}+\bphi^\top\log\bphi.
+    \end{aligned}
+\label{eq:flexible-Mstep-sigma-Gamma}
+\end{equation}
+\resettocmain
+\section{Simulation studies}\label{sec:flexible-simsetup-intro}
+With performance of the approximate EM algorithm established under multiple scenarios in Section \ref{sec:approx-simsetup-intro}, we don't consider quite as many situations in this chapter, assuming performance of the algorithm will remain largely unchanged under different data types. Instead, we undertake simulations which illustrate the parameter estimation capabilities for these non-Gaussian response distributions. To that end, we consider trivariate and five-variate scenarios consisting of the three `de facto' distributions for continuous, count and binary data, followed by a series of \textit{univariate} sets of joint models fit to simulated data from the more `non-standard' distributions. The aim of these univariate simulations is to show good estimation capabilities afforded by the approximate EM algorithm.
+
+In a similar vein to how the `default' simulation scenario was laid out in the purely Gaussian case in Section \ref{sec:approx-simsetup-proper}, we outline those default parameter values in the next section; followed by a brief note on the actual simulation procedures used for each of these families.
+
+\subsection{Default values for simulation of a flexible longitudinal processes}\label{sec:flexible-simsetup-proper}
+
+Here, we outline the choices for $\TRUE{\bO_{\D_k,\bb_k,\bs_k}}$. Departing from setting of the true parameter based on the longitudinal response `number' $k=1,\dots,K$, we now set the true parameter values for the $\kth$ response depending on the family. The true parameter values for the longitudinal sub-model for $h_k\lb\Expi{\Y{_k}\big|\b{_k};\TRUE{\bO_{\D_k,\bb_k,\bs_k}}}\rb$ are shown in Table \ref{tab:flexible-sim-distrib}. The full covariance matrix (\ie for the multivariate joint model) is defined in the same way $\D = \dsum\D_k$ with covariance between each random intercept set as $0.125$. 
+
+\begin{table}[ht]
+\centering
+\rowcolors{2}{lightgray!20}{white}
+\captionsetup{font=scriptsize}
+\begingroup\normalsize
+\begin{tabular}{l|rrr}
+  Response distribution & $\bb_k^\top$ & $\diag{\D_k}^\top$ & $\bs_k^\top$ \\ 
+  \hline
+  Gaussian & $\lb-2.00, 0.10, -0.10, 0.20\rb$ & $\lb0.25, 0.09\rb$ & $\equiv\sek=0.16$\\
+  Gamma & $\lb0.00, -0.10, 0.10, -0.20\rb$ & $\lb0.20, 0.05\rb$ & $2.00$\\
+  Poisson & $\lb2.00,-0.10,0.10,0.20\rb$ & $\lb0.50, 0.09\rb$ & \textit{N/A}\\
+  Negative binomial & $\lb2.00,-0.10,0.10,0.20\rb$ & $\lb0.50, 0.09\rb$ & $1.00$\\
+  Generalised Poisson (under) & $\lb1.00, 0.05, -0.05, 0.10\rb$ & $\lb0.30, 0.00\rb$ & $-0.30$\\
+  Generalised Poisson (over) & $\lb0.50, -0.20, 0.05, 0.40\rb$ & $\lb0.70, 0.00\rb$ & $0.30$\\
+  Binomial & $\lb1.00,-1.00,1.00,-1.00\rb$ & $\lb2.00, 0.00\rb$ & \textit{N/A}\\
+  \hline
+\end{tabular}
+\endgroup
+\caption{Choices for $\TRUE{\bO_{\D_k,\bb_k,\bs_k}}$ for a chosen distribution on the $\kth$ longitudinal response. \textit{N/A}: Not applicable \ie no dispersion to be modelled. For the generalised Poisson, `under': Underdispersed; `over': Overdispersed.} 
+\label{tab:flexible-sim-distrib}
+\end{table}
+
+The chosen parameter values for Poisson and negative binomial count responses are chosen to avoid situations where the simulated response has an excess of zeroes. The parameter choices for the Gamma case ensures a right skewed distribution which precludes exceedingly large values in its long tail. We consider two-fold data generation of \textit{both} under- and overdispersed data under the generalised Poisson.
+
+The simulation of survival times follows the same process as previously outlined in Section \ref{sec:approx-simsetup-proper}; we re-emphasise that whilst elements of $\bb$, $\D$ and $\bs$ now depend on the \textit{distribution}, the corresponding $\kth$ element of $\bg$ still depends \textit{only} on whether $k$ is odd or even. The baseline hazard is controlled to ensure approximately 30\% failure rate across all $N=300$ simulated datasets.
+
+\begin{remark}
+    Notably, in the random effect specification under a binary response a random intercept is chosen over the slope used for all other response types. This was because (perhaps due to truncation of longitudinal profiles) it was challenging to reliably generate binomial data which \tt{glmmTMB} was able to fit to in the intended way. The same reasoning extends to the generalised Poisson.
+\end{remark}
+
+\subsection{Note on simulation from candidate response distributions}\label{sec:flexible-sim-long}
+In order to `complete the picture' in anticipation of subsequent simulations to be carried out, we briefly expand upon the routine outlined in Section \ref{sec:sim-longit} for generation of (Gaussian) longitudinal responses. 
+
+We define the vector of true parameter values $\TRUE{\bO_{\D,\bb,\bs}}=\lb\vech\lb\D\rb^\top,\bb^\top,\bs^\top\rb^\top$ with which we form the linear predictor for the longitudinal process, $\linp=\X_i\bb+\Z_i\b$, and dispersion process $\tilde{\bm{\eta}}_{i}=\W\bs$ (see Section \ref{sec:flexible-gmvjm-disp} for details and special cases), with $\W$ an appropriately-generated design matrix. Simulation of the random effects $\b$ is unchanged, as is the simulation of survival times. 
+
+With linear predictor $\linp$ in-hand, we turn attention to simulation of the longitudinal response through inverse link function: $\Expi{\Y|\b; \TRUE{\bO_{\D,\bb,\bs}}}=h^{-1}\lb\linp\rb$ where $h\lb\cdot\rb$ is defined for each candidate distribution considered in Table \ref{tab:flexible-distribs}. In practice, built-in \tt{R} functions are used for the Poisson \tt{rpois}; binomial \tt{rbinom} with argument \tt{size} set to 1; Gamma \tt{rgamma} with arguments \tt{shape} set as $\exp\lbr\tilde{\bm{\eta}}_{i}\rbr$ and \tt{scale} as $\exp\lbr\linp\rbr/\exp\lbr\tilde{\bm{\eta}}_{i}\rbr$; negative binomial using \tt{rnegbin} from the \tt{MASS} package \citep{R-MASS}; and finally generalised Poisson using a bespoke simulation function.
+
+\subsection{Trivariate mixture of families}\label{sec:flexible-sim-triv}
+Beginning with a trivariate joint model with one Gaussian ($\Y{_1}$), one Poisson ($\Y{_2}$) and one binary ($\Y{_3}$) longitudinal sub-model, we demonstrate parameter estimation capabilities for a realistic scenario where three different types of data are jointly modelled using their `most natural' or de facto distribution.
+
+Figure \ref{fig:flexible-sims-triv} illustrates estimation for the survival parameters $\hat{\bm{\Phi}}$. We note estimates of the association parameters $\hat{\bg}$ are well-estimated, but there appears to be some overestimation in $\hat{\gamma}_2$ (associated with the Poisson) as well as underestimation in $\hat{\gamma}_3$ (binomial). The estimates for $\hat{\zeta}$ appears to have suffered slightly in light of these two association parameters. 
+
+The fully tabulated results are presented in Appendix \ref{sec:appendix-GMVJM-triv}, where we note broadly good performance. However, the variance of the random intercept for the binomial response, $\hat{\D}_{5,5}$, and the fixed effect intercept $\hat{\beta}_{30}$ suffer poorest coverage. This perhaps indicating some conflation between the two; the model perhaps unable to attribute variance in the binomial response to the random effects.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=140mm]{Figures_Chapter4/Triv_surv.png}
+    \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for a trivariate mixture joint model. The dashed line signifies the true parameter value.}
+    \label{fig:flexible-sims-triv}
+\end{figure}
+
+\subsection{Further trivariate simulations}\label{sec:flexible-sim-trivfurther}
+Mimicking the investigations carried out into the effect of the follow-up length $r$ and failure rate $\omega$ in Sections \ref{sec:approx-sims-r} and \ref{sec:approx-sims-omega}, respectively, we monitor these in a joint fashion for the trivariate mixture as considered in the previous section. Utilising the same candidate values for $r\in\lbr5,10,15\rbr,\ \omega\in\lbr10\%,30\%,50\%\rbr$, we undertake $N=200$ simulations for each combination of $\lbr r\rbr\times\lbr\omega\rbr$ with simulated sample size $n=250$. 
+
+The parameter estimates for the survival parameters $\hat{\bg}$ and $\hat{\zeta}$ are given in Figure \ref{fig:flexible-sims-triv-further}. Here, we observe once more that an increased number of failure times leads to a reduction in spread about the estimates for $\hat{\zeta}$, which is well-estimated with relatively little bias. The time-varying survival parameters $\hat{\bg}$ are well-estimated overall. Generally speaking, we note a reduction in bias as $r$ increases from 5 time-points. However, we note routine underestimation in $\hat{\gamma}_3$, though we do not expect this to improve with longer profiles, since it is attached to the random intercept only.
+
+Additional results are provided in Appendix \ref{sec:appendix-GMVJM-FurtherTriv}. We observe broadly good coverage from $\vech\big(\hat{\D}\big)$, apart from $\hat{\D}_{55}$ -- attached to the binary sub-model -- which routinely has poorest coverage. There does appear to be some systematic underestimation of these variance-covariance components; this bias decreasing as $r$ increases. The fixed effects $\hat{\bb}$ also appear to enjoy reduction in bias as the profile length increases, with the intercept attached to the binary sub-model suffering the poorest coverage across simulations, with all other components having coverage around the nominal 0.95. Finally we observe the average estimated standard error generally gets closer to the empirical standard deviation as $r$ increases, this suggesting that a longer profile allows the approach to more accurately capture the variability surrounding these parameter estimates. 
+
+The elapsed time for convergence of the approximate EM algorithm and additional time taken for calculation of standard errors is given in Table \ref{tab:flexible-sim-comps-trivfurther}, where we note a longer profile reduces this computation time, and a larger proportion of failures increases it; this phenomena was previously remarked upon in Section \ref{sec:approx-sims-omega}. 
+
+\begin{table}[h]
+    \centering
+    \rowcolors{2}{lightgray!20}{white}
+    \captionsetup{font=scriptsize}
+    \begin{tabular}{l:r:r:r}
+         &  $r=5$ & $r=10$ & $r=15$  \\
+         \hline
+        $\omega=10\%$ & 4.628 [4.125, 5.237] & 3.217 [2.896, 3.608] & 3.175 [2.828, 3.631] \\ 
+        $\omega=30\%$ & 5.868 [5.167, 6.916] & 4.110 [3.720, 4.577] & 3.964 [3.620, 4.383] \\ 
+        $\omega=50\%$ & 7.422 [6.520, 8.624] & 5.237 [4.771, 5.801] & 4.819 [4.380, 5.412] \\ 
+    \hline
+    \end{tabular}
+    \caption{Median [IQR] elapsed time in seconds for simulations considered in the trivariate simulations. The proportion who fail is denoted by $\omega$ and the maximal length of the longitudinal profiles by $r$.}
+    \label{tab:flexible-sim-comps-trivfurther}
+\end{table}
+
+\begin{figure}[th]
+    \centering
+    \includegraphics[width=140mm]{Figures_Chapter4/Triv_further_surv.png}
+    \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for differing maximal profiles lengths $r$ and failure rates $\omega$. The dashed line signifies the true parameter value.}
+    \label{fig:flexible-sims-triv-further}
+\end{figure}
+
+\subsection{Five-variate mixture joint model}\label{sec:flexible-sim-five}
+With performative capabilities laid out in a trivariate setting -- across differing simulation scenarios -- in the previous section, we seek to offer an idea of performance of the algorithm for both a larger sample size $n=500$ and a greater number of longitudinal responses $K=5$ for a larger simulated sample $N=500$. Specifically here we opt for two Gaussian ($k=1,2$), two Poisson ($k=3,4$), and one binomial ($k=5$) longitudinal responses.
+
+We opt for slightly different true values to those given in \ref{sec:flexible-simsetup-proper}, and set $\diag{\D} = \lb0.25, 0.09, 0.30, 0.06, 0.20, 0.04, 0.50, 0.09, 2.00\rb^\top$ with resulting correlation between random intercepts of the $e^{\mathrm{th}}$ and $f^{\mathrm{th}}$ responses $\rho_{ef}$: $\rho_{13}=0.46,\ \rho_{15}=0.56,\ \rho_{17}=0.35,\ \rho_{19}=0.18,\ \rho_{35} = 0.51,\ \rho_{37} = 0.32,\ \rho_{39}=0.16,\ \rho_{57}=0.40,\ \rho_{59}=0.20,\ \rho_{79}=0.13$. Additionally, we mute slightly the association parameters $\bg=\lb0.25,-0.25,0.25,-0.25,0.30\rb^\top$.
+
+The estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ are presented in Figure \ref{fig:flexible-sim-five} where we note good estimation of all five association parameters as well as the time-invariant $\hat{\zeta}$. We note underestimation amongst $\hat{\gamma}_5$, and overestimation in $\hat{\gamma}_3$ with percentage biases of (-)12.0\% and 11.6\%, respectively. The median [IQR] elapsed time for the approximate EM algorithm to converge and standard errors calculated was 20.684 [19.358, 22.491] seconds; the escalation in computing times that hampers traditional quadrature approaches is diluted under the proposed approach. 
+
+A full summary of all $N=500$ sets of model fits are given in Table \ref{tab:flexible-fivevariate}. Generally speaking, we do not observe deterioration in estimation capabilities when considering two additional longitudinal responses, though the estimates (and/or their estimated standard errors) could be deemed conservative. In general, the average estimated standard error is in-line with the empirical standard deviation of parameter estimates, indicating a broadly good handle on the variability of the parameters; notably on the whole these are slightly overestimated, opposing the underestimation one expects given earlier results in literature \citep{Hsieh2006}. However, as noted in Appendix \ref{sec:appendix-sim-considerations-power}, a larger sample, incidence rate, and/or other data characteristics may be necessary for adequately establishing a handle here.
+
+As was the case with the trivariate scenario, we note the fixed effect intercept, as well as the variance of the random intercept for the binomial sub-model suffers the poorest coverage. The remaining variance-covariance components $\vech\big(\hat{\D}\big)$ appear to be well estimated, but we once more note systematic \textit{underestimation} of these terms; something that may improve by alterations to convergence criterion \eqref{eq:approx-convcrit}.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=140mm]{Figures_Chapter4/Fivegammazet.png}
+    \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for the five-variate mixture model. A blue asterisk (*) signifies the true parameter value.}
+    \label{fig:flexible-sim-five}
+\end{figure}
+
+% latex table generated in R 3.6.3 by xtable 1.8-4 package
+% Mon Jun 12 09:56:59 2023
+\begin{table}[ht]
+\centering
+\rowcolors{2}{lightgray!20}{white}
+\captionsetup{font=scriptsize}
+\scriptsize
+\begin{tabular}{l|rrrrr}
+Parameter & Emp. Mean (SD) & Mean SE & Bias & MSE & CP \\ 
+  \hline
+  $\D_{11}= 0.250$ &  0.248 (0.020) & 0.022 & -0.002 & 0.000 & 0.962 \\ 
+  $\D_{31}= 0.125$ &  0.125 (0.015) & 0.018 &  0.000 & 0.000 & 0.974 \\ 
+  $\D_{51}= 0.125$ &  0.123 (0.014) & 0.016 & -0.002 & 0.000 & 0.960 \\ 
+  $\D_{71}= 0.125$ &  0.123 (0.019) & 0.022 & -0.002 & 0.000 & 0.976 \\ 
+  $\D_{91}= 0.125$ &  0.117 (0.043) & 0.049 & -0.008 & 0.002 & 0.970 \\ 
+  $\D_{22}= 0.090$ &  0.090 (0.007) & 0.008 &  0.000 & 0.000 & 0.968 \\ 
+  $\D_{33}= 0.300$ &  0.299 (0.022) & 0.026 & -0.001 & 0.000 & 0.956 \\ 
+  $\D_{53}= 0.125$ &  0.125 (0.014) & 0.017 &  0.000 & 0.000 & 0.970 \\ 
+  $\D_{73}= 0.125$ &  0.123 (0.021) & 0.023 & -0.002 & 0.000 & 0.964 \\ 
+  $\D_{93}= 0.125$ &  0.119 (0.047) & 0.053 & -0.006 & 0.002 & 0.966 \\ 
+  $\D_{44}= 0.060$ &  0.060 (0.005) & 0.005 &  0.000 & 0.000 & 0.968 \\ 
+  $\D_{55}= 0.200$ &  0.198 (0.017) & 0.019 & -0.002 & 0.000 & 0.970 \\ 
+  $\D_{75}= 0.125$ &  0.122 (0.017) & 0.020 & -0.003 & 0.000 & 0.980 \\ 
+  $\D_{95}= 0.125$ &  0.117 (0.039) & 0.045 & -0.008 & 0.002 & 0.974 \\ 
+  $\D_{66}= 0.040$ &  0.039 (0.003) & 0.004 & -0.001 & 0.000 & 0.942 \\ 
+  $\D_{77}= 0.500$ &  0.484 (0.034) & 0.041 & -0.016 & 0.001 & 0.942 \\ 
+  $\D_{97}= 0.125$ &  0.119 (0.059) & 0.065 & -0.006 & 0.004 & 0.962 \\ 
+  $\D_{88}= 0.090$ &  0.087 (0.007) & 0.008 & -0.003 & 0.000 & 0.942 \\ 
+  $\D_{99}= 2.000$ &  1.696 (0.210) & 0.267 & -0.304 & 0.137 & 0.784 \\ 
+  $\beta_{10}= 2.000$ &  1.990 (0.035) & 0.039 & -0.010 & 0.001 & 0.966 \\ 
+  $\beta_{11}=-0.100$ & -0.100 (0.015) & 0.017 &  0.000 & 0.000 & 0.972 \\ 
+  $\beta_{12}= 0.100$ &  0.100 (0.026) & 0.028 &  0.000 & 0.001 & 0.960 \\ 
+  $\beta_{13}=-0.200$ & -0.200 (0.051) & 0.054 &  0.000 & 0.003 & 0.964 \\ 
+  $\beta_{20}=-2.000$ & -2.007 (0.038) & 0.042 & -0.007 & 0.001 & 0.962 \\ 
+  $\beta_{21}= 0.100$ &  0.103 (0.012) & 0.014 &  0.003 & 0.000 & 0.976 \\ 
+  $\beta_{22}=-0.100$ & -0.098 (0.027) & 0.030 &  0.002 & 0.001 & 0.960 \\ 
+  $\beta_{23}= 0.200$ &  0.200 (0.053) & 0.058 &  0.000 & 0.003 & 0.970 \\ 
+  $\beta_{30}= 2.000$ &  1.998 (0.032) & 0.035 & -0.002 & 0.001 & 0.966 \\ 
+  $\beta_{31}=-0.100$ & -0.101 (0.011) & 0.012 & -0.001 & 0.000 & 0.974 \\ 
+  $\beta_{32}= 0.100$ &  0.101 (0.022) & 0.025 &  0.001 & 0.001 & 0.970 \\ 
+  $\beta_{33}=-0.200$ & -0.198 (0.046) & 0.049 &  0.002 & 0.002 & 0.962 \\ 
+  $\beta_{40}= 2.000$ &  2.004 (0.049) & 0.051 &  0.004 & 0.002 & 0.946 \\ 
+  $\beta_{41}=-0.100$ & -0.097 (0.016) & 0.017 &  0.003 & 0.000 & 0.952 \\ 
+  $\beta_{42}= 0.100$ &  0.100 (0.033) & 0.037 &  0.000 & 0.001 & 0.978 \\ 
+  $\beta_{43}=-0.200$ & -0.205 (0.070) & 0.072 & -0.005 & 0.005 & 0.958 \\ 
+  $\beta_{50}= 1.000$ &  0.891 (0.137) & 0.129 & -0.109 & 0.031 & 0.840 \\ 
+  $\beta_{51}=-1.000$ & -0.984 (0.042) & 0.048 &  0.016 & 0.002 & 0.958 \\ 
+  $\beta_{52}= 1.000$ &  1.034 (0.086) & 0.091 &  0.034 & 0.009 & 0.956 \\ 
+  $\beta_{53}=-1.000$ & -1.035 (0.170) & 0.162 & -0.035 & 0.030 & 0.938 \\ 
+  $\sigma^2_1= 0.160$ &  0.160 (0.004) & 0.004 &  0.000 & 0.000 & 0.982 \\ 
+  $\sigma^2_2= 0.160$ &  0.160 (0.004) & 0.004 &  0.000 & 0.000 & 0.974 \\ 
+  $\gamma_1= 0.250$ &  0.254 (0.094) & 0.099 &  0.004 & 0.009 & 0.940 \\ 
+  $\gamma_2=-0.250$ & -0.243 (0.107) & 0.114 &  0.007 & 0.012 & 0.960 \\ 
+  $\gamma_3= 0.250$ &  0.279 (0.137) & 0.148 &  0.029 & 0.020 & 0.960 \\ 
+  $\gamma_4=-0.250$ & -0.248 (0.085) & 0.092 &  0.002 & 0.007 & 0.960 \\ 
+  $\gamma_5= 0.300$ &  0.264 (0.093) & 0.099 & -0.036 & 0.010 & 0.946 \\ 
+  $\zeta=-0.200$ & -0.210 (0.175) & 0.184 & -0.010 & 0.031 & 0.962 \\ 
+   \hline
+\end{tabular}
+\caption{Parameter estimates for five-variate simulation scenario. `Emp. Mean (SD)' denotes the average estimated value with the standard deviation of parameter estimates and Mean SE the mean standard error calculated for each parameter from each model fit. Coverage probabilities are calculated from $\hbO\pm1.96\mathrm{SE}(\hbO)$. The median [IQR] total computation time (e.g. including time taken to obtain initial estimates etc.) was 27.164 [25.859, 28.991] seconds.} 
+\label{tab:flexible-fivevariate}
+\end{table}
+
+\subsection{Univariate joint models: Gamma; negative binomial; and generalised Poisson}\label{sec:flexible-sim-univs}
+We now consider four univariate joint models with GLMM sub-model specified by the `non-standard' distributions where dispersion is additionally modelled: One Gamma, one negative binomial and both under- and over-dispersed generalised Poisson.
+
+Figure \ref{fig:flexible-sim-univs-gamzet} presents the estimates for survival parameters $\hat{\bm{\Phi}}$ obtained for each longitudinal specification, where we note that the different longitudinal specifications don't appear to detract from the good performance noted in the purely Gaussian case. Here, the underdispersed generalised Poisson has notably the largest spread, which is likely attributable to the random effects structure here being an intercept only; in a similar fashion to the binomial previously seen a potential excess of zeroes in the simulated data cloud the amount of variance in the response $\Y$ attributable to the random effects. The overdispersed generalised Poisson exhibits the largest bias ($\approx-10\%$) for the association parameter $\hat{\gamma}$ with notably less variation than its underdispersed counterpart. The time invariant parameter $\hat{\zeta}$ is well-estimated across all families. 
+
+Estimates for the scalar dispersion parameter $\hat{\sigma}$ are presented in Figure \ref{fig:flexible-sim-univs-sigma}. We note here that the Gamma and negative binomial joint models enjoy broadly good estimates of the shape and overdispersion parameter respectively. Both the under- and overdispersed generalised Poisson appear to struggle to capture the true ratio of variance to the mean; markedly worse for the overdispersed scenario. We argue since the estimates $\hbO_{-\hat{\bs}}$ are generally good, and computation time is fast for these families, that this lapse in ability for the algorithm is a trade-off a practitioner may accept; especially since the estimates $\bs$ are not worlds away from their true values. Here we refer back to the idea of trade-offs between computation time and parameter estimates in Section \ref{sec:approx-simstudy-conclusion}, with pointers towards usage of subsequent MCMC schemes to obtain `more accurate' parameter estimates.
+
+Additional results are provided in Appendix \ref{sec:appendix-GMVJM-univs}. Here, we note good performance for the Gamma scenario and more mixed performance for the count responses. For the generalised Poisson, the intercept $\beta_0$ is fairly poorly estimated (percentage bias 6\%), and $\sigma$ appears to be overestimated in magnitude for the underdispersed case, as discussed above. For the negative binomial simulations, we note that all fixed effects $\bb$ appear to be fairly poorly estimated, though the remainder of $\hbO_{-\hat{\bb}}$ is well-captured including, interestingly, the overdispersion parameter $\sigma$. The shortcomings in estimation capabilities for the negative binomial may be due to the magnitude $\bb$ producing simulated $\Y\in\ls0,4890\rs$ which could elicit struggles in obtaining the true fixed effects coefficients $\bb$. In order to investigate a potential remedy for this, we repeated the simulation with the fixed effects being set as the much smaller $\bb=\lb0.50,0.05,0.10,-0.10\rb^\top$. Results from this brief set of simulations are additionally presented in Appendix \ref{sec:appendix-GMVJM-univs}, where we note the fixed effects are comparatively well-captured.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=140mm]{Figures_Chapter4/gamzet_new.png}
+    \caption{Estimates for the survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for four univariate joint models (`over': overdispersion; `under': underdispersion). The conditional distribution of $\Y|\b$ is shown on the $x$ axis. The dashed line signifies the true parameter value.}
+    \label{fig:flexible-sim-univs-gamzet}
+\end{figure}
+
+Finally, appraising the computation times for these families in Table \ref{tab:flexible-univs-times}, we note that both Gamma and GP-1 enjoy computation times not dissimilar from those previously seen. Interestingly, the negative binomial systematically required more iterations (median [IQR] 24 [23, 26]), which coupled with its comparatively more `expensive' log-likelihood \eqref{eq:flexible-negbin-ll} lead to these joint model fits being the most computationally cumbersome. We also note that \tt{glmmTMB} (\ie `total computation time' in Table \ref{tab:flexible-univs-times}) appears struggle with this family, so this doesn't appear exclusive to the approximate EM algorithm considered. The repeated negative binomial simulations with smaller fixed effects enjoyed lower computation times.
+
+% latex table generated in R 3.6.3 by xtable 1.8-4 package
+% Tue Aug 22 16:26:22 2023
+\begin{table}[ht]
+\centering
+\rowcolors{2}{lightgray!20}{white}
+\captionsetup{font=scriptsize}
+\begin{tabular}{l:r:r}
+  Univariate family & EM algorithm & Total computation time \\ 
+  \hline
+  Gamma & 3.561 [3.406, 3.732] & 7.188 [6.870, 7.540] \\ 
+  Negative binomial & 13.312 [12.507, 14.332] & 28.306 [27.379, 29.462] \\ 
+  Generalised Poisson (under) & 4.437 [3.687, 5.891] & 6.832 [6.005, 8.402] \\ 
+  Generalised Poisson (over) & 4.022 [3.660, 4.375] & 5.739 [5.303, 6.232] \\
+  \hline
+\end{tabular}
+\caption{Median [IQR] computation times for both the EM algorithm (plus calculation of standard errors) and total computation (\ie start to finish). All times are given in seconds. The generalised Poisson is split into `over': overdispersion and `under': underdispersion as per Table \ref{tab:flexible-sim-distrib}.}
+\label{tab:flexible-univs-times}
+\end{table}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=140mm]{Figures_Chapter4/sigma_new.png}
+    \caption{Dispersion parameter estimates $\hat{\sigma}$ for four univariate joint models (`over': overdispersion; `under': underdispersion). The conditional distribution of $\Y|\b$ is shown on the panel title. The dashed line signifies the true parameter value.}
+    \label{fig:flexible-sim-univs-sigma}
+\end{figure}
+
+\subsection{Closing remarks}\label{sec:flexible-simstudy-conclusion}
+We have demonstrated in the simulation studies carried out across Sections \ref{sec:flexible-sim-triv}--\ref{sec:flexible-sim-univs} that the approximate EM algorithm can estimate the parameters of interest $\bO$ well in a timely manner, with particular focus on the central tendency for estimates of the survival parameters $\hat{\bm{\Phi}}=\lb\hat{\bg}^\top,\hat{\zeta}\rb^\top$ and all estimates $\hbO$ provided in Appendix \ref{sec:appendix-GMVJM-results}. The implementation here representing a novel approach to estimation under a multivariate joint model with its longitudinal sub-models composed by GLMMs by maximum likelihood.
+
+We noted broadly good performance in the estimation of $\hbO$; however, this is not without its caveats. Poorer coverage was observed for $\hbO_{\hat{\D}}$ under the binomial response. We posit that this could be due to the nature of the response itself not carrying as much information \ie not enough variation to be captured by corresponding GLMM -- potentially indicating hard-to-remedy simulation issue -- and/or the approximation determined by \eqref{eq:approx-approx}--\eqref{eq:approx-Sigmahat} could behave differently under such a binary response, as we go on to investigate in the next chapter. The same interpretation here extends to the poor estimation of the generalised Poisson, with potentially imbalanced/highly variable data leading to struggles in capturing the true parameter values.\newline
+In spite of some poorer performance amongst $\hbO_{-\hat{\bm{\Phi}}}$, the coverage of $\hat{\bm{\Phi}}$ remained respectable irregardless of the conditional distribution imposed on the response. 
+
+We argue -- as we did in Section \ref{sec:approx-simstudy-conclusion} -- that there does exist some trade-off between the fast computation time and parameter estimation capabilities. In comparison with the purely Gaussian longitudinal specifications we considered in Section \ref{sec:approx-simsetup-intro}, the coverage of the fixed effects and variance-covariance matrices appear to suffer slightly, in particular under the binomial GLMM.\newline
+We perhaps revisit then the potential use of the approximate EM algorithm in obtaining starting values in a quick manner for some more precise (\eg MCMC algorithm). The recommendation may then be that practitioners interested in fitting binomial or generalised Poisson should proceed with some caution, or use $\hbO$ as $\bO^{(0)}$ in a subsequent MCMC scheme. All other families, as parameterised in this thesis, are likely to not warrant the same level of caution.
+
+\section{On the number of quadrature nodes, \texorpdfstring{$\varrho$}{rho}}\label{sec:flexible-quadrature-intro}
+In Section \ref{sec:numint-paGH}, we briefly alluded to fleeting guidance within joint modelling literature for the proposed amount of quadrature nodes one should employ. \citet{Wulfsohn97} utilised $\varrho=2$ under their, quite simplistic, `standard' quadrature, with \citet{Crowther2016} using both five and fifteen quadrature points under this methodology, too. \citet{Bernhardt15} used nine in their adaptive quadrature routine on a multivariate joint model with logistic sub-model.
+
+\citet{Rizopoulos2012} state that whilst non-adaptive routines (\eg Section \ref{sec:numint-GH}) require, say, 7--15 nodes, adaptive methods (Sections \ref{sec:numint-aGH} and \ref{sec:numint-paGH}) require substantially fewer nodes, say 3--5 to obtain a sufficiently accurate approximation. Our simulation results appear to corroborate this, with three quadrature nodes utilised throughout all simulations carried out in this chapter and Chapter \ref{cha:approx}.
+
+% Something of a heuristic / non-rigorous.
+Furthermore, we could attempt to develop something of a heuristic for the number of quadrature nodes $\varrho$ in a joint model. We return to the recommendation proffered by \citet{Stringer2022} in a GLMM setting \eqref{eq:numint-stringerRecc}. This incorporated the sample size $n$ and the minimal observed length of follow-up $M$. Clearly, it's possible that $M$ could take value one, thereby producing an undefined value for $\varrho$ \ie in \tt{R} \tt{log(250, base=1)} returns \tt{Inf}, which is inoperable upon. 
+
+We therefore seek to field some potential (and fairly arbitrarily-defined) rules-of-thumb in the joint modelling setting, determining the number of nodes $\varrho$ as a function of some percentile of follow-up length, $\varrho\lb p\rb$, and comparing with results obtained using different numbers of quadrature nodes
+\begin{equation}
+    \begin{aligned}
+        \varrho\lb p\rb&=\left\lceil\frac{3}{2}\log_{P_p}\!n-2\right\rceil,
+    \end{aligned}
+\label{eq:rho-heuristic}
+\end{equation}
+where $P_p$ denotes the $p^{\mathrm{th}}$ percentile of lengths of follow-up. 
+
+With no generality, we explore $p\in\lbr10,25,33\rbr$ in addition to candidate values of $\varrho$ previously used in literature $\varrho\in\lbr2,3,5,7,9,15\rbr$. For the `base' trivariate joint model simulation outlined in Section \ref{sec:flexible-simsetup-proper}, where baseline hazard parameter $\log\nu$ is randomly selected from set of potential values $\lbr-3,-3.5,-2.75\rbr$ to yield a variety of failure rates ($\approx20\%$--$40\%$) for the $N=200$ simulated sets of data; the idea being that `static' numbers of nodes \textit{not} dependent on the data may falter slightly. 
+
+Figure \ref{fig:flexbile-quadrature} illustrates the root mean square error for each of the parameters whose parameter updates outlined in either Sections \ref{sec:approx-Mstep} or \ref{sec:flexible-Mstep-fixef} are taken using (adaptive) Gauss-Hermite quadrature. Most parameters conform to a sharp visual levelling-off at $\varrho=3$, with little distinguishing $\varrho=3$ and $\varrho=15$. The residual variance for the Gaussian response appears to fluctuate more in comparison, however we note in this instance from the $y$-axis that these are in fact minute fluctuations, and could be attributed to MC error. We could perhaps simply summarise these results by concluding that $\varrho=3$ or $\varrho=5$ seem reasonable, with diminishing returns for $\varrho>5$; this result being consistent with earlier comments in \citet{Rizopoulos2012}. The heuristic \eqref{eq:rho-heuristic} resulted in three to five nodes for both $p=25$ and $p=33$ in the majority of simulated sets, but do not appear to out-perform the static choices $\varrho=3$ or $\varrho=5$.
+
+\begin{figure}
+    \centering
+    \includegraphics{Figures_Chapter4/GHinvestigationRMSE.png}
+    \caption{Root mean square error (MSE) for a subset of parameter vector $\hbO$ for different candidate values $\varrho\in\lbr2,3,5,7,9,15,\varrho\lb10\rb,\varrho\lb25\rb,\varrho\lb33\rb\rbr$. Due to \tt{plotmath} restrictions in \tt{R}, $\varrho$ is represented simply by $\rho$.}
+    \label{fig:flexbile-quadrature}
+\end{figure}
+
+\section{Usage of the normal approximation in a Monte Carlo EM algorithm}\label{sec:flexible-mc-em}
+
+In this chapter as well as the last, we have exploited the normal approximation on the conditional distribution of the random effects $\condb$, which we first outlined in Section \ref{sec:approx-approx-specificbit}. This approximation allowed us to `collapse down' requisite expectations of the form $\Expi{g\lb\b\rb|T_i,\Delta_i,\Y;\bO}$ \eqref{eq:numint-form-of-expectation}, which form the potentially computationally taxing E-step, and take them with respect to low-dimensional quadrature. In Section \ref{sec:numint-MC} we demonstrated how this expectation could be appraised using Monte Carlo integration \eqref{eq:numint-MC}.
+
+We now seek to combine the normal approximation on the random effects given the observed data and current parameter estimates and the Monte Carlo approach to the E-step outlined. We evaluate the expectation using $N$ Monte Carlo samples 
+\begin{equation}
+    \Expi{g\lb\b\rb|T_i,\Delta_i,\Y;\bO}\approx\frac{1}{N}\sum_{l=1}^Ng\lb\b^{(l)}\rb,
+\label{eq:flexible-MCapproach}
+\end{equation}
+where $\b^{\lb l\rb},\ l=1,\dots,N$ are drawn from $\Napprox$ with $\hb$ and $\hS$ calculated from \eqref{eq:approx-bhat} and \eqref{eq:approx-Sigmahat}, respectively. We seek to investigate differences in EM algorithms wherein the E-step is evaluated by Gauss-Hermite quadrature or Monte Carlo methods \eqref{eq:flexible-MCapproach}, simulating and fitting one hundred sets of trivariate data with true parameter values outlined in Section \ref{sec:flexible-simsetup-proper}. 
+
+We appraise the E-step \eqref{eq:flexible-MCapproach} at each iteration by antithetic Monte Carlo previously mentioned in Section \ref{sec:numint-MC} and implemented in earlier work \citep{Henderson2000}, as well as a quasi-Monte Carlo approach \citep{Philipson2020}. `Ordinary' Monte Carlo sampling was not considered as previous work in joint modelling showed the two alternative methods to be more computationally efficient whilst affording the same level of performance \citep{Philipson2020}. Both Monte Carlo approaches to the E-step are implemented as they appear in \tt{joineRML} \citep{Hickey2018} and disquisition surrounding the underlying sampling properties of each approach is given in \citet{Philipson2020}. The aim of the exercise here is to investigate differences in performance across EM algorithms, all of which make use of the normal approximation on $\b|T_i,\Delta_i,\Y;\bO$ utilised throughout the thesis.
+
+At the outset of the MCEM algorithm, we set the number of Monte Carlo samples to be taken as $N=100$; as pointed out by \citet{Ripatti2002} it is likely unwise to draw many samples when $\bO$ is far away from the maximiser and increase $N$ as we approach these MLEs $\hbO$. Using the relative difference criterion in \eqref{eq:approx-convcrit}, say
+\begin{align*}
+    \delta_{\mathrm{rel}}^{(m+1)} = \max\lb\frac{|\tobmp{\Omega}_1-\tobm{\Omega}_1|}{|\tobm{\Omega}_1|+\nu},\dots, 
+                                           \frac{|\tobmp{\Omega}_L-\tobm{\Omega}_L|}{|\tobm{\Omega}_L|+\nu}\rb,
+\end{align*}
+\citet{Ripatti2002} define the coefficient of variation (`cv') as
+\begin{align*}
+    \mathrm{cv}\lb\delta^{(m+1)}_{\mathrm{rel}}\rb = \mathrm{Var}\lb \delta^{(m-1)}_{\mathrm{rel}}, \delta^{(m)}_{\mathrm{rel}}, \delta^{(m+1)}_{\mathrm{rel}}\rb\bigg/\mathrm{mean}\lb \delta^{(m-1)}_{\mathrm{rel}}, \delta^{(m)}_{\mathrm{rel}}, \delta^{(m+1)}_{\mathrm{rel}}\rb,
+\end{align*}
+which informs the choice of $N$ at the next iteration $N\rightarrow N+\lfloor N/5\rfloor$ if $\mathrm{cv}\lb\delta^{(m+1)}_{\mathrm{rel}}\rb>\mathrm{cv}\lb\delta^{(m)}_{\mathrm{rel}}\rb$. The idea behind this `automatic' setting of $N$ for each subsequent iteration is, as $\bO^{(m+1)}$ approaches $\hbO$, the executed M step (\ie the parameter updates) become smaller and are potentially clouded by MC error which we aim to reduce by said increase in the number of samples $N$. In a slight departure from both \citet{Ripatti2002} and \citet{Hickey2018}, we declare convergence of the MCEM algorithm when the criteria \eqref{eq:approx-convcrit} is met in two, instead of three, consecutive iterations.
+
+Figure \ref{fig:flexible-MCEM} illustrates estimation for the survival parameters $\hat{\bm{\Phi}}$. Across approaches we note broad visual agreement for the parameter estimates across the E-step approaches, except quasi Monte Carlo appears to slightly better estimate the association parameter attached to the binary response $\hat{\gamma}_3$. The fully tabulated results are presented in Appendix \ref{sec:appendix-GMVJM-MCEM}, where this trend of agreement across approaches continues, with similar phenomena as noted in \eg Sections \ref{sec:flexible-sim-triv} and \ref{sec:flexible-sim-five} evident across the two Monte Carlo implementations. Interestingly, both MC approaches appear to struggle in their estimation of the Poisson fixed effect intercept $\hat{\beta}_{20}$. 
+
+We may conclude from the brief study undertaken here that the normal approximation \eqref{eq:approx-approx} appears to extend well to an approximate Monte Carlo EM algorithm (or perhaps rather a Monte Carlo approximate EM algorithm) which could be more appealing to some audiences; essentially, the approximation is not limited to quadrature outlined in Sections \ref{sec:approx-Mstep}, \ref{sec:flexible-Mstep-fixef} and \ref{sec:flexible-Mstep-disp}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Chapter4/MCEM_gamzet.png}
+    \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for a trivariate mixture joint model fit by the approximate EM algorithm as outlined in Chapters \ref{cha:approx} and \ref{cha:flexible} as well as by a Monte Carlo EM algorithm as outlined in Section \ref{sec:flexible-mc-em}. The dashed line signifies the true parameter value.}
+    \label{fig:flexible-MCEM}
+\end{figure}
+
+\end{chapter}

@@ -1,0 +1,507 @@
+\begin{chapter}{\label{cha:approx}Faster Fitting: An Approximate EM Algorithm}
+\vfill
+\begin{center}
+    \begin{bluebox}
+    The work presented in this chapter is based on the publication:\\Murray, J., Philipson, P., 2022. \textit{A fast approximate EM algorithm for joint models of survival and multivariate longitudinal data}. Computational Statistics \& Data Analysis 170, 107438. doi: \href{https://doi.org/10.1016/j.csda.2022.107438}{\tt{10.1016/j.csda.2022.107438}}.
+    \end{bluebox}
+\end{center}
+\vfill
+\clearpage
+\section{Motivation}
+In Chapter \ref{cha:methods-classic} we outlined the multivariate joint model framework with $K$ longitudinal responses which are assumed continuous and Gaussian. Available software for such joint models, representing existing computational approaches, was outlined in Sections \ref{sec:intro-evolution-multivariate} and \ref{sec:intro-evolution-software} encompassed both maximum likelihood approaches as well as the Bayesian paradigm.
+
+Multivariate joint models (MVJMs) are superior to $K$ separate univariate fits, as they take into account the correlation \textit{between} the longitudinal responses; using all relevant information in the joint model thus obtaining correctly adjusted estimates for each response. Additionally, one obtains a single prediction using all possible information, rather than several from said $K$ univariate fits, each of which is likely to overstate the importance of any association when treated in isolation.
+
+Fitting of these models is computationally burdensome, as mentioned in Section \ref{sec:numint-intro}, due to the multidimensional integral present in the E-step \eqref{eq:numint-target}.
+
+\subsection{E-step constraints in multivariate joint models}\label{sec:approx-Estepmotiv}
+As we outlined in Section \ref{sec:methods-Estepdetails}, and as alluded to above, most computational issues arise due the E-step \eqref{eq:methods-E-step}. Here necessary expectations are taken with respect to the distribution of the random effects conditional on the observed data at the current set of parameter estimates. Specifically, we require expectations of the form \eqref{eq:numint-target}, with this conditional distribution then having form \eqref{eq:numint-expandtarget}. However, owing to either an increased number of longitudinal responses in the multivariate joint model of interest; the complexity of their random effects structures; or both, existing techniques are likely to be less viable due to the inherent computational burden. This is to say, the existing methods we outlined in Sections \ref{sec:numint-GH}--\ref{sec:numint-MC} are likely to become infeasible as the dimension of the random effects, $q$, increases. Said intractability often manifesting itself by the computation time taken to fit these multivariate joint models being commensurate with $q$: Limiting the application of multivariate joint models to smaller numbers of random effects, longitudinal processes, or both. 
+
+The different methods we outlined to evaluate integrals of interest in Sections \ref{sec:numint-aGH}--\ref{sec:numint-MC} in fact were all proposed in turn to overcome the apparent computational burden in earlier literature \eg \citet{Wulfsohn97}. Adaptive quadrature methods sought to reduce the number of weights and abscissae used in numerical integration, but the amount of evaluations may still be computationally demanding in spite of this, owing to large $q$. Monte Carlo methods themselves do not suffer the same burden, but may become prohibitive for higher dimensional random effects owing to the number of required samples for adequate evaluation. 
+
+\citet{Hickey2018} go as far to speculate that inference for joint models with very many longitudinal responses, such as electronic healthcare records, may require some approximate method in evaluation of the integral \eqref{eq:numint-target} as part of parameter estimation under maximum likelihood.
+
+\section{An approximate EM algorithm}\label{sec:approx-approx}
+\subsection{A normal approximation}\label{sec:approx-approx-specificbit}
+ \citet{Bernhardt15} proposed a normal approximation on the distribution of the random effects $\condb$ for each individual conditional on the observed data in the context of a joint model with a \textit{logistic} sub-model in place of the survival one \eqref{eq:methods-survival}. The proposed normal approximation has the effect of reducing the dimensionality of each required integral to be uniformally one, regardless of the complexity of the random effects. This then exploits that any linear combination of $\b$ would \textit{also} be normal, thereby improving computational efficiency. We seek then to extend their approximation to the joint model with a survival sub-model as introduced in the previous Chapter in Sections \ref{sec:methods-notation} and \ref{sec:methods-likelihood}.
+
+ \citet{Bernhardt15} propose, at the parameter estimates at the current iteration $(m)$, $\tobm{\bO}$,
+ \begin{align}
+     \b|T_i,\Delta_i,\Y;\tobm{\bO},\tobm{\lo}\appx \Napprox,
+ \label{eq:approx-approx}
+ \end{align}
+  where $\hb$ is the vector which maximises the complete data log-likelihood at the current set of parameter estimates:
+  \begin{align}
+      \hb=\argmax{\b}\log f\big(\b, T_i, \Delta_i, \Y; \tobm{\bO}\big);
+  \label{eq:approx-bhat}
+  \end{align}
+  with estimated variance
+  \begin{align}
+      \hS=\lbr-\frac{\partial^2\log f\big(\b,T_i,\Delta_i,\Y;\tobm{\bO}\big)}{\partial\b\partial\b^\top}
+    \bigg\rvert_{\b=\hb}\rbr^{-1}.
+  \label{eq:approx-Sigmahat}
+  \end{align}
+  In \eqref{eq:approx-approx} we explicitly condition on the current estimate for the baseline hazard, $\tobm{\lo}$, which we treat as a nuisance parameter, holding \textit{implicit} membership in $\tobm{\bO}$ only. Hereafter, its involvement in the approximation and parameter estimates continues to be implicit in nature.
+  
+  It was previously demonstrated by \citet{Rizopoulos2012} that $f\lb\b|\Y;\bO\rb$ is approximately normal as $m_i\rightarrow\infty$ within the confines of a `classic' \textit{univariate} joint model. Subsequently, \citet{Bernhardt15} extended this to the multivariate Gaussian case we considered in Chapter \ref{cha:methods-classic} for the `full' conditional distribution shown in \eqref{eq:approx-approx}. We later devote Chapter \ref{cha:justification} to the justification of the above approximation.
+
+  The approximation \eqref{eq:approx-approx} then allows for \textit{all} necessary conditional expectations which are of the form $\Expi{g\lb\b\rb|T_i, \Delta_i, \Y; \tobm{\bO}}$ to be taken with respect to a univariate normal distribution. Said normal distributions can then be quickly evaluated using adaptive Gauss-Hermite quadrature, which we outline in Section \ref{sec:approx-Mstep}. 
+
+  \subsection{Starting values}\label{sec:approx-startvalues}
+  The number of iterations required by the EM algorithm can be reduced by choosing starting values, $\bO^{(0)}$, which are close to the maximiser. We set about obtaining these initial values using pre-existing \tt{R} packages.
+  
+  For $k=1,\dots,K$ we obtain parameter estimates for the $\kth$ longitudinal process by fitting a linear mixed effects model using \tt{glmmTMB} \citep{R-glmmTMB}. This returns initial conditions for the fixed effects $\bb_k^{(0)}$ and the residual variance $\sigma_{\varepsilon_k}^{2^{(0)}}$. Additionally, we obtain the best linear unbiased predictors (BLUPs) for the random effects $\b{_k}$ along with their variance-covariance matrix $\D_k^{(0)}$. Then, across all $K$ responses we can construct the initial condition for the block-diagonal $\D^{(0)}=\dsum\D_k^{(0)}$, and populate the off-block-diagonal elements with $\mathrm{cov}\lb\bm{b}_e,\bm{b}_f\rb,\ e,f=1,\dots,K,\ e\neq f$.
+
+  Next, we use the aforementioned BLUPs for each $k=1,\dots,K$ response, $\b{_k}$, as $K$ independent time-varying covariates in the usual Cox PH model, along with the time invariant $\bm{S}_i,\ i=1\dots n$, to obtain $\bm{\Phi}^{(0)}=\lb\gamma_1^{(0)},\dots,\gamma_K^{(0)},\bm{\zeta}^{(0)^{\top}}\rb^\top$. The form of each of these time-varying covariates is dependent upon the form of $\bm{W}_k(\cdot)$ in \eqref{eq:methods-survival} (\ie intercept and slope, quadratic specification and so on). This is done using the \tt{survival} package \citep{R-survival}, and additionally returns the initial estimate for the baseline hazard, $\lambda_0^{(0)}\lb\cdot\rb$.
+
+  We can then form $\bO^{(0)}$ and go about parameter estimation via the EM algorithm, confident that it commences at parameter values which are conducive to faster convergence of the algorithm itself. We used \tt{glmmTMB} as it allows for efficient generalised mixed model fitting for numerous families, and we found it to provide much more stable parameter estimates in a more timely manner when compared with competing packages. Other packages, such as \tt{nlme} \citep{R-nlme} or \tt{lme4} \citep{R-lme4}, are very slightly quicker but restricted to modelling continuous (Gaussian) $\Y$, since we progress to considering non-Gaussian responses in Chapter \ref{cha:flexible}, we additionally use \tt{glmmTMB} here for simplicity. 
+  
+  \subsection{Convergence details}\label{sec:approx-convcrit}
+  Posit that we have just completed one EM step from iteration $(m)$ to iteration $(m+1)$, and want to ascertain whether the algorithm has converged. Two standard rules for such an investigation are the absolute and relative convergence criteria -- the existing packages \tt{joineR} \citep{R-joineR} using the former and \tt{JM} \citep{R-JM} the latter -- for instance. 
+  
+  An issue one may encounter when attempting to maximise the likelihood via an iterative procedure such as EM is in becoming `stuck' near the maximiser, or prematurely declaring convergence to it. This can be remedied by taking into account the scale of parameters when applying these stopping rules: If a parameter is very small (\ie close to zero) in magnitude, it is perhaps likely that some numerical issue may come into play in calculation of the relative difference; likewise the absolute difference doesn't take into account the scale of parameters at all, and may prematurely stop the algorithm.
+
+  One method to circumvent these potential issues is to employ a two-pronged approach: 
+  \begin{align}
+    \begin{cases}
+        \max\lb|\tobmp{\Omega}_1-\tobm{\Omega}_1|,\dots,|\tobmp{\Omega}_L-\tobm{\Omega}_L|\rb&<\xi_1\ \mathrm{if}\ |\Omega_x| < \upsilon \\
+        \max\lb\frac{|\tobmp{\Omega}_1-\tobm{\Omega}_1|}{|\tobm{\Omega}_1|+\nu},\dots, 
+               \frac{|\tobmp{\Omega}_L-\tobm{\Omega}_L|}{|\tobm{\Omega}_L|+\nu}\rb&<\xi_2\ \underset{\!\!\!\!\!x=1,\dots,L}{\mathrm{if}\ |\Omega_x|\ge\upsilon}.
+    \end{cases}
+    \label{eq:approx-convcrit}       
+  \end{align}
+  where $L$ denotes the dimension of $\bO$ \eqref{eq:methods-length-of-omega}. Interestingly, this is the stopping rule used by the software \tt{SAS} in its EM algorithms; repurposed in the joint modelling setting recently by \tt{joineRML} \citep{Hickey2018}. 
+  
+  We opt for the convergence criterion shown above as the approach precludes issues one may encounter when considering solely one convergence criterion, whilst still affording accuracy in those parameters with estimates closer to zero; in particular those variance components on the diagonal of $\mathrm{D}$ that are bounded below by zero. In the relative difference criterion, $\nu$ is some small value added to the denominator to preclude numerical issues which might occur in the calculation here. In all presented simulations and analyses we use $\xi_1=\nu=10^{-3}$, $\xi_2 = 5\times10^{-3}$ and $\upsilon=0.1$ unless otherwise stated. 
+ 
+  \subsection{The approximate EM algorithm}\label{sec:approx-approxEMalg}
+  With details on how we obtain starting values and determine whether or not the model has converged, we now set out to illustrate how we utilise the approximation in Section \ref{sec:approx-approx-specificbit} within the context of an EM algorithm for a joint model. 
+  
+  In short, we obtain our initial conditions for the parameter vector $\bO$ and iteratively cycle between the E- and M-steps, refining these parameter estimates until convergence is deemed to have occurred. At \textit{each} iteration we utilise the approximation \eqref{eq:approx-approx}--\eqref{eq:approx-Sigmahat} to obtain conditional expectations before forming parameter updates; this specific process being elucidated in Section \ref{sec:approx-Mstep}. 
+  
+  With that being said, we lay out the general steps taken to fit MVJMs outlined in Section \ref{sec:methods-jm} in a similar spirit to existing work \citep{Bernhardt15, Murray2022, Murray2023}:
+  \begin{enumerate}
+      \item Employ the methodology outlined in Section \ref{sec:approx-startvalues} to obtain the initial conditions for the parameters, $\bO^{(0)}$.
+      \item For any iteration $(m+1)$:
+      \begin{enumerate}[label=\roman*.]
+          \item Maximise $\log f\big(\b,T_i,\Delta_i,\Y;\tobm{\bO}\big)$ using the \tt{optim} function with the quasi-Newton BFGS algorithm to obtain $\hb$ and $\hS$ (see \eqref{eq:approx-bhat} and \eqref{eq:approx-Sigmahat}, respectively).
+          \item Use the approximation \eqref{eq:approx-approx} to update the parameter vector $\tobm{\bO}\rightarrow\tobmp{\bO}$; greater detail is provided in Section \ref{sec:approx-Mstep}.
+      \end{enumerate}
+      \item Check whether the algorithm has converged by evaluating the convergence criterion \eqref{eq:approx-convcrit}. If the criterion is satisfied, exit the algorithm; otherwise, proceed to the next iteration by setting $(m)\rightarrow (m+1)$.
+      \item Repeat steps 2. and 3. for a minimum of four iterations, cycling between parameter updates and convergence checks.
+  \end{enumerate}
+  
+  \subsection{Standard error calculation}\label{sec:approx-SEs}
+  In Section \ref{sec:methods-SEs} we explored three methods to calculate standard errors in order to complete inference. There, we posited that the approximation of the observed empirical information matrix \eqref{eq:methods-obsemp} would likely be preferable from a computational standpoint: It offers a route to obtain the standard errors in a more timely manner than by bootstrapping or repeated numerical differentiation.
+
+  The observed empirical information matrix \eqref{eq:methods-obsemp} is calculated by $n$ subject specific score vectors evaluated at the MLEs $\hbO$
+
+  \begin{equation}
+    \begin{aligned}
+        s_i\big(\hbO\big)=\int_{-\infty}^\infty\bigg[
+                        \frac{\pt}{\pt\hbO}\bigg\{&\log f\big(\Y|\b;\hbO\big)+\log f\big(T_i,\Delta_i|\b;\hbO\big) \\&\qquad\qquad\qquad+ \log f\big(\b|\hbO\big)\bigg\}
+                    \bigg] f\big(\b|T_i,\Delta_i,\Y;\hbO\big) d\b,
+    \end{aligned}
+  \label{eq:approx-score-equation}
+  \end{equation}
+  wherein, given the approximate method outlined in \ref{sec:approx-approx-specificbit}, the expectation presented above is taken with respect to the normal distribution in \eqref{eq:approx-approx}.
+
+  Specifically, after convergence of the EM algorithm, we find $\hb$ and $\hS$ at the purported MLEs, $\hbO$. Then, the (profile) score vector \eqref{eq:approx-score-equation} is calculated. The constituent densities herein are conditionally independent given the random effects $\hb$, therefore we form `individual' constituent scores to form the score vector 
+  \begin{equation*}
+      s_i\big(\hbO\big)=\lb s_i\big(\hbO_\D\big)^\top, s_i\big(\hat{\bb}\big)^\top, s_i\lb\hat{\sigma}^2_{\varepsilon_1}\rb, \dots, s_i\lb\hat{\sigma}^2_{\varepsilon_K}\rb, s_i\big(\hat{\bm{\Phi}}\big)^\top\rb^\top,
+  \end{equation*}
+  wherein $\hbO_\D\equiv\vech\big(\hat{\D}\big)$. The constituent scores are given as (for simplicity's sake, the hat notation is momentarily dropped):
+  \begin{equation}
+      \begin{aligned}
+          s_i\lb\bO_\D\rb&=-\frac{1}{2}\mathrm{Tr}\lb\D^{-1}\dXdY{\D}{\bO_\D}\rb+\frac{1}{2}\mathrm{Tr}\lb\D^{-1}\dXdY{\D}{\bO_\D}\D^{-1}\Expi{\tcrossprod{\b}}\rb;\\
+          s_i\lb\bb\rb&=\X_i^\top\mathrm{V}_i^{-1}\lb\Y-\X_i\bb-\Z_i\Expi{\b}\rb;\\
+          s_i\lb\sek\rb&=-\frac{m_{ik}}{2\sek}+\frac{\Expi{\lb\Y-\X_i\bb-\Z_i\b\rb^\top\lb\Y-\X_i\bb-\Z_i\b\rb}}{2\sigma^4_{\varepsilon_k}};\\
+          s_i\lb\bm{\Phi}\rb&=\dXdY{\Expi{\log f\lb T_i, \Delta_i|\b;\bO\rb}}{\bm{\Phi}};
+      \end{aligned}
+  \label{eq:approx-SE-scores}
+  \end{equation}
+  where $\dXdY{\D}{\bO_\D}$, the derivative of matrix $\D$ with respect to its half-vectorisation, is a matrix itself and represents the location of those elements (\ie a matrix of zeroes with ones placed according to the element of the half-vectorisation, thereby capturing their contribution to calculation of the score). An alternative form for the score on $\vech\lb{\D}\rb$ is given in Appendix \ref{sec:appendix-alt-Dscore}. Of course, in actuality the expectations in \eqref{eq:approx-SE-scores} are conditioned on the observed data and the maximum likelihood estimates $\hbO$ as was the case in \eg \eqref{eq:numint-target}; the form of such conditional expectations under the normal approximation is elucidated in the next section.
+
+  We additionally draw attention to the method proposed by \citet{Xu2014}, outlined in Section \ref{sec:methods-SE-xu2014}, being an unattractive route: We systematically perturb each of the $L$ parameters constructing $\bO$ \eqref{eq:methods-length-of-omega} in turn; each requiring maximisation of the baseline hazard, followed by calculation of $n$ sets of $\lbr\hb,\hS\rbr$. Therefore, under this proposed method, obtaining the information matrix by forward differencing (Appendix \ref{sec:appendix-numdiff}, the `cheaper' option) requires $n\times \lb1+L\rb$ \tt{optim} calls to find the modal value and its variance alone.
+  
+  \section{The M-step}\label{sec:approx-Mstep}
+  In Section \ref{sec:jm-em-jm} we outlined the general form of parameter updates which form the M-step (and elucidate the form of requisite conditional expectations required) in \eqref{eq:methods-classicMstep} and \eqref{eq:methods-survMstep} for MVJMs. Here, we consider each parameter which constructs $\bO$, in addition to the baseline hazard, and illustrate how the approximation \eqref{eq:approx-approx} is used to update parameter vector $\bO^{(m)}\rightarrow\bO^{(m+1)}$. For each parameter, we begin with the conditional expectation on the requisite log-likelihood \eqref{eq:methods-loglik-ranefs}--\eqref{eq:methods-loglik-longit} (\ie the E-step), followed by the necessary steps taken to form its update (\ie the M-step). 
+  
+  We continue with the shorthand notation for all expectations \ie eschew their conditioning on the observed data and current parameter estimates with this held implicit going forward. In each presented update the parameter $\hat{x}$ does not represent the MLE per se, instead the estimate for the `next iteration' $(m+1)$.
+  \subsection{Update for \texorpdfstring{$\D$}{D}}\label{sec:approx-Mstep-D}
+  The covariance matrix for the random effects $\D$ appears only in \eqref{eq:methods-loglik-ranefs}. We therefore have
+  \begin{align*}
+      \Expi{\log f\lb\b|\D\rb}&=\Expi{-\frac{q}{2}\log2\pi-\frac{1}{2}|\D|-\frac{1}{2}\b^\top\D^{-1}\b},\\
+      &=-\frac{q}{2}\log2\pi+\frac{1}{2}|\D^{-1}|-\frac{1}{2}\mathrm{Tr}\lbr\D^{-1}\Expi{\b\b^\top}\rbr,
+  \end{align*}
+  where $\mathrm{Tr}\lbr\cdot\rbr$ denotes the trace of its matrix argument. Since $\D$ is symmetric, the partial derivative with respect to its inverse is
+  \begin{align*}
+      \frac{\pt\Expi{\log f\lb\b|\D\rb}}{\pt\D^{-1}}&=\frac{1}{2}\D-\frac{1}{2}\Expi{\b\b^\top},\\
+      \implies \hat{\D}&=\Expi{\b\b^\top}.
+  \end{align*}
+  Now, we make use of the normal approximation \eqref{eq:approx-approx}, which tells us that $\Exp_i\ls\b\rs=\hb$ and $\Var\ls\b\rs=\hS$. Trivially then we obtain
+  \begin{align*}
+      \Var\ls\b\rs&=\hS=\Expi{\b\b^\top}-\Expi{\b}\Expi{\b}^\top,\\
+      \implies\Expi{\b\b^\top}&=\hS+\Expi{\b}\Expi{\b}^\top,\\
+      &=\hS+\hb\hb^\top.
+  \end{align*}
+  And finally we obtain the update
+  \begin{align}
+      \hat{\D}=\frac{\Si\hS+\hb\hb^\top}{n},
+  \label{eq:approx-Mstep-D}
+  \end{align}
+  which notably, owing to the approximation \eqref{eq:approx-approx}, does \textit{not} require any integration.
+
+  \subsection{Update for \texorpdfstring{$\bb$}{betagauss}}\label{sec:approx-Mstep-betagauss}
+  The fixed effects $\bb$ are housed in the log-likelihood for the longitudinal processes \eqref{eq:methods-loglik-longit}. Subject $i$'s contribution to the log-likelihood is denoted by $\ell_i\lb\cdot\rb$. The log-likelihood with respect to $\bb$ is
+  \begin{align*}
+      \elli{\bb}\unsetp{\bb}-\frac{1}{2}\crossprod{\lb\Y-\bm{\eta}_i\rb}{\mathrm{V}_i^{-1}\lb\Y-\bm{\eta}_i\rb}
+  \end{align*}
+  where $\bm{\eta}_i=\X_i\bb+\Z_i\b$. This has expected value
+  \begin{align*}
+      \Expi{\elli{\bb}}&=-\frac{1}{2}\Expi{\crossprod{\lb\Y-\bm{\eta}_i\rb}{\mathrm{V}_i^{-1}\lb\Y-\bm{\eta}_i\rb}},\\
+      &=-\frac{1}{2}\mathrm{Tr}\lbr\mathrm{V}_i^{-1}\Expi{\tcrossprod{\lb\Y-\bm{\eta}_i\rb}}\rbr,
+  \end{align*}
+  which we can appraise using the approximation \eqref{eq:approx-approx}. We set
+  \begin{align}
+      \bm{\eta}_i=\X_i\bb+\Z_i\b\appx N\lb\X_i\bb+\Z_i\hb,\Z_i\hS\Z_i^\top\rb=N\lb\hbmu,\Amat\rb,
+  \label{eq:approx-Mstep-longitappx}
+  \end{align}
+  where $\Amat$ is the variance-covariance matrix of the approximated (multivariate) normal distribution; its computation analogous to $\Var\ls aX + b\rs=a^2\Var\ls X\rs$ in the univariate case. Subsequently we define $\btau=\diag{\Amat}^{1/2}$ and write the approximated conditional expectation 
+  \begin{align*}
+      \tExpi{\elli{\bb}}&=-\frac{1}{2}\Sl w_l\mathrm{Tr}\lbr\mathrm{V}_i^{-1}\ls\tcrossprod{\lb\Y-\hbmu-\btau v_l\rb}\rs\rbr,
+  \end{align*}
+  here $w_l,\ v_l,\ l=1,\dots,\varrho$ are the Gauss-Hermite weights and abscissae, respectively; $\Sl w_l = 1,\ \Sl v_l = 0$. In practise these weights and abscissae are found using \tt{gauss.quad.prob} from  \tt{R} package \tt{statmod} \citep{quadrature}. 
+
+  The derivative of this approximate expectation with respect to $\bb$ is
+  \begin{align*}
+      \dXdY{\tExpi{\elli{\bb}}}{\bb}=\X_i^\top\mathrm{V}_i^{-1}\Sl w_l\lb\Y-\hbmu-\btau v_l\rb,
+  \end{align*}
+  where we note since $\Sl v_l=0$ the derivative is evaluated at $\hb$ only. Equating the above to zero (with quadrature now eschewed) and equating to zero for all $i=1,\dots,n$ we obtain the closed-form update for $\bb$
+  \begin{equation*}
+      \X_i^\top\mathrm{V}_i^{-1}\lb\Y-\X_i\bb-\Z_i\hb\rb=\bm{0}\implies\X_i^\top\mathrm{V}_i^{-1}\X_i\bb=\X_i^\top\mathrm{V}_i^{-1}\lb\Y-\Z_i\hb\rb\nonumber;\\
+  \end{equation*}
+  \begin{align}    
+      \hat{\bb}=\lb\Si\X_i^\top\X_i\rb^{-1}\lb\Si\X_i^\top\ls\Y-\Z_i\hb\rs\rb.
+  \label{eq:approx-Mstep-beta}
+  \end{align}
+
+  \subsection{Update for \texorpdfstring{$\sigma^2_{\varepsilon_k}$}{residvar}}\label{sec:approx-Mstep-sigma2}
+  Once more we consider the longitudinal log-likelihood \eqref{eq:methods-loglik-longit}. We consider now its form for subject $i$ \textit{at time-point} $j$ for ease of derivation \ie considering the residual variance itself rather than its matrix representation $\mathrm{V}_{ik}$. We additionally also approach this update for each $k=1,\dots,K$ independently, but note that the response identifier $k$ is dropped in derivations for notational convenience. The log-likelihood contribution for subject $i$ at timepoint $j$ is
+  \begin{align*}
+      \elli{\se}\unsetp{\se}-\frac{1}{2}\log\se-\frac{1}{2\se}\lb\mathrm{Y}_{ij}-\eta_{ij}\rb^2,
+  \end{align*}
+  which has expected value
+  \begin{align*}
+      \Expi{\elli{\se}}=-\frac{1}{2}\log\se-\frac{1}{2\se}\Expi{\lb\mathrm{Y}_{ij}-\eta_{ij}\rb^2}.
+  \end{align*}
+  Utilising the normal approximation \eqref{eq:approx-approx} we set
+  \begin{align*}
+      \eta_{ij}=\mathrm{X}_{ij}\bb+\mathrm{Z}_{ij}\b\appx N\lb\mathrm{X}_{ij}\bb+\mathrm{Z}_{ij}\hb,\mathrm{Z}_{ij}\hS\mathrm{Z}_{ij}^\top\rb=N\lb\hat{\mu}_{ij},\tau^2_{ij}\rb,
+  \end{align*}
+  and subsequently form the approximated expectation
+  \begin{align*}
+      \tExpi{\elli{\se}}=-\frac{1}{2}\log\se-\frac{1}{2\se}\Sl w_l\lb\mathrm{Y}_{ij}-\hat{\mu}_{ij}-\tau_{ij}v_l\rb^2,
+  \end{align*}
+  with derivative with respect to $\se$
+  \begin{align*}
+      \dXdY{\tExpi{\elli{\se}}}{\se}=-\frac{1}{2\se}+\frac{1}{2\sigma^4_\varepsilon}\Sl w_l\lb\mathrm{Y}_{ij}-\hat{\mu}_{ij}-\tau_{ij}v_l\rb^2.
+  \end{align*}
+  Equating to zero and solving for $\se$ across all $m_i$ observed time-points for all $n$ subjects we obtain the closed-form update for $\se$
+  \begin{align}
+      \hat{\sigma}^2_\varepsilon=\frac{\Si\sum_{j=1}^{m_i}\Sl w_l\lb\mathrm{Y}_{ij}-\hat{\mu}_{ij}-\tau_{ij}v_l\rb^2}{\Si m_i}.
+  \end{align}
+  \subsection{Update for \texorpdfstring{$\lambda_0$}{basehaz}}\label{sec:approx-Mstep-l0}
+  We begin by rewriting the log-likelihood for the event-time process shown in \eqref{eq:methods-loglik-survival} to eschew the integrand. This integration over the survival process is replaced with a finite summation over the process evaluated at the unique failure times, since the non-parametric estimator of baseline hazard is zero \textit{except} at observed failure times \citep{Henderson2000}. Instead, we introduce matrices and vectors which contain all required information and functions of time to allow for said summation to occur easily. We now write
+  \begin{equation}
+    \begin{aligned}
+    \log f(T_i,\Delta_i|\b;\bO) = \Delta_i\log\lo(T_i)+\Delta_i\ls\bm{S}_i^\top\bm{\zeta} + \Sk\gamma_k\bm{F}_{ik}^\top\b{_k}\rs - \\
+    \qquad\qquad\qquad\lo\lb\bm{u}_i\rb^\top\exp\lbr\mathrm{S}_i\bm{\zeta} + \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr,
+    \end{aligned}
+    \label{eq:approx-Mstep-survrewrite}
+  \end{equation}
+  where we introduce multiple items for notational convenience and brevity. The vector of failure times survived by subject $i$ is denoted by $\bm{u}_i$. Vector $\bm{F}_{ik}$ denotes $\bm{W}_k(t)$ evaluated at $T_i$; if response $k$ is to be modelled by an intercept-and-slope random effects specification then $\bm{F}_{ik}=\lb1, T_i\rb^\top$. The matrix $\mathrm{F}_{\bm{u}_ik}$ is defined in a similar spirit, except its \textit{rows} are determined by $\bm{W}_k(t)$ evaluated at each element of $\bm{u}_i$. For convenience's sake we have also introduced $\mathrm{S}_i$, simply representing a $\mathrm{len}\lb\bm{u}_i\rb\times p_s$ matrix, whose rows are replicates of $\bm{S}_i$.
+  
+  With our rewritten log-likelihood established above, we can consider the conditional expectation on $\lo(\cdot)$:
+  \begin{align*}
+      \elli{\lo}&\unsetp{\lo}\Delta_i\log\lo(T_i)-\lo\lb\bm{u}_i\rb^\top\exp\lbr\mathrm{S}_i\bm{\zeta} + \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr,\\
+      \Expi{\elli{\lo}}&=\Delta_i\log\lo(T_i)-\lo\lb\bm{u}_i\rb^\top\Expi{\exp\lbr\mathrm{S}_i\bm{\zeta} + \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr}.
+  \end{align*}
+  To evaluate the expectation $\Expi{\exp\lbr\mathrm{S}_i\bm{\zeta} + \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr}$, we make use of normal approximation \eqref{eq:approx-approx}
+  \begin{align}
+      \mathrm{S}_i\bm{\zeta} + \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\appx N\lb\mathrm{S}_i\bm{\zeta} + \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\hb{_k},\mathrm{Q}\hS\mathrm{Q}^\top\rb=N\lb\hbmu,\Amat\rb,
+  \label{eq:approx-SurvApprox}
+  \end{align}
+  with $\Amat$ previously defined and the matrix $\mathrm{Q}=\mathrm{F}_{\bm{u}_i}\mathrm{diag}\lb\bg^*\rb$, where $\bg^*$ is the vector with $q_k$ replicates of $\gamma_k\ \forall\ k=1,\dots,K$ and $\mathrm{F}_{\bm{u}_i}$ is the horizontal concatenation of $\mathrm{F}_{\bm{u}_i1},\dots,\mathrm{F}_{\bm{u}_iK}$. We can then approximate the expectation above as
+  \begin{align*}
+      \tExpi{\elli{\lo}}=\Delta_i\log\lo(T_i)-\lo\lb\bm{u}_i\rb^\top\Sl w_l\exp\lbr\hbmu+\btau v_l\rbr.
+  \end{align*}
+  Finally, we can take derivative with respect to the baseline hazard, equate to zero, and fairly trivially form the update for $\hat{\lambda}_0\lb\cdot\rb$:
+  \begin{align}
+      \hat{\lambda}_0\lb u\rb&=\frac{\Si\Delta_i I\lb T_i=u\rb}{\Si\Sl w_l\exp\lbr\hbmu+\btau v_l\rbr I(T_i\ge u)}.
+  \label{eq:approx-Mstep-basehaz}
+  \end{align}
+  \subsection{Update for survival parameters \texorpdfstring{$\bm{\Phi}$}{gammazeta}}\label{sec:approx-Mstep-Phi}
+  Lastly, we consider the update for the pair of survival parameters $\bm{\Phi}=\lb\bg^\top,\bz^\top\rb^\top$. Utilising the same rewritten survival log-likelihood \eqref{eq:approx-Mstep-survrewrite} we can form the conditional expectation
+  \begin{align*}
+      \elli{\bm{\Phi}}&\unsetp{\bm{\Phi}}\Delta_i\lbr\bm{S}_i^\top\bz+\Sk\gamma_k\bm{F}_{ik}^\top\b{_k}\rbr - \lo\lb\bm{u}_i\rb^\top\exp\lbr\mathrm{S}_i\bz + 
+      \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr,\\
+      \Expi{\elli{\bm{\Phi}}}&=\Delta_i\lbr\bm{S}_i^\top\bz+\Sk\gamma_k\bm{F}_{ik}^\top\Expi{\b{_k}}\rbr - \lo\lb\bm{u}_i\rb^\top\Expi{\exp\lbr\mathrm{S}_i\bz + 
+      \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr}
+  \end{align*}
+  where from \eqref{eq:approx-approx} we know $\Expi{\b{_k}}=\hb{_k}$ and $\Expi{\exp\lbr\mathrm{S}_i\bz + \Sk\gamma_k\mathrm{F}_{\bm{u}_ik}\b{_k}\rbr}$ is approximated in the same way as $\eqref{eq:approx-SurvApprox}$. We can then form the approximated expectation
+  \begin{align}
+      \tExpi{\elli{\bm{\Phi}}}=\Delta_i\lbr\bm{S}_i^\top\bz+\Sk\gamma_k\bm{F}_{ik}^\top\hb{_k}\rbr-\lo\lb\bm{u}_i\rb^\top\Sl w_l\exp\lbr\hbmu+\btau v_l\rbr.
+  \label{eq:approx-Mstep-PhiObjective}
+  \end{align}
+  Because the elements of $\bm{\Phi}$ are housed within an exponent, a closed-form update doesn't exist. Instead, we consider the one-step Newton-Raphson update as presented in \eqref{eq:methods-survMstep}. Here we note that because $\bg$ is effectively found `in' the $\btau$ term, differentiation of the approximated expectation above is an unattractive task. With this in mind, we use numerical differentiation techniques to calculate both the (profile) score $s_i\lb\bm{\Phi}\rb$ and Hessian $\mathrm{H}_i\lb\bm{\Phi}\rb$ of the conditional expectation above. Additionally, we note that in the above we substitute $\lambda_0(\cdot)$ with $\hat{\lambda}_0\lb \cdot\rb$ given by \eqref{eq:approx-Mstep-basehaz}.
+  
+  \section{Simulation studies}\label{sec:approx-simsetup-intro}
+  With the methodology established in Sections \ref{sec:approx-approx} and \ref{sec:approx-Mstep}, we endeavour to ascertain the parameter estimation capabilities of the approximate EM algorithm for MVJMs. Moreover, we consider several simulation scenarios with overarching goal of establishing said capabilities, along with how the method is affected by different data structures and parameter values.
+  Due to the large quantity of simulations we consider, we first define the `standard' simulation scenario. Unless otherwise stated, we consider $N=100$ simulations for each scenario.
+  \subsection{The `standard' simulation scenario}\label{sec:approx-simsetup-proper}
+  We seek to define the \textit{default} set of simulations parameters we use. This allows us to enjoy perquisite brief explanations of all future simulations we consider by e.g. pointing out what's changed from said default set. 
+  
+  We set the number of subjects $n=500$, each of whom have their $\kth$ continuous (and Gaussian) longitudinal measurements taken at the regularly-spaced vector of possible times $\bm{t}=\lb0,\dots,\kappa\rb^\top$ where $\kappa=5$ denotes the maximal follow-up time. The vector $\bm{t}$ has length $r$, such that at as $r$ increases these follow-up measurement times become more regular \ie $\bm{t}$ is more `dense'. The fixed effects are defined by $\bb_{\mathrm{odd}}=\lb2, -0.1, 0.1, -0.2\rb^\top$ and $\bb_{\mathrm{even}}=-\bb_{\mathrm{odd}}$; the elements correspond to an intercept term, time $\bm{t}$ and two baseline covariates in the form of standard normal realization $x_{i1}$ and a single Bernoulli draw ($p=0.5$), $x_{i2}$. This specification of $\X_{ik}$ matches Section \ref{sec:sim-longit} and is the same for $k=1,\dots,K$. We simulate under a random intercept and slope specification unless otherwise stated, subsequently defining the $q\times q = 2K\times2K$ variance-covariance matrix for the random effects $\D = \dsum \mathrm{diag}\lb0.25, 0.09\rb$, with correlation induced between random intercept terms by setting $\mathrm{D}_{ef}=0.125\ e,f=1, 3, \dots, q-1,\ e\neq f$. We set residual variance $\sigma^2_{\varepsilon_k}=0.16\ \forall\ k=1,\dots,K$.
+
+  Survival times $T_i$, along with an independent potential censor-time $C_i$, are simulated for each subject using the methodology outlined in Section \ref{sec:sim-joint} and subsequent failure indicators $\Delta_i$ are generated. We set only a single time-invariant coefficient $\zeta$ which is attached to $x_{i2}$ in the survival sub-model. The association parameters are set as $\gamma_{\mathrm{odd}}=0.5$ and $\gamma_\mathrm{even}=-0.5$. The shape, $\alpha$, and (log) scale, $\log\nu$, of the Gompertz baseline hazard we introduced in Section \ref{sec:sim-survtime} are set to $\alpha=0.1,\ \log\nu=-0.3$ by default, which results in an average failure rate of approximately 30\% over \textit{all} $N$ simulated datasets. The resultant distribution of failure times then resembling the corresponding flatter distributions seen in Section \ref{sec:sim-considerations-basehaz}. The censoring rate is held at $\Upsilon=e^{-3.5}$ which results in approximately 13\% censoring. We then follow the truncation procedure outlined in Section \ref{sec:sim-joint} for all subjects to obtain $\bm{t}_i\ \forall\ i=1\dots,n$.
+
+  Our standard joint model simulation set-up for the $k^\mathrm{th}$ longitudinal response for subject $i$ at time $j$ is 
+  \begin{equation}
+      \begin{aligned}
+          \begin{cases}
+              y_{ikj} &= \left(\beta_{k0} + b_{ik0}\right) + \lb\beta_{k1} + b_{ik1}\rb t_{ij} + \beta_{k2}x_{i1} + \beta_{k3}x_{i2} + \varepsilon_{ikj}\\
+              \lambda_i(t) &= \lo\lb t\rb\exp\lbr x_{i2}\zeta + \Sk\gamma_k\lb b_{ik0} + b_{ik1}t\rb\rbr,
+          \end{cases}
+      \end{aligned}
+  \end{equation}
+  with
+  \begin{equation*}
+      \b\sim N_q\lb \bm{0},\D\rb,\qquad\varepsilon_{ikj}\sim N\lb0, \sigma_{\varepsilon_k}^2\rb,\qquad \b{_k}\indep\bm{\varepsilon}_{ik}.
+  \end{equation*}
+  With the default simulation scenario established, we proceed with several simulation studies which aim to monitor multiple facets of estimation via the approximate EM algorithm.
+
+  All simulation studies and applications in the thesis were executed on an Ubuntu Desktop with 4GHz Intel core i7 with 8GB RAM using \tt{R} version 4.2.0. No high performance computing facility was used. All \tt{R} code is available online: \url{https://github.com/jamesmurray7/thesis}.
+
+  \subsection{Sample size \texorpdfstring{$n$}{n}}\label{sec:approx-sims-n}
+  We first consider the impact of varying sample size $n$. We select four (fairly arbitrary) choices, setting $n\in\lbr100,250,500,1000\rbr$. Joint models are fit to the largest simulated sample sizes $n=1000$ using stopping criterion $\xi_2=0.01$ in \eqref{eq:approx-convcrit}. We present estimates for the survival parameters, $\hat{\bm{\Phi}}=\lb\hat{\bg}^\top,\hat{\zeta}\rb^\top$, from all $N=100$ simulations at each of the four sample size choices in Figure \ref{fig:approx-sims-n}. Immediately, we note that the true value (dashed line) is well estimated, with decreasing spread as the sample size increases. 
+  
+  In-depth results from this simulation study is presented in Appendix \ref{sec:appendix-MVJMresults-sims-n}. From these, we note that the algorithm generally produces very good point estimates for the true parameter value used in simulation, with empirical variability which decreases as the sample size increases. We note that the coverage of parameters appears to be conservative, most egregiously so for the smallest sample size; this levels off slightly at $n=250$, and is more palatable for the slightly larger sample sizes $n\in\lbr500,1000\rbr$. This phenomena is likely related in part to the discussions surrounding power given in Appendix \ref{sec:appendix-sim-considerations-power}. Especially for $n=100$ where the confidence intervals for estimates are very wide given the lack of information in the data and the estimates themselves more likely to be influenced by random variability amongst the simulated data; as $n$ increases the ability to detect the true parameters $\bO$ also improves, with minimal bias observed amongst parameters for $n=1000$.
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_Chapter3/n_gammazeta.png}
+      \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for different simulated sample sizes $n$. The dashed line signifies the true parameter value.}
+      \label{fig:approx-sims-n}
+  \end{figure}
+
+  Finally, the time taken for the approximate EM algorithm to converge and calculation of standard errors unsurprisingly increases with $n$. For the smallest sample size, this elapsed time was (median [IQR]) 1.799 [1.452, 2.479] seconds, approximately doubling for $n=250$ with 3.553 [3.314, 3.769] seconds; at $n=500$ 8.525 [8.243, 8.886] seconds and a larger `jump' at the largest sample size 26.962 [26.193, 27.591] seconds. We note that one should not expect \textit{proportional} increases in computation time, with this large increase in time taken largely attributable to the sheer number of \tt{optim} steps (\ie step 2. in Section \ref{sec:approx-approxEMalg}) as well as the size of survival design matrices \eqref{eq:approx-Mstep-survrewrite} which is determined by the number of unique failure times. The median number of EM iterations per second completed by the algorithm decreases from 5.0 for $n=100$, 1.8 for $n=250$, 0.73 for $n=500$ and 0.20 for $n=1000$. Interestingly however, the $n=1000$ case systematically requires fewer iterations to achieve convergence; potentially due to the greater amount of data providing more information for the algorithm to provide better estimates for the conditional expectations housed in the E-step.
+  
+  \subsection{Number of longitudinal responses \texorpdfstring{$K$}{K}}\label{sec:approx-sims-K}
+  The main `selling point' of the approximate EM algorithm is that irregardless of the dimension of the random effects, the conditional expectations are appraised against a univariate normal distribution. Therefore, we would expect to observe a non-exponential increase in computation times as we increase the number of longitudinal responses (\ie increasing the dimension of random effects), which one would observe under traditional existing methodologies (which we explore in Section \ref{sec:approx-comparisons}). 
+
+  We elect $K\in\lbr1,2,3,5,7\rbr$, and for each simulation scenario we set the variance-covariance matrix to be the diagonal matrix $\D=\bigoplus_{k=1}^K \diag{0.25, 0.06}$. A swathe of parameter estimates are presented in Appendix \ref{sec:appendix-MVJMresults-K}. Here we note, particularly for larger $K$, that the parameter estimates are slightly conservative in nature, this is likely due to inadequate sample size $n$ for the complexity of the model determined by the number of parameters (\ie treating $\gamma_k,\ k=1,\dots,K$ as time-varying covariates), with the perhaps relatively small $n=500$ in combination with the relatively low event rate, resulting in wider confidence intervals than one may expect in an appropriately-powered empirical study; see Appendix \ref{sec:appendix-sim-considerations-power}. The focal point of the simulations we carried out was largely from a computation time-standpoint.
+  
+  The computation times are perhaps best captured in Figure \ref{fig:approx-sims-K}, where we note an (approximately) linear increase in computation times as the dimension of random effects increases from $q=2\rightarrow4\rightarrow\dots\rightarrow14$.
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_Chapter3/K_times.png}
+      \caption{Elapsed time (seconds) for convergence of the approximate EM algorithm ($+$ calculation of standard errors), as well as total computation time for choices of $K$. Vertical dotted lines represent breaks in the $x$-axis. A $\log_{10}$ scale is used between ticks on the $y$-axis.}
+      \label{fig:approx-sims-K}
+  \end{figure}
+  
+  \subsection{Length of follow-up period \texorpdfstring{$r$}{r}}\label{sec:approx-sims-r}
+  Given the underlying normal approximation utilised in Sections \ref{sec:approx-approx}--\ref{sec:approx-Mstep}, we expect presence of more data in the longitudinal sub-model to improve parameter estimate performance. With this in mind, we select four different candidate values for the \textit{maximal} follow-up period $r\in\lbr3,5,10,15\rbr$. We note in these simulations that the average failure time is similar. The parameter estimates for the survival parameters $\hat{\bm{\Phi}}$ from all simulations at each $r$ is shown in Figure \ref{fig:approx-sims-r}, with detailed tabulation provided in Appendix \ref{sec:appendix-MVJMresults-r}.
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_Chapter3/r_gammazeta.png}
+      \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for different maximal longitudinal profile lengths $r$. The dashed line signifies the true parameter value.}
+      \label{fig:approx-sims-r}
+  \end{figure}
+
+  Results from \citet{Rizopoulos2012} as well as \citet{baghishani2012} indicate that as the minimal observed profile length increases, the bias in parameter estimates should decrease (and performance in general improve), Figure \ref{fig:appendix-MVJMresults-r} shows the bias in each of the parameters estimated by the joint model. Generally speaking, performance is noticeably worse at $r=3$, which quickly improves even for $r=5$, with there being no real distinguishing features as $r$ increases, especially between $r=10$ and $15$, save for the average estimated standard error approaching the true empirical standard deviation of parameter estimates, indicating that the approximation appears to better capture the true variability of $\hbO$ as a longer longitudinal profile becomes available. 
+
+  \begin{remark}
+    We note (particularly in Table \ref{tab:appendix-MVJMresults-r} in Appendix \ref{sec:appendix-MVJMresults-r}) that the improvement isn't perhaps as marked as one may expect; this could be due to $N=100$ being a relatively low number of simulations to carry out (\ie larger Monte Carlo error), and that the minimal (and median) value for $m_i$ does not change dramatically between sets of $r$, which may not inherently lead to better-estimated random effects.
+  \end{remark}
+  
+  \subsection{Failure rate \texorpdfstring{$\omega$}{omega}}\label{sec:approx-sims-omega}
+  We now alter the two parameters which control the baseline hazard: The shape $\alpha$ and scale $\log\nu$, as outlined in Section \ref{sec:approx-simsetup-proper}. We hold the shape constant at its default value $\alpha=0.1$, representing a gradually increasing underlying hazard, instead altering the scale parameter to achieve some arbitrarily-set average failure rate across the $N=100$ generated sets of data. The values for $\log\nu$ and resulting (approximate) failure rates $\omega$ are:
+  \begin{align*}
+      \overset{\log\nu\ =}{\lbr-4.30, -3.00, -2.15, -1.40\rbr}\rightarrow\overset{\omega\ =}{\lbr10\%,30\%,50\%,70\%\rbr}.
+  \end{align*}
+  We expect \textit{a priori} that an increased number of failures will produce more `concentrated' estimates for $\hat{\zeta}$ (simply due to there being more `information'), with interest additionally falling on the performance of $\hat{\bg}$, with the other parameters $\hbO_{-\hat{\bm{\Phi}}}$ also of (secondary) interest. Estimates for survival parameters are presented in Figure \ref{fig:approx-sims-omega}, and detailed tabulation available in Appendix \ref{sec:appendix-MVJMresults-omega} for all parameters.
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_Chapter3/omega_gammazeta.png}
+      \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for different (approximate) failure rates $\omega$. The dashed line signifies the true parameter value.}
+      \label{fig:approx-sims-omega}
+  \end{figure}
+
+  Appraising first the $N$ estimates for $\hat{\bm{\Phi}}$, we note generally the spread around the mean parameter estimate tends to decrease for all parameters, most obviously for the time-invariant $\hat{\zeta}$ with the lowest failure rate $\omega=10\%$ producing the worst survival parameter estimates. We may then conclude from these results that the algorithm appears to perform best when the failure rate is in the region of 30--50\%. 
+  
+  For the elements of $\vech\big(\hat{\D}\big)$, we note little to distinguish between failure rates. Investigating the fixed effect parameters $\hat{\bb}$, we note that the term attached to time $\hat{\beta}_{k1}$ enjoys lowest bias at $\omega=10\%$, obviously since fewer truncations of the longitudinal profile occur with little distinguishing the remaining fixed effects in $\hat{\bb}$. Finally, the residual variances $\hat{\sigma}^2_{\varepsilon_k}$ are well estimated irregardless of $\omega$.
+
+  \begin{remark}
+      We note that the computation time increases as the proportion of the sample who fails increases. This is partially due to the simulation generating $\Si\Delta_i$ unique failure times, so that as $\omega$ increases, the matrices in \eqref{eq:approx-Mstep-survrewrite} become much larger, thereby having a `knock-on' effect on subsequent matrix algebra necessary in computations required in the E-step.
+  \end{remark}
+  
+  \subsection{Magnitude of random effects variance}\label{sec:approx-sims-D}
+  We now consider increasing the variances associated with random effects to be arbitrarily large. We alter \textit{only} the diagonal elements, meaning that the off-diagonal `default' values for matrix $\D$ we outline in Section \ref{sec:approx-simsetup-proper} remain unchanged, inducing light-to-moderate correlation across random intercepts, which are not reported. We consider multiplicative increases on these diagonal elements. Namely, we introduce $\D^{(1)}$ and $\D^{(2)}$ which have $(e,f)^{\mathrm{th}}$ element set as $\D^{(1)}_{e,f}=3\D_{e,f},\ \D^{(2)}_{e,f}=10\D_{e,f}\ \forall\ e=f$ and $\D^{(1)}_{e,f}=\D^{(2)}_{e,f}=\D_{e,f}\ \forall\ e\neq f$ representing two candidate variance-covariance matrices with ratios of the random intercept to random slope variance held the same as the default $\D$. We additionally introduce the matrices $\D^{(3)}$ and $\D^{(4)}$ which once more share the same off-diagonal elements with $\D$ but with element-wise scale factors applied to their main diagonals:
+  \begin{align*}
+      \mathrm{diag}\big(\D^{(3)}\big)&=\diag{\D}\odot\lb3,1.5,5,0.9,4,1.2\rb^\top,\quad\mathrm{and}\\
+      \mathrm{diag}\big(\D^{(4)}\big)&=\diag{\D}\odot\lb10,2,13,3,15,4\rb^\top,
+  \end{align*}
+  where $\odot$ denotes element-wise multiplication.
+  
+  The estimates for survival parameters are presented in Figure \ref{fig:approx-sims-D} as well as in the detailed capabilities for all parameters in Appendix \ref{sec:appendix-MVJMresults-D}. We note all parameters $\hbO_{-\hat{\bm{\Phi}}}$ appear to be well estimated no matter the characterisation of the variance-covariance matrix. For the association parameters $\hat{\bg}$ we note that performance is slightly worse under $\D^{(1)}$, wherein the random slope variance is large relative to that of the random intercept, which perhaps leads to muddied capabilities in estimating the time-varying parameter $\bg$. Likewise, under $\D^{(4)}$ -- wherein the random slope variance is \textit{small} compared to the random intercept's -- we note similar phenomena, although in neither scenario is the performance poor. The association parameters $\hat{\bg}$ are best-estimated in this simulation study under $\D^{(2)}$ and $\D^{(3)}$ wherein one posits that the `ratio' of random intercept-to-slope variance is more sensibly defined; allowing both the simulated data and the model to adequately establish simulated trajectories. We note the median computation time does not drastically differ amongst candidate $\D$.
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_Chapter3/vechD_gammazeta.png}
+      \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ for different variance-covariance matrices $\D$. The dashed line signifies the true parameter value. For the matrices $\D^{(1)},\dots,\D^{(4)}$ see Section \ref{sec:approx-sims-D}.}
+      \label{fig:approx-sims-D}
+  \end{figure}
+
+  \subsection{Closing remarks}\label{sec:approx-simstudy-conclusion}
+  Through the simulation studies carried out in Sections \ref{sec:approx-sims-n} -- \ref{sec:approx-sims-D}, we tweaked many of the simulation `tuning knobs' we identified in Section \ref{sec:methods-simulation} in an effort to create distinct simulation scenarios; visualisations of the central tendency of estimates for the survival parameters $\hat{\bm{\Phi}}=\lb\hat{\bg}^\top,\hat{\zeta}\rb^\top$ were presented throughout, with detailed tabulation of \textit{all} parameter estimates $\hbO$ given in Appendix \ref{sec:appendix-MVJM-results}. For all cases we noted that parameter estimation was not negatively affected by the changes made to the simulated data.
+  
+  There is undoubtedly something of a trade-off between the parameter estimates -- in certain simulation scenarios being deemed conservative -- and the fast computation time. For the scenarios we considered in these simulation studies, we argue that this exchange is reasonable. Indeed, \citet{Bernhardt15} posited that if more accurate parameter estimates, or standard errors, were required then the approximate EM algorithm as used here could be used instead to obtain starting values for \eg an MCMC scheme in a relatively quick manner \ie eschewing much of the burn-in phase, which may be arbitrarily long for complex joint models. We also refer to potential consternation surrounding sample size and incidence rate as outlined in Appendix \ref{sec:appendix-sim-considerations-power}; the algorithm and/or the route taken to establish uncertainty in the parameter estimates as given in Sections \ref{sec:methods-SE-obsemp} and \ref{sec:approx-approxEMalg}, respectively, may suffer from these extraneous factors.
+  
+  \section{Comparison with existing software}\label{sec:approx-comparisons}
+  We now seek to compare the parameter estimation capabilities of the approximate EM algorithm established in this chapter with existing methodology. We choose the software package \tt{joineRML} \citep{Hickey2018}, which fits multivariate joint models as explored in Chapter \ref{cha:methods-classic} by maximum likelihood using a Monte Carlo E-step, which we explored in Section \ref{sec:numint-MC}. Here, we simply endeavour to show that the computation time spent in the EM algorithm follow different trajectories as the dimension of random effects increases.
+
+  We elect $K\in\lbr3,5,7\rbr$, and for each simulation scenario here we set the sample size $n=250$ and the variance-covariance matrix to be the diagonal matrix $\D=\bigoplus_{k=1}^K \diag{0.25, 0.06}$. The main reason for setting the sample size at $n=250$ is to avoid computation issues under \tt{joineRML} for largest $K$. A byproduct of this safeguard is that at largest $K$, we observe extremely conservative coverage for \textit{both} methodologies, as both the model-fitting approaches produce large standard errors in circumstances where the sample size is small. As we discuss in Appendix \ref{sec:appendix-sim-considerations-power} (and as alluded to in Sections \ref{sec:approx-sims-n}), one posits that a certain sample size and/or failure rate is required for a given number of longitudinal responses; with little research undertaken here in the multivariate joint modelling context. With this in mind, we do not present tabulated results, instead opting for graphical representation.
+
+  The routine undertaken by \tt{joineRML} is slightly different to the approximate EM algorithm we use. Though both methods obtain initial conditions for $\bO$ via the process outlined in Section \ref{sec:approx-startvalues} -- bar minor difference in external packages used -- \tt{joineRML} notably performs a \textit{separate} EM algorithm on the $K$ longitudinal processes only in order to start its MCEM procedure as close to the maximiser as possible; in particular the off-block-diagonal elements in $\D$ are `better' than those obtained by the procedure in Section \ref{sec:approx-startvalues}. With this in mind, we allow \tt{joineRML} to undertake this `pre-EM' EM algorithm until convergence, which we set a high tolerance of $0.1$ on, so that the starting values are likely more in-line with those from the approximate EM algorithm: The aim here is to time the EM algorithm itself, and so this endeavour for similar starting values is undertaken; whereafter the time discrepancies observed are more likely to stem from computational differences mostly arising from the different numerical integration routines.
+
+  We use the same convergence criteria \eqref{eq:approx-convcrit} across both methodologies, with tolerance values set as described in Section \ref{sec:approx-convcrit}. \citet{Philipson2020} showed that usage of quasi Monte Carlo methods for sampling from $\b|\Y$ \eqref{eq:b-cond-mvn}, namely the Sobol sequence, produced fastest fitting joint models out of \tt{joineRML}'s available options, so is used in these comparative simulations. The default values for the number of MC iterations, scale factor increase in sample size for consecutive non-convergent iterations, and so on, are left at their default values \ie we assume said values are preset at least owing in part to their performance.
+
+  We begin with perhaps the most important feature: Computation time. Figure \ref{fig:approx-comparisons-comptime} shows that, whilst neither approach appears to suffer from truly exponential increase in computation time, being able to shirk necessity of integration by Monte Carlo sampling allows the approximate EM algorithm to be faster as a baseline.
+
+  \begin{figure}
+      \centering
+      \includegraphics[width=140mm]{Figures_Chapter3/comparison_elapsed.png}
+      \caption{Elapsed time (seconds) for convergence of the approximate EM algorithm ($+$ calculation of standard errors) and convergence of the MCEM scheme in \tt{joineRML}. Vertical dotted lines represent breaks in the $x$-axis. A $\log_{10}$ scale is used between ticks on the $y$-axis.}
+      \label{fig:approx-comparisons-comptime}
+  \end{figure}
+
+  Next, we seek to compare the parameter estimation capabilities of the survival parameters $\hat{\bm{\Phi}}$ from each approach, which are presented in Figure \ref{fig:approx-comparisons-estimates}. Here, perhaps the most striking conclusion is the similarity between the estimates. Though this is perhaps not surprising: The modal estimate for $\hb$ obtained in \eqref{eq:approx-bhat} is likely extremely close to the mean value for of the sampled collection of (some function of) $\b$ obtained by MCEM \eqref{eq:numint-MC}, \ie the expectations required at each EM iteration are evaluated to be approximately the same across methods, some further investigation along this line of thought is given later in Section \ref{sec:flexible-mc-em}.
+  
+  The parameter estimates themselves indicate that performance is good across both methods, with there being some evidence of overestimation in absolute value of some $\hat{\bg}$ terms (\eg $\hat{\gamma}_4$ and $\hat{\gamma}_7$ in $K=7$; $\hat{\gamma}_1$, $\hat{\gamma}_3$ and $\hat{\gamma}_5$ in $K=5$). An interesting feature to note is that the spread of estimates for $\hat{\zeta}$ is consistent irregardless of the number of longitudinal responses; indicating that the variance around this time-invariant parameter is reliant on the (potential interaction of) sample size and failure rate. 
+  
+  The parameter estimates in Figure \ref{fig:approx-comparisons-estimates} are supplemented by graphical representation (`X') of the average Wald confidence intervals of these parameter estimates, as dictated by the estimated standard errors, in addition to the empirical variance captured by the boxplots already. These neatly capture the performance issue surrounding the method of standard error calculation \eqref{eq:methods-obsemp}, and as noted earlier a much larger sample size is likely needed to ameliorate this. However, as noted at the outset of this exercise, the simulations here are largely perfunctory: Establishing a handle on capabilities across methods with predominant focus on the computation time.
+
+  \begin{figure}
+      \centering
+      \includegraphics{Figures_Chapter3/Kgammazeta.png}
+      \caption{Estimates for survival parameters $\hat{\bg}$ and $\hat{\zeta}$ across 100 simulated joint model fits performed by the approximate EM algorithm and \tt{joineRML}. A blue diamond denotes true value. In addition to the boxplots of point-estimates, grey crosses represent the average 2.5\% and 97.5\% point estimates across all corresponding simulations (\ie the empirical estimated range based on the standard error).}
+      \label{fig:approx-comparisons-estimates}
+  \end{figure}
+
+  \section{Sensitivity analysis}\label{sec:approx-sens}
+  \subsection{\texorpdfstring{$t$-distributed random effects}{REs}}\label{sec:approx-sens-tREs}
+  The random effects used in simulation have been realizations from a multivariate normal distribution with zero-mean and pre-specified variance-covariance matrix $\D$. One could argue such an assumption is somewhat prohibitive: In reality there would likely be a number of deviations one would classify as outliers. A $t_\nu$-distribution however would allow for larger amounts of variation in these random effects, particularly for lower degrees of freedom $\nu$.
+
+  This avenue is perhaps doubly interesting since we consider $\condb$ to be approximately normal and changing the true distribution of the random effects to themselves be non-normal could impact performance. We can therefore consider a brief simulation study to appraise how stringent this approximation is. A priori, we expect estimation capabilities of the variance-covariance matrix $\D$ used in the multivariate $t_\nu$ distribution to be poor for lower degrees of freedom $\nu$. This is because internally, we estimate $\vech\lb\D\rb$ using properties of the multivariate normal distribution, as outlined in Section \ref{sec:approx-Mstep-D}. We then expect this to ameliorate as $\nu\rightarrow\infty$ \ie the true distribution approaches the normal.
+  
+  Carrying out a brief simulation study -- acting as a sensitivity analysis -- allows inspection of exactly how poor said estimation of $\vech\lb\D\rb$ is for smaller $\nu$; whether the rest of the parameters $\bO_{-\D}$ suffer to any degree as well as how `normal' the true distribution of the random effects, as determined by $\nu$, need be for the approximation \eqref{eq:approx-approx} to be reasonable.
+  
+  We simulate a univariate joint model, with fixed effects with $\vech\lb\D\rb=\lb0.25,0.00,0.05\rb$. For each candidate $\nu\in\lbr2, 3, 4, 5, 6, 7, 8, 9, 10,15, 20, 25, 30\rbr$ we simulate one hundred datasets, each with $n=250$ and $r=10$. The maximal degrees of freedom considered, $\nu=30$, is where the $t$-distribution fully approximates the normal.
+
+  \begin{figure}[t]
+      \centering
+      \includegraphics{Figures_Chapter3/CP-tdistn-corrections.png}
+      \caption{95\% Coverage for univariate simulation scenario with true values of random effects simulated from a bivariate $t_\nu$ distribution. A $\log_{10}$ scale is employed on the $x$-axis between ticks. The nominal value 0.95 is represented by a dashed line.}
+      \label{fig:approx-sens-t-CP}
+  \end{figure}
+  
+  The results for the univariate joint models fit for this sensitivity analysis are tabulated in Table \ref{tab:approx-sens-t-results} for a subset of candidate $\nu$ values. Investigating first the parameter estimates $\hbO_{-\hat{\D}}$, we note there is little to distinguish between results across candidate degrees of freedom. The capabilities in estimation of $\vech\big(\hat{\D}\big)$ are, as we expected, very poor for smaller degrees of freedom; this improves as $\nu$ increases (i.e. the underlying distribution of the random effects approaches the normal). The `progression' of coverage obtained for each $\nu$ is presented in Figure \ref{fig:approx-sens-t-CP}, wherein our interest is perhaps focused on elements of $\vech\big(\hat{\D}\big)$. We note, as expected, that as $\nu\rightarrow30$ (\ie approaches the normal) coverage of these parameters improves, achieving nominal 95\% coverage. The remaining parameters $\hbO_{-\hat{\D}}$ appear to be largely unaffected as $\nu$ increases and `bounce' around the nominal 0.95 coverage line; perhaps most interestingly here is that the MLEs $\hat{\bg}$ appear robust to the misspecification of random effects variance-covariance at lower $\nu$. 
+  
+  We argue, to some extent, that the covariance matrix $\D$ is often only of secondary interest (if indeed of \textit{any} interest at all); the performative capabilities of $\bO_{-\D}$ under the heavier-tailed distributions is perhaps perhaps satisfactory in this regard. However, although model performance does not deteriorate from a parameter estimation perspective as outlined, \citet{McFetridge2021} detail that misspecification of the random effects can lead to problems and inefficiencies with other aspects of the fitted joint model, such as individualised predictions, which we go on to outline in Chapter \ref{cha:posthoc}.
+
+  % latex table generated in R 4.3.3 by xtable 1.8-4 package
+  % Wed May 22 10:46:06 2024
+  \begin{table}[t]
+  \raggedleft
+  \rowcolors{2}{lightgray!20}{white}
+  \captionsetup{font=scriptsize}
+  \scriptsize
+  \begin{tabular}{l|rrrrr:rrrrr}
+    Parameter & Mean (SD) & SE & Bias & MSE & CP & Mean (SD) & SE & Bias & MSE & CP \\ 
+    \hline
+    & \multicolumn{5}{c}{$\nu=2^*$} & \multicolumn{5}{c}{$\nu=10$} \\ 
+    \hline
+    $\D_{11} = 0.250$ &  2.098 (1.812) & 0.089 &  1.848 & 6.667 & 0.00 &  0.311 (0.041) & 0.032 &  0.061 & 0.005 & 0.55 \\ 
+    $\D_{21} = 0.000$ &  0.027 (0.566) & 0.044 &  0.027 & 0.318 & 0.35 &  0.000 (0.013) & 0.011 &  0.000 & 0.000 & 0.92 \\ 
+    $\D_{22} = 0.050$ &  0.340 (0.431) & 0.017 &  0.290 & 0.268 & 0.00 &  0.061 (0.009) & 0.007 &  0.011 & 0.000 & 0.66 \\ 
+    $\beta_{10} = 2.000$ &  1.989 (0.150) & 0.157 & -0.011 & 0.022 & 0.94 &  1.993 (0.061) & 0.056 & -0.007 & 0.004 & 0.92 \\ 
+    $\beta_{11} = 0.330$ &  0.314 (0.034) & 0.041 & -0.016 & 0.001 & 0.98 &  0.325 (0.021) & 0.019 & -0.005 & 0.000 & 0.94 \\ 
+    $\beta_{12} = -0.500$ & -0.489 (0.085) & 0.098 &  0.011 & 0.007 & 0.98 & -0.499 (0.042) & 0.040 &  0.001 & 0.002 & 0.94 \\ 
+    $\beta_{13} = 0.250$ &  0.285 (0.203) & 0.224 &  0.035 & 0.042 & 0.98 &  0.260 (0.074) & 0.080 &  0.010 & 0.006 & 0.95 \\ 
+    $\sigma^2 = 0.160$ &  0.161 (0.006) & 0.006 &  0.001 & 0.000 & 0.97 &  0.160 (0.006) & 0.006 &  0.000 & 0.000 & 0.93 \\ 
+    $\gamma = 0.500$ &  0.516 (0.074) & 0.081 &  0.016 & 0.006 & 0.96 &  0.499 (0.144) & 0.140 & -0.001 & 0.021 & 0.95 \\ 
+    $\zeta = -0.200$ & -0.166 (0.285) & 0.273 &  0.034 & 0.081 & 0.96 & -0.189 (0.247) & 0.251 &  0.011 & 0.060 & 0.96 \\ 
+    \hline
+    \rowcolor{white} & \multicolumn{5}{c}{$\nu=3$} & \multicolumn{5}{c}{$\nu=20$} \\ 
+    \hline
+    $\D_{11} = 0.250$ &  0.731 (0.492) & 0.045 &  0.481 & 0.471 & 0.00 &  0.268 (0.032) & 0.030 &  0.018 & 0.001 & 0.94 \\ 
+    $\D_{21} = 0.000$ &  0.006 (0.097) & 0.019 &  0.006 & 0.009 & 0.57 &  0.002 (0.010) & 0.010 &  0.002 & 0.000 & 0.94 \\ 
+    $\D_{22} = 0.050$ &  0.135 (0.050) & 0.010 &  0.085 & 0.010 & 0.00 &  0.055 (0.006) & 0.006 &  0.005 & 0.000 & 0.92 \\ 
+    $\beta_{10} = 2.000$ &  2.009 (0.082) & 0.089 &  0.009 & 0.007 & 0.96 &  2.003 (0.057) & 0.054 &  0.003 & 0.003 & 0.94 \\ 
+    $\beta_{11} = 0.330$ &  0.320 (0.025) & 0.028 & -0.010 & 0.001 & 0.96 &  0.326 (0.019) & 0.018 & -0.004 & 0.000 & 0.93 \\ 
+    $\beta_{12} = -0.500$ & -0.491 (0.059) & 0.062 &  0.009 & 0.004 & 0.95 & -0.498 (0.037) & 0.038 &  0.002 & 0.001 & 0.97 \\ 
+    $\beta_{13} = 0.250$ &  0.241 (0.117) & 0.125 & -0.009 & 0.014 & 0.98 &  0.239 (0.078) & 0.075 & -0.011 & 0.006 & 0.95 \\ 
+    $\sigma^2 = 0.160$ &  0.160 (0.006) & 0.006 &  0.000 & 0.000 & 0.95 &  0.162 (0.006) & 0.006 &  0.002 & 0.000 & 0.95 \\ 
+    $\gamma = 0.500$ &  0.517 (0.099) & 0.099 &  0.017 & 0.010 & 0.93 &  0.519 (0.149) & 0.147 &  0.019 & 0.022 & 0.96 \\ 
+    $\zeta = -0.200$ & -0.236 (0.244) & 0.254 & -0.036 & 0.060 & 0.96 & -0.208 (0.248) & 0.249 & -0.008 & 0.061 & 0.95 \\ 
+    \hline
+    & \multicolumn{5}{c}{$\nu=5$} & \multicolumn{5}{c}{$\nu=30$} \\ 
+    \hline
+    $\D_{11} = 0.250$ &  0.403 (0.063) & 0.036 &  0.153 & 0.027 & 0.06 &  0.267 (0.032) & 0.031 &  0.017 & 0.001 & 0.95 \\ 
+    $\D_{21} = 0.000$ &  0.001 (0.021) & 0.013 &  0.001 & 0.000 & 0.80 &  0.001 (0.010) & 0.010 &  0.001 & 0.000 & 0.96 \\ 
+    $\D_{22} = 0.050$ &  0.082 (0.017) & 0.007 &  0.032 & 0.001 & 0.07 &  0.053 (0.007) & 0.006 &  0.003 & 0.000 & 0.95 \\ 
+    $\beta_{10} = 2.000$ &  2.007 (0.062) & 0.064 &  0.007 & 0.004 & 0.96 &  1.993 (0.051) & 0.053 & -0.007 & 0.003 & 0.95 \\ 
+    $\beta_{11} = 0.330$ &  0.325 (0.020) & 0.021 & -0.005 & 0.000 & 0.97 &  0.327 (0.019) & 0.017 & -0.003 & 0.000 & 0.91 \\ 
+    $\beta_{12} = -0.500$ & -0.499 (0.043) & 0.045 &  0.001 & 0.002 & 0.98 & -0.495 (0.039) & 0.038 &  0.005 & 0.002 & 0.94 \\ 
+    $\beta_{13} = 0.250$ &  0.242 (0.084) & 0.091 & -0.008 & 0.007 & 0.98 &  0.248 (0.070) & 0.075 & -0.002 & 0.005 & 0.98 \\ 
+    $\sigma^2 = 0.160$ &  0.160 (0.006) & 0.006 &  0.000 & 0.000 & 0.97 &  0.160 (0.005) & 0.006 &  0.000 & 0.000 & 0.97 \\ 
+    $\gamma = 0.500$ &  0.534 (0.121) & 0.122 &  0.034 & 0.016 & 0.92 &  0.489 (0.151) & 0.152 & -0.011 & 0.023 & 0.98 \\ 
+    $\zeta = -0.200$ & -0.195 (0.260) & 0.253 &  0.005 & 0.067 & 0.91 & -0.215 (0.250) & 0.252 & -0.015 & 0.062 & 0.93 \\ 
+     \hline
+  \end{tabular}
+  \caption{Results from univariate simulation scenario with true values of random effects simulated from a bivariate $t_\nu$ distribution. `Mean (SD)' denotes the average value (SE) from the one hundred model fits (i.e. an empirical summary) and `SE' the average estimated standard error. `MSE': Mean squared error; `CP': 95\% Coverage Probability. *: One model failed to converge for $\nu=2$.}
+  \label{tab:approx-sens-t-results}
+  \end{table}
+
+  \subsection{Censoring rate \texorpdfstring{$\Upsilon$}{censrate}}\label{sec:approx-sens-C}
+  An increased number of censored observations during follow-up can introduce bias in the parameter estimates and widen the uncertainty in the parameter estimates, which is largely attributable to reduced information being available for estimating the hazard. In `real' data analysis, a higher censoring rate might be due to some extraneous factor such as drop out due to a treatment side effect, and the Cox PH may subsequently incorrectly attribute the observed differences to the treatment itself, leading to confused/misleading inference which actually reflects these dropout-related characteristics rather than the risk of the event of interest.
+
+  Here, given the consternation surrounding the effect a greater number of censored observations may have on the Cox PH model itself, we seek to elucidate any sensitivity the joint model -- particularly one fit by the approximate EM algorithm -- may have. Additionally, one could posit since the contribution of the the survival density $\log\sfT$ to the complete data log-likelihood under an increased censoring rate will be much smaller, the approximation in Section \ref{sec:approx-approx-specificbit} may falter slightly. However, as pointed out by \citet{Rizopoulos2012}, the complete data log-likelihood is \textit{already} dominated by the contribution from the linear mixed models $\log\sfY$; we then anticipate that the approximation withstands this change to the underlying likelihood.
+
+  In our simulation studies as outlined in Sections \ref{sec:sim-joint} and \ref{sec:approx-simsetup-proper} we control the rate of censoring by the rate parameter $\Upsilon$. In the simulation studies carried out in Section \ref{sec:approx-simsetup-intro}, the censoring rate $\Upsilon=e^{-3.5}$ results in approximately 13\% of subjects being censored during follow-up \ie $T_i=C_i<\kappa$. In addition to this `baseline' amount we consider two additional $\Upsilon$ with resultant increased censoring rates
+  \begin{align*}
+      \Upsilon &= e^{-2.6}\ \longrightarrow\ \ \approx\mathrm{30\%\ censoring};\\
+      \Upsilon &= e^{-1.9}\ \longrightarrow\ \ \approx\mathrm{50\%\ censoring}.
+  \end{align*}
+
+  The estimates for $\hat{\bm{\Phi}}$ are presented in Figure \ref{fig:approx-sens-C}, here we note that the spread of estimates appear to increase with the amount of censoring taking place. An in-depth tabulation is presented in Appendix \ref{sec:appendix-MVJMresults-censoring} wherein we observe little to distinguish between $\hbO_{-\hat{\bm{\Phi}}}$ save for parameter estimates becoming more conservative on average as the censoring rate increases. 
+
+  \begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_Chapter3/C_gammazeta.png}
+      \caption{Estimates for survival parameters $\bg$ and $\zeta$ for different censoring rates. `Lowest' denotes $\Upsilon=e^{-3.5}$; `Medium' denotes $\Upsilon=e^{-2.6}$; and `Highest' $\Upsilon=e^{-1.9}$. The dashed line signifies the true parameter value.}
+      \label{fig:approx-sens-C}
+  \end{figure}
+
+  \section{Note on implementation}\label{sec:approx-implementation}
+  Since faster computation is at the `heart' of the research objective, we bring this chapter to a close by briefly bridging from the theory (in both this chapter and the previous one), results in Sections \ref{sec:approx-approx} and \ref{sec:approx-Mstep}, with practical details. Here, we seek to offer some insight into underpinning computational details.
+
+  The statistical programming language \tt{R} \citep{R-R} is utilised throughout, with computational bottlenecks rewritten in \tt{C++}, facilitated by \tt{R} package \tt{Rcpp} \citep{R-Rcpp}, which provides seamless integration between the R programming language and \tt{C++}: Allowing \tt{R} users to write high-performance, computationally intensive functions in \tt{C++} and easily call them from within \tt{R}. In addition to the many `standard' \tt{C} libraries integrated via \tt{Rcpp}, we make use of an additional package \tt{RcppArmadillo} \citep{R-RcppArmadillo}, which further integrates the Armadillo \tt{C++} library with \tt{R}. Armadillo is a popular library, which is used for linear algebra (which we carry out a lot of), and balances intuitive, \tt{MATLAB}-esque syntax with high performance implementations of many numerical operations. In the \tt{optim} step in Section \ref{sec:approx-approxEMalg} a great deal of computational efficiency can be gained by providing the gradient vector $\dXdY{\log f\lb\b, T_i, \Delta_i, \Y; \bO\rb}{\b}$, whose form is given in Appendix \ref{sec:appendix-gradb}.
+  
+  An example of the gains in performance for evaluating the conditional expectation \eqref{eq:approx-Mstep-PhiObjective}, which represents a significant computational bottleneck in practise, is provided in Appendix \ref{cha:appendix-gmvjoint}. 
+
+\end{chapter}

@@ -1,0 +1,78 @@
+\chapter*{Glossary}
+\addcontentsline{toc}{chapter}{Glossary}
+\begin{small}
+\begin{multicols}{2}
+This glossary outlines common notation used in more than one chapter of the thesis.
+% Add entries to the glossary
+\begin{description}
+    \item[$K$] The number of longitudinal responses to be jointly modelled.
+    \item[$\Y{_k}$] The $\kth$ longitudinal response observed for subject $i$, $k=1,\ldots,K$
+    \item[$m_{ik}$] The number of observations for subject $i$ on the $\kth$ response.
+    \item[$m_i$] The total number of observed measurements for subject $i$ across all $K$ responses \ie $m_i=\Sk m_{ik}$.
+    \item[$T_i^*$] The (possibly unobserved) failure time for subject $i$.
+    \item[$C_i$] The (possibly unobserved) censoring time for subject $i$.
+    \item[$T_i$] The event time for subject $i$, defined as whichever occurs first out of $T_i^*$ and $C_i$.
+    \item[$\Delta_i$] Failure indicator, taking value 1 if $T_i=T_i^*$ and zero if $T_i=C_i$.
+    \item[$\mathrm{X}_{ik}$] The design matrix for the fixed effects for subject $i$ for the $\kth$ response.
+    \item[$\mathrm{Z}_{ik}$] The design matrix for the random effects for subject $i$ for the $\kth$ response.
+    \item[$\bb_k$] The fixed effects on the $\kth$ response. The collection across all $K$ responses is $\bb=\lb\bb_1^\top,\ldots,\bb_K^\top\rb^\top$.
+    \item[$\b{_k}$] The random effects for subject $i$ for the $\kth$ response. The collection across all $K$ responses is $\b=\lb\b{_1}^\top,\ldots,\b{_K}^\top\rb^\top$.
+    \item[$\varepsilon_k$] The residuals for the linear mixed effects model.
+    \item[$q_k$] The dimension of random effects as specified for the $\kth$ longitudinal model.
+    \item[$q$] The total dimension of random effects across all $K$ responses \ie $q=\Sk q_k$.
+    \item[$\lambda_i(t)$] The hazard of instantaneous failure at time $t$ for subject $i$.
+    \item[$\lambda_0(t)$] The baseline hazard (unspecified) at time $t$.
+    \item[$\bm{S}_i$] The vector of baseline covariates used in the survival sub-model.
+    \item[$\bz$] The vector of coefficients associated with the baseline covariates $\bm{S}_i$.
+    \item[$\gamma_k$] The association parameter `linking' the $\kth$ longitudinal response with the hazard by the shared random effects $\b{_k}$.
+    \item[$\bm{W}_k(t)$] Vector function of time at time $t$ corresponding to the random effects structure on the $\kth$ random effects.
+    \item[$\bm{\Phi}$] The collection of survival parameters $\bm{\Phi}=\lb\bg^\top,\bz^\top\rb^\top$.
+    \item[$\bO$] The vector of parameters to be estimated.
+    \item[$L$] The length of $\bO$. 
+    \item[$\hat{\bm{x}}$] The maximum likelihood estimate for some parameter $\bm{x}$.
+    \item[$\bm{x}^{(m)}$] The \textit{current} estimate for some parameter $\bm{x}$ at iteration $m$.
+    \item[$g\lb\cdot\rb$] Used to denote `some function'.
+    \item[$\mathbb{E}\ls\cdot\rs$] The expectation taken `generally'/`across all'.
+    \item[$\mathbb{E}_i\ls\cdot\rs$] The expectation taken specifically with respect to subject $i$s design measures and estimated random effects.
+    \item[$\tilde{\mathbb{E}}_i\ls\cdot\rs$] The approximate expectation.
+    \item[$\ell\lb\cdot\rb$] The log-likelihood. 
+    \item[$\ell_i\lb\cdot\rb$] The log-likelihood contribution from subject $i$. 
+    \item[$s_i\lb\cdot\rb$] The score function or gradient vector.
+    \item[$\mathrm{H}_i\lb\cdot\rb$] The hessian function \ie generates/returns the matrix of second derivatives.
+    \item[$\varrho$] The number of quadrature weights and abscissae to use.
+    \item[$\bm{w}$] The vector of weights used in quadrature routines $\bm{w}=\lb w_1,\dots,w_\varrho\rb^\top$.
+    \item[$\bm{v}$] The vector of abscissae used in quadrature routines $\bm{w}=\lb v_1,\dots,v_\varrho\rb^\top$.
+    \item[$\mathcal{I}$] An information matrix
+    \item[$\nu$] Either the scale of the Gompertz baseline hazard used in simulation, or the degrees of freedom in a $t_\nu$-distribution.
+    \item[$\alpha$] The rate of the Gompertz baseline hazard used in simulation.
+    \item[$\appx$] Denotes `approximately distributed by'.
+    \item[$\hb$] The vector which maximises the complete data likelihood for subject $i$ at $\bO^{(m)}$.
+    \item[$\hS$] The variance of the estimate $\hb$.
+    \item[$\xi_1,\xi_2$] Thresholds use to determine convergence on the absolute and relative scales, respectively. 
+    \item[$\upsilon$] Determines which of $\xi_1,\xi_2$ is used on a given element of $\bO$. 
+    \item[$\omega$] The failure rate in a simulation $\omega=n^{-1}\Si\Delta_i$. 
+    \item[$r$] The maximal number of observations a subject can have in a simulation, across all $K$. 
+    \item[$\bm{\eta}_i$] The linear predictor. 
+    \item[$h\lb\cdot\rb$] A link function relating the conditional mean of the response to the linear predictor with known inverse $h^{-1}\lb\cdot\rb$. 
+    \item[$\tilde{\bm{\eta}}_i$] The linear predictor for the dispersion model. 
+    \item[$\bm{W}_{ik}$] The design matrix for the dispersion parameters for subject $i$ for the $\kth$ response. 
+    \item[$\bm{\sigma}_k$] The dispersion parameter on the $\kth$ response. 
+    \item[$\tilde{h}\lb\cdot\rb$] A link function relating the dispersion of the response to its linear predictor with known inverse $\tilde{h}^{-1}\lb\cdot\rb$. 
+    \item[$\hat{Y}$] A fitted value for the response $Y$.
+    \item[$\hat{r}$] An unscaled residual. 
+    \item[$\hat{r}^{(P)}$] A Pearson residual. 
+    \item[$\hat{r}^{(CS)}$] A Cox-Snell residual. 
+    \item[$\mathcal{M}$] A fitted joint model. $\mathcal{M}_0$ and $\mathcal{M}_1$ are used to denote a simpler and more complex model, respectively. 
+    \item[$\pi_i\lb u|t\rb$] The probability that subject $i$ survives to future time $u$ given their available information at time $t$.
+    \item[$S\lb\cdot\rb$] The survival function. 
+    \item[$w$] A window of interest in which a joint model's predictive accuracy is to be ascertained. 
+    \item[$\Tstart$] The starting time of the window.
+    \item[$h$] The horizon time of the window
+    \item[$\bm{u}_w$] The vector of length $f$ containing all failure times in $w$.
+    \item[$\hat{\pi}_i(w)$] The estimated probability that subject $i$ survives $w$. 
+    \item[$\mathrm{AUC}$] The area under the ROC curve.
+    \item[$\wPE$] The estimated prediction error.
+\end{description}
+
+\end{multicols}
+\end{small}

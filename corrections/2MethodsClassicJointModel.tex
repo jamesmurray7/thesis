@@ -1,0 +1,453 @@
+\begin{chapter}{\label{cha:methods-classic}The Classic Joint Modelling Framework}
+In this chapter, the multivariate joint modelling framework under which we operate is defined, along with requisite notation. Following this we detail parameter estimation via maximum likelihood and data simulation techniques for the constituent sub-models as well as the joint model itself. We note that we present the `\textit{classic}' joint model in the first instance, named as such since early literature exclusively considered responses which were assumed Gaussian. In Chapter \ref{cha:flexible} we relax this assumption and introduce a breadth of other response types and in Chapter \ref{cha:posthoc} explore avenues for post-hoc analyses and prediction.
+  \section{\label{sec:methods-jm}Joint modelling}
+  \subsection{\label{sec:methods-notation}Models, likelihood and notation}
+  For each subject $i=1,\dots,n$ we observe $\Y=\lb\Y{_1}^\top,\dots,\Y{_K}^\top\rb^\top$ where each $\Y{_k}, k=1,\dots,K$ denotes the $\kth$ longitudinal response of interest $\Y{_k}=\lb y_{i1k},\dots,y_{im_{ik}k}\rb^\top$. Each of the $K$ responses are measured $m_{ik}$ times, which can differ between subjects and responses. We observe a (possibly right-censored) event time $T_i=\min(T_i^*,C_i)$ where $T_i^*$ denotes the true event time and $C_i$ the independent potential censoring time, subsequently introducing failure indicator $\Delta_i$ which is unity if $T_i^*<C_i$ and zero otherwise.
+  
+  We adopt the following linear mixed effects model for the $\kth$ longitudinal response
+  \begin{equation}
+    \begin{aligned}
+      \Y{_k} &= \X_{ik}\lb t\rb\bb_{k} + \Z_{ik}\lb t\rb\b{_k} + \bm{\varepsilon}_{ik}\\
+      \b{_k} &\sim N_{q_k}\lb 0, \mathrm{D}_k\rb, \qquad \bm{\varepsilon}_{ik}\sim N\lb0, \sigma^2_{\varepsilon_k}\rb,\qquad \b{_k}\indep\bm{\varepsilon}_{ik},
+    \end{aligned}
+  \label{eq:methods-lmm}
+  \end{equation}
+  Here, $\X_{ik}$ denotes the (possibly time-dependent) design matrix for the fixed effects of interest to the $\kth$ longitudinal response for subject $i$ with corresponding $p_k$-vector of coefficients $\bb_k$. Likewise, $\Z_{ik}$ is a (possibly time-dependent) random effects design matrix and $\b{_k}$ the subject-specific $q_k$-vector of random effects. These random effects are assumed to follow a zero-mean multivariate normal distribution with covariance matrix $\mathrm{D}_k$. Across the $K$ longitudinal responses, we establish collections of the fixed effects $\bb=\lb\bb_1^\top,\dots,\bb_K^\top\rb^\top$ as well as the random effects $\b=\lb\b{_1}^\top,\dots,\b{_K}^\top\rb^\top$ for subject $i$.
+  
+  We form the joint model by inducing an association between the $K$ longitudinal trajectories and the hazard $\li$ through inclusion of the random effects $\b{_k}$. The sub-model for the event-time process is the usual Cox proportional hazards (PH) model
+  \begin{align}
+       \lambda_i(t)=\lambda_0(t)\exp\lbr\bm{S}_i^\top\bm{\zeta} + \Sk\gamma_k\bm{W}_k(t)^\top\b{_k}\rbr.
+  \label{eq:methods-survival}
+  \end{align}
+  Here $\K$ is the vector of baseline covariates of interest to the event-time process and $\bz$ the corresponding $p_s$--vector of coefficients. The baseline hazard $\lo(\cdot)$ is treated as a nuisance parameter and left unspecified. Parameter $\gamma_k$ represents the strength of association between the random effects for the $\kth$ longitudinal response in \eqref{eq:methods-lmm} and the hazard, with $\bm{W}_k(t)$ denoting the appropriate vector function of time corresponding to the random effects structure on the $\kth$ longitudinal response. This could take the form of an intercept and slope, natural cubic splines and so on. As an example, consider $K=2$ responses, the first modelled under an intercept and slope specification and the other by random intercept only, the exponent in \eqref{eq:methods-survival} becomes $\exp\lbr\bm{S}_i^\top\bm{\zeta} + \gamma_1\lb1, t\rb^\top\lb b_{i10} b_{i11}\rb + \gamma_2b_{i20}\rbr$. One interprets $\gamma_k$ as any parameter in a Cox model: Larger values increase the (log) hazard whereas smaller values decrease it. If $\gamma_k$ is not significantly different from the null, then a separate analysis would suffice.  
+
+  It is equally -- if not more -- popular in literature to define the nature of the association in \eqref{eq:methods-survival} by the current value of the $\kth$ linear predictor, rather than only its random effects (see \eg Table 1 in \citet{Hickey2016}), as was discussed in Section \ref{sec:intro-evolution-REs}. We elect the shared random effects association structure out of preference alone; deviations away from some population mean trajectory being the driving force behind an observed association. More complex association structures could include stationary Gaussian processes \citep{Henderson2000, Martins2022}, or current-value-and-slope parameterisations \citep{Rizopoulos2011B, Rustand2023}. 
+  
+  \subsection{\label{sec:methods-likelihood}Likelihood}
+  As we exclusively consider estimation via (semiparametric) maximum likelihood, we first define the log-likelihood of the joint distribution of the set of observed outcomes for subject $i$, $\lbr\Y{_1},\dots,\Y{_K},T_i,\Delta_i\rbr$. In doing so, we assume that each longitudinal process and the survival process are conditional on the random effects $\b$: The correlation between measurements in the $\kth$ longitudinal process as well as the association between this longitudinal process and the event-time process are accounted for by the random effects. We define the joint density as 
+  \begin{equation}
+      f\lb T_i, \Delta_i, \Y|\b;\bO\rb = f\lb T_i,\Delta_i|\b;\bO\rb f\lb\Y|\b;\bO\rb
+  \label{eq:methods-cond-indep}
+  \end{equation}
+  where $f\lb\Y|\b;\bO\rb=\prod_{k=1}^Kf\lb\Y{_k}|\b{_k};\bO\rb$ can be thought of as i.e. the product of the individual probability density functions (pdf) for the $K$ longitudinal processes and $f(T_i,\Delta_i|\b;\bO)$ denotes the pdf for the event-time process. The vector of parameters is denoted by $\bO$. We then define the observed data likelihood for subject $i$ as
+    \begin{align}
+    f\lb T_i, \Delta_i, \Y; \bO\rb &= \int_{-\infty}^\infty f\lb T_i, \Delta_i, \Y, \b; \bO\rb d\b \nonumber \\
+    &= \int_{-\infty}^\infty\ls\prod_{k=1}^Kf\lb\Y{_k}|\b{_k};\bb_k,\sigma_k\rb\rs f\lb T_i,\Delta_i|\b;\bg,\bm{\zeta}\rb f\lb\b|\mathrm{D}\rb d\b.
+    \label{eq:methods-obs-likelihood}
+    \end{align}
+  where we have integrated out the unobserved random effects. We have additionally introduced $\bg=\lb\gamma_1,\dots,\gamma_K\rb^\top$ as the vector of association parameters across the $K$ responses. We now explicitly define the parameter vector $\bO=\lb\vech\lb\mathrm{D}\rb^\top,\bb^\top,\bg^\top,\bz^\top\rb^\top$, where $\vech(\cdot)$ denotes the half-vectorisation of its matrix argument, thus returning all unique elements.
+  
+  Since we seek to maximise the log-likelihood $\ell(\bO)=\Si\log f\lb T_i, \Delta_i, \Y; \bO\rb$, we present the logarithm of each constituent density in \eqref{eq:methods-obs-likelihood}. The log-likelihood of the random effects density is given by the multivariate normal 
+  \begin{equation}
+      \log f\lb\b|\mathrm{D}\rb=-\frac{q}{2}\log(2\pi)-\frac{1}{2}\log|\mathrm{D}|-\frac{1}{2}\b^\top\mathrm{D}^{-1}\b,
+  \label{eq:methods-loglik-ranefs}
+  \end{equation}
+  where $q$ denotes the dimensionality of the random effects covariance matrix $\mathrm{D}$ i.e. $q=\Sk q_k$ and $|M|$ denotes the determinant of matrix $M$. The event-time process has log-likelihood
+  \begin{equation}
+    \begin{aligned}
+        \log f\lb T_i,\Delta_i|\b;\bg,\bm{\zeta}\rb &= \Delta_i\log\lo\lb T_i\rb + \Delta_i\ls\K^\top\bm{\zeta} + \Sk\gamma_k\bm{W}_k(T_i)^\top\b{_k}\rs \\
+        & \qquad \quad - \int_0^{T_i}\lo\lb u\rb\exp\lbr\K^\top\bm{\zeta}+ \Sk\gamma_k\bm{W}_k(u)^\top\b{_k}\rbr \mathrm{d}u,
+    \end{aligned}
+  \label{eq:methods-loglik-survival}
+  \end{equation}
+  herein, the vector function of time corresponding to the specification of the $\kth$ random effects, $\bm{W}_k(\cdot)$ introduced in \eqref{eq:methods-survival}, is employed with associated failure time $T_i$, as well as with each survived failure time in the integrand. Notably under an unspecified baseline hazard $\lo\lb\cdot\rb$ the quantity in the integrand in \eqref{eq:methods-loglik-survival} is only non-zero \textit{at} the observed failure times \citep{Henderson2000}.
+  
+  Finally, we consider the the log-likelihood of the longitudinal processes. We first exploit the fact that we believe each of the $K$ responses to be (multivariate) normal, conditional on the random effects. For each subject $i$ we construct block-diagonal matrices across the $K$ longitudinal responses for the covariate information, $\mathrm{X}_i=\dsum\mathrm{X}_{ik}$; the random effects structure $\mathrm{Z}_i=\dsum\mathrm{Z}_{ik}$ and error terms $\mathrm{V}_i=\dsum\sigma^2_{\varepsilon_k}\mathbb{I}_{m_{ik}}$. Here, $\mathbb{I}_{x}$ denotes the $x\times x$ identity matrix and $\bigoplus$ denotes the direct matrix sum of its arguments. The log-likelihood for the longitudinal responses is then 
+  \begin{align}\label{eq:methods-loglik-longit}
+    \log f(\Y|\b;\bO) &= -\frac{m_i}{2}\log(2\pi)-\frac{1}{2}\log|\mathrm{V}_i|-\frac{1}{2}\lb\Y-\bm{\eta}_i\rb^\top\mathrm{V}_i^{-1}\lb\Y-\bm{\eta}_i\rb,\\
+    \bm{\eta}_i &= \mathrm{X}_i\bb-\mathrm{Z}_i\b, \nonumber
+  %\label{eq:methods-loglik-longit}
+  \end{align}
+  where $m_i=\Sk m_{ik}$ .  
+  
+\section{\label{sec:methods-estimation-EM}Parameter estimation via the EM algorithm}
+As we discussed in Section \ref{sec:jointintro}, initial approaches to fitting joint models were in the form of two-stage approaches. Whilst these were simple to implement, they were found in many instances to produce biased parameter estimates (see e.g. \citet{Sweeting2011}). We therefore focus on estimation via (semiparametric) maximum likelihood, as was undertaken in seminal underpinning literature \citep{Wulfsohn97, Henderson2000}. Maximisation of $\ell(\bO)=\Si\log f\lb T_i, \Delta_i, \Y; \bO\rb$ with respect to $\bO$ in this frequentist framework is traditionally undertaken by usage of the Expectation Maximisation (EM) algorithm.
+\subsection{\label{sec:methods-em-general}A general overview of the EM algorithm}
+  In situations where a procedure for maximum likelihood estimation would be possible if not for the absence of some data, the EM algorithm has arisen as a popular, broadly applicable algorithm that provides an iterative procedure for computing said MLEs. The underlying idea of the EM algorithm is to construct the \textit{complete} data likelihood -- which allows for MLEs to be found iteratively -- given an \textit{incomplete} data problem \citep{Mclachlan08}.
+  
+  Let $f(\bm{Y}=\bm{y};\bO)$ be the probability density function (pdf) of the observed data vector $\bm{y}$. We henceforth view the observed data $\bm{y}$ as being incomplete, and a function of the complete data vector $\bm{x}$; more formally we have mapping from sample spaces $\mathcal{X}$ to $\mathcal{Y}$. We note that the concept of \textit{incomplete} data covers not only the `conventional' notion of missing data but additionally when some variable(s) would not be observable in practicality.\newline
+  We introduce next the pdf for the complete data $f_c(\bm{X}=\bm{x};\bO)$, where the subscript $c$ is used to differentiate this from the above pdf for the observed data, and signifies `complete'. The complete data log-likelihood, if $\bm{x}$ were observable, is $\ell_c(\bO)=\log f_c(\bm{x};\bO)$. However, instead of observing the complete data $\bm{x}\in\mathcal{X}$, we observe the incomplete data $\bm{y}=\bm{y}(\bm{x})\in\mathcal{Y}$ as detailed previously. It follows that \citep{Mclachlan08}
+  \begin{align*}
+      f(\bm{y};\bO)=\int_{\mathcal{X}(\bm{y})}f_c(\bm{x};\bO)d\bm{x}.
+  \end{align*}
+  The EM algorithm essentially seeks to solve the incomplete data likelihood equation $\pt\ell(\bO)/\pt\bO=\bm{0}$ by instead using the complete data log-likelihood $\ell_c(\bO)$, which in practise is replaced by its conditional expectation on the observed data $\bm{y}$ at the current estimate of parameter vector $\bO$, at say iteration $m$. The EM algorithm consists of two `steps' per iteration which are eponymous to the approach: The expectation (E-) and maximisation (M-) step. On the $(m+1)$st iteration, the E-step and M-step are defined as:
+  \begin{description}
+  \item [E-step] Calculate 
+  \begin{equation}
+      Q\lb\bO;\bO^{(m)}\rb=\Exp\!\ls\ell_c(\bO)|\bm{y};\bO^{(m)}\rs.
+  \label{eq:em-gen-estep}
+  \end{equation}
+  
+  \item [M-step] Maximise $Q\lb\bO;\bO^{(m)}\rb$ with respect to $\bO$, i.e.
+  \begin{align}
+      \bO^{(m+1)}=\underset{\bO}{\arg\max}\ Q\lb\bO;\bO^{(m)}\rb.
+  \label{eq:em-gen-mstep}
+  \end{align}
+  \end{description}
+  To elucidate further; each EM iteration requires conditional expectations of the form $\mathbb{E}\ls g(\bm{x})|\bm{y};\bO\rs$, where $g(\bm{x})$ is some function on the complete data required to form the maximum likelihood update in the M-step, which one obtains through e.g. score equations.
+  
+ \subsection{\label{sec:jm-em-jm}The EM algorithm in a joint modelling framework} 
+  With the constituent E- and M-steps laid out in \eqref{eq:em-gen-estep} and \eqref{eq:em-gen-mstep}, respectively, we can turn attention toward parameter estimation for the observed data likelihood \eqref{eq:methods-obs-likelihood}. \newline
+  The set of \textit{observed} data for subject $i$ is constructed by the longitudinal response(s), $\Y$, the subject's event time $T_i$ and failure indicator $\Delta_i$: $\lbr\Y,T_i,\Delta_i\rbr$. To be explicit, the \textit{complete} data for subject $i$ is $\lbr\Y,T_i,\Delta_i,\b\rbr$ whereby every element except for the random effects $\b$ are observed. These random effects are then treated as \textit{missing data} upon implementation of the EM algorithm.
+  
+  The E-step \eqref{eq:em-gen-estep} in the context of a joint model at iteration $(m+1)$ is
+  \begin{align*}
+    Q\lb\bO;\bO^{(m)}\rb&=\Si\Expi{\log f(\Y, T_i, \Delta_i, \b|\bO)}\\
+    &=\sum_{i=1}^n\int_{-\infty}^\infty\lbr\log f(\Y, T_i, \Delta_i, \b|\bO)\rbr f\big(\b|\Y,T_i,\Delta_i;\bO^{(m)}\big)d\b,
+  \end{align*}
+  where the integrand provides the contribution to the expected complete data (log) likelihood by subject $i$. The expectation $\Exp_i\ls\cdot\rs$ is taken with respect to the conditional distribution of the random effects on the observed data at a current set of parameter estimates $f(\b|\Y,T_i,\Delta_i;\bO^{(m)})$. The expected value of the complete data log-likelihood (which forms this E-step) is
+  \begin{equation}
+    \begin{aligned}
+      Q\lb\bO;\bO^{(m)}\rb&=\Si \Exp_i\!\bigg[\log f\lb\Y|\b;\bO^{(m)}\rb + \log f\lb T_i,\Delta_i|\b;\bO^{(m)}\rb \\&\qquad\qquad\qquad+ \log f\lb\b|\bO^{(m)}\rb\bigg].
+    \end{aligned}
+  \label{eq:methods-E-step}
+  \end{equation}
+  The M-step is formed by maximising $n$ \textit{sets} of conditional expectations of the form $\mathbb{E}_i[g\lb\b\rb|T_i,\Delta_i,\Y;\bO]$ found in the preceding E-step, where $g\lb\b\rb$ denotes some necessary function of the random effects and the expectation is calculated against the conditional distribution $f\big(\b|\Y,T_i,\Delta_i;\bO^{(m)}\big)$. 
+  
+  The form of the parameter updates in the M-step are widely reported in literature, each illustrating the form required of $g\lb\b\rb$ in the preceding E-step. Here, the updated parameter estimates $\bO^{(m+1)}$ are given using the `current' estimates from the previous iteration, $\bO^{(m)}$:
+  \begin{equation}
+  \begin{aligned}
+    \bb^{(m+1)} &= \lb\Si\X_i^\top\X_i\rb^{-1}\lb\Si\X_i^\top\lb\Y-\Z_i \Expi{\b}\rb\rb;\\
+    \sigma_k^{2^{(m+1)}} &=\frac{1}{\Si m_{ik}}\Si \Exp_i\!\ls\lb\Y{_k}-\X_{ik}\bb{_k}^{(m)}-\Z_{ik}\b{_k}\rb^\top
+                                 \lb\Y{_k}-\X_{ik}\bb{_k}^{(m)}-\Z_{ik}\b{_k}\rb\rs;\\
+    \mathrm{D}^{(m+1)} &= \frac{1}{n}\Si \Expi{\b\b^\top};\\
+    \lambda^{(m+1)}_0(t) &= \frac{\Si\Delta_i \mathrm{I}(T_i=t)}{\Si \Exp_i\!\ls\exp\lbr\K^\top\bz^{(m)}+\Sk\gamma_k^{(m)}\bm{W}_k\lb t\rb^\top\b{_k}\rbr\rs \mathrm{I}(T_i>t)};
+  \end{aligned}
+  \label{eq:methods-classicMstep}
+  \end{equation}
+  
+  where $I\lb\cdot\rb$ is the indicator function. The update for the parameters associated with the survival (log) density \eqref{eq:methods-loglik-survival}, $\bg$ and $\bz$, do not exist in closed form (owing to their housing in an exponent), so are maximised iteratively by a one-step Newton Raphson algorithm. We let $\bm{\Phi}=\lb\bg^\top,\bz^\top\rb^\top$ denote the survival parameters, with update from iteration $(m)$ to $(m+1)$ given by
+  \begin{equation}
+      \bm{\Phi}^{(m+1)}=\bm{\Phi}^{(m)}-\ls\Si\mathrm{H}_i\lb\bm{\Phi}^{(m)}\rb\rs^{-1}\ls\Si s_i\lb\bm{\Phi}^{(m)}\rb\rs,
+  \label{eq:methods-survMstep}
+  \end{equation}
+  where $s_i\lb\bm{\Phi}\rb$ is the gradient vector of the conditional expectation of the requisite complete data (profile) log-likelihood with respect to $\bm{\Phi}$, and $\mathrm{H}_i\lb\bm{\Phi}\rb$ the matrix of second derivatives for subject $i$.
+  We undertake a more in-depth look at the E-step for these joint models in the next section.
+  \section{The E-step for joint models}\label{sec:methods-Estepdetails}
+  We require expectations of the form 
+  \begin{equation*}
+      \Expi{g\lb\b\rb|T_i, \Delta_i, \Y; \bO},
+  \end{equation*}
+  which are taken with respect to the density of the random effects conditioned on the observed data at the current set of parameter estimates, with this `current set' notation temporarily dropped,
+  \begin{equation}
+      \Expi{g\lb\b\rb|T_i, \Delta_i, \Y; \bO}=\int_{-\infty}^\infty g\lb\b\rb \condb d\b.
+  \label{eq:numint-target}
+  \end{equation}
+  In the presence of the random effects $\b$ the longitudinal process(es) $\Y$ \textit{do not} inform the survival process $\mathcal{S}_i=\lbr T_i,\Delta_i\rbr$; these are conditionally independent given $\b$. With this in mind we then slightly rewrite our conditional density $\condb$ to be
+  \begin{align*}
+    f\lb\b|\cS;\Y,\bO\rb
+  \end{align*}
+  where the set of survival information $\cS$ is momentarily used for ease of presentation, and $\Y$ is now treated as an extraneous element.
+
+  We then proceed using Bayes' theorem to rewrite this conditional density 
+  \begin{align}
+    f\lb\b|\cS;\Y,\bO\rb=\frac{f\lb\cS|\b;\Y,\bO\rb f\lb\b|\Y,\bO\rb}{f\lb\cS|\Y,\bO\rb},
+  \label{eq:numint-condb-step}
+  \end{align}
+  where the quantity $f\lb\b|\Y,\bO\rb$ is given in terms of the conditional and marginal probabilities
+  \begin{align}
+    f\lb\b|\Y,\bO\rb=\frac{f\lb\Y,\b|\bO\rb}{f\lb\Y|\bO\rb}=\frac{f\lb\Y,\b|\bO\rb}{\int_{-\infty}^\infty f\lb\Y,\b|\bO\rb d\b}\equiv
+    \frac{f\lb\Y|\b;\bO\rb f\lb\b|\bO\rb}{\int_{-\infty}^\infty f\lb\Y|\b;\bO\rb f\lb\b|\bO\rb d\b},
+  \label{eq:numint-problem}
+  \end{align}
+  Rewriting the denominator in \eqref{eq:numint-condb-step} with effort taken to remove the conditioning of $\cS$ on $\Y$ we obtain
+  \begin{align*}
+    f\lb\cS|\Y,\bO\rb=\int_{-\infty}^\infty f\lb\cS|\b;\bO\rb f\lb\b|\Y,\bO\rb d\b.
+  \end{align*}
+
+  Thus, the density against which expectations are evaluated is (returning to our previously-used notation)
+  \begin{equation}
+    \condb=\frac{\sfT\bY}{\int_{-\infty}^\infty\sfT\bY d\b},
+  \label{eq:numint-expandtarget}
+  \end{equation}
+  with all required expectations then taking the form
+  \begin{equation}
+    \begin{aligned}
+        \Expi{g\lb\b\rb|T_i,\Delta_i,\Y;\bO}&=\frac{1}{\int_{-\infty}^\infty\sfT\bY d\b}\\
+        &\qquad\qquad\qquad\times\int_{-\infty}^\infty g\lb\b\rb\sfT\bY d\b.
+    \end{aligned}    
+  \label{eq:numint-form-of-expectation}
+  \end{equation}
+  For the case when the conditional distribution of $\Y|\b$ is assumed to be multivariate normal i.e.\ $\Y|\b\sim N\lb\X_i\bb+\Z_i\b,\mathrm{V}_i\rb$, the density $f\lb\b|\Y;\bO\rb$ present in \eqref{eq:numint-condb-step} and, by extension, \eqref{eq:numint-form-of-expectation} is given by multivariate normal theory \citep{Wulfsohn97, Lin2002, Hickey2018}
+  \begin{equation}
+      \b|\Y;\bO\sim N\lb\mathrm{A}_i\lbr\Z_i^\top\mathrm{V}_i^{-1}\lb\Y-\X_i\bb\rb\rbr, \mathrm{A}_i\rb,
+  \label{eq:b-cond-mvn}
+  \end{equation}
+  where $\mathrm{A}_i=\lb\Z_i^\top\mathrm{V}_i^{-1}\Z_i + \mathrm{D}^{-1}\rb^{-1}$. This tractable expression for $\bY$ allows us to avoid the computational burden of evaluating \eqref{eq:numint-problem}.
+
+\subsection{Numerical integration}\label{sec:numint-intro}
+Fitting joint models can be computationally burdensome, owing in large part to the integral taken over the random effects in calculation of the necessary conditional expectations \eqref{eq:numint-target}, which are necessary in obtaining the parameter estimates at each subsequent M-step \eqref{eq:methods-classicMstep}. 
+
+This integral does not have an analytic solution; a numerical approach is typically employed to approximate these integrals for each subject. Such evaluation over the random effects serves as the main source of computational woe, and is the main bottleneck in the majority of cases. The random effects are likely not one-dimensional, and computational demand is commensurate with their dimensionality \citep{Philipson2020}.
+
+Several methods for approximation of the conditional expectation \eqref{eq:numint-target} are found in the literature. Early methods included low-dimensional Gauss-Hermite quadrature or Monte Carlo methods \citep{Wulfsohn97, Henderson2000}; both since becoming routinely used in available software. More recently, adaptive quadrature methods have been employed, along with Laplace approximations. In the following sections, we seek to outline how these methods are used in the E-step of a joint model to evaluate $\Expi{g\lb\b\rb|T_i, \Delta_i, \Y; \bO}$.
+\subsection{Gauss-Hermite quadrature}\label{sec:numint-GH}
+Gauss-Hermite quadrature is a method for approximating definite integrals of the form
+\begin{equation*}
+  \int_{-\infty}^\infty f(x)\exp\lbr-x^2\rbr dx.
+\end{equation*}
+Since the integrand above resembles the normal distribution, Gauss-Hermite quadrature is particularly useful for approximating integrals resembling the normal kernel. Considering our expectation of interest, which we restate from \eqref{eq:numint-target}
+\begin{align*}
+    \Expi{g\lb\b\rb|T_i, \Delta_i, \Y; \bO}=\int_{-\infty}^\infty g(\b) f\lb\b|T_i,\Delta_i, \Y;\bO\rb d\b,
+\end{align*}
+under `standard' Gauss-Hermite quadrature rules we evaluate the above by the sum of $\varrho$ weighted evaluations of the integrand at pre-specified abscissae. The weights $\bm{w}$ and abcissae $\bm{v}$ are available in numerous locations, including the \tt{R} package \tt{statmod} \citep{quadrature}. The integral is approximated then by
+\begin{align}
+    \int_{-\infty}^\infty g\lb\b\rb &f\lb\b|T_i,\Delta_i,\Y;\bO\rb d\b \approx \nonumber\\
+    & 2^{q/2}\sum_{l_1=1}^\varrho\dots\sum_{l_q=1}^\varrho w_l g\lb \bm{v}_l\sqrt{2}\rb f\lb \bm{v}_l\sqrt{2}|T_i,\Delta_i,\Y;\bO\rb\exp\lbr||\bm{v}_l||^2\rbr,
+\label{eq:numint-standardGH}
+\end{align}
+where $||x||$ denotes the euclidean norm of its argument. In \eqref{eq:numint-standardGH} above, the abscissae $\bm{v}_l=\lb v_{l_1}, \dots, v_{l_q}\rb^\top$ each have corresponding weights $\bm{w}=\lb w_1,\dots,w_\varrho\rb^\top$. That is, we extend a univariate Gaussian quadrature rule to the $q$-dimensioned case \citep{RizopoulosJMbook}.
+
+Owing to how the specific values of the nodes and weights are assigned to best interpolate a polynomial of degree $2\varrho-1$, the closeness of the approximation \eqref{eq:numint-standardGH} to the exact value improves as $\varrho$ increases. Typically, this `standard' Gauss-Hermite method assumes zero-centering with the shape of a normal distribution. Therefore, another important factor that affects the quality of the approximation is the location of the quadrature points with respect to the modal mass of the integrand. That is, the approximation \eqref{eq:numint-standardGH} will be poor if most of the mass of $g\lb\b\rb\!f\lb\b|T_i,\Delta_i,\Y;\bO\rb$ lies away from zero, and/or the spread of this integrand is different from the weight function. In the context of (generalised) linear mixed models, \citet{Stringer2022} argue that this `shifting' of mass occurs with some regularity.
+
+This `standard' Gauss-Hermite quadrature provides then a method to (essentially, exactly with large enough $\varrho$) appraise integrals whose analytic solution is either non-existent, or irritating, to calculate. We draw attention to two main drawbacks to the approach. First, the computational burden of the dimension of the random effects coupled with requirement of a potentially high number of quadrature points being necessary to achieve an approximation of sufficient accuracy. Secondly, one will obtain a poor approximation if the mass of the objective function is located away from zero, and so a more reliable method may be desired. 
+
+Indeed, in much of the early literature surrounding joint models, strides were taken away from this numerical integration method in favour of Monte Carlo methods (which we go on to discuss in Section \ref{sec:numint-MC}) perhaps because of these issues. In the next section, we examine a method which attempts to circumvent possible malposition of the quadrature routine. 
+
+\subsection{Adaptive Gauss-Hermite quadrature}\label{sec:numint-aGH}
+With consternation surrounding the position of quadrature nodes we outlined in the previous section in mind we explore now an `adaptive' quadrature rule \citep{Pinheiro1995}. This aims to appropriately center and scale abscissae used in evaluation of the integrand \eqref{eq:numint-target}. The integral is approximated by
+\begin{align}
+    \int_{-\infty}^\infty g\lb\b\rb &f\lb\b|T_i,\Delta_i,\Y;\bO\rb d\b \approx \nonumber\\
+    & 2^{q/2}|\hat{\mathrm{C}}_i|\sum_{l_1=1}^\varrho\dots\sum_{l_q=1}^\varrho w_l g\lb \hat{\bm{v}}_l\rb f\lb \hat{\bm{v}}_l|T_i,\Delta_i,\Y;\bO\rb\exp\lbr||\bm{v}_l||^2\rbr,
+\label{eq:numint-aGH}
+\end{align}
+where the aforementioned shift in abcissae is performed by introduction of the term $\hat{\bm{v}}_l=\hat{\bm{b}}_i+\sqrt{2}\hat{\mathrm{C}}_i\bm{v}_l$, with $\bm{v}_l$ previously defined in addition to
+\begin{align}
+    \hb &= \arg\!\max{}\!_{\b}\lbr\log f\lb\Y, T_i, \Delta_i, \b;\bO\rb\rbr, \label{eq:argmaxb}\\
+    \hat{\mathrm{H}}_i&=-\frac{\pt^2\log f\lb\Y, T_i, \Delta_i, \b;\bO\rb}{\pt\b\pt\b^\top}\bigg\rvert_{\b=\hb}. \label{eq:Hessb}
+\end{align}
+Finally, the term $\hat{\mathrm{C}}_i$ present in \eqref{eq:numint-aGH} is the lower triangular Choleski factorisation which satisfies $\hat{\mathrm{C}}_i\hat{\mathrm{C}}_i^\top=\hat{\mathrm{H}}_i^{-1}$. \citet{RizopoulosJMbook} draw attention to the transformed integrand resembling a $N\lb\bm{0},\frac{1}{2}\mathbb{I}_q\rb$ distribution; proportional to the weight function of Gauss-Hermite quadrature.
+
+Since the evaluation \eqref{eq:numint-aGH} centers the abscissae $\bm{v}$ at the mode $\hb$ and scales by the curvature $\hat{\mathrm{H}}_i$ of the complete data (log) likelihood for each of the $n$ subjects, it generally provides a very good approximation of \eqref{eq:numint-target} \citep{Stringer2022}. Typically, this adaptive quadrature rule requires fewer abscissae than its `standard' counterpart explored in Section \ref{sec:numint-GH} \citep{RizopoulosJMbook}, owing to its eponymous `adaptive' quality.
+
+Briefly, on the topic of the number of abscissae, we note little guidance within joint modelling literature for a proposed value for $\varrho$; simply that increasing it will likely stabilise parameter estimates. Couched in a GLMM setting, \citet{Stringer2022} recommend setting the number of quadrature points based on two characteristics of the data: The number of `groups' in the data (e.g. the number of subjects $n$) and the smallest number of observations across all $n$ groups $M=\min\lb m_i\rb$
+\begin{align}
+    \varrho_{{}_\mathrm{Stringer}} = \left\lceil\frac{3}{2}\log_{M}\!n-2\right\rceil.
+\label{eq:numint-stringerRecc}
+\end{align}
+
+\subsection{Pseudo-adaptive Gauss-Hermite quadrature}\label{sec:numint-paGH}
+Belying the promise of greater accuracy and fewer requisite abscissae in the routine outlined in \eqref{eq:numint-aGH}, large computational cost can manifest due to necessary \textit{repeated} calculation of $\hb$ and subsequently $\hat{\mathrm{H}}_i$, given in \eqref{eq:argmaxb} and \eqref{eq:Hessb}, respectively. Explicitly, since \eqref{eq:numint-aGH} is housed within the EM algorithm, both $\hb$ and $\hat{\mathrm{H}}_i, i=1,\dots,n$ need to be obtained at \textit{each} iteration, prior to whatever (potentially expensive) quadrature routine is undertaken.
+
+To circumvent the repeated obtention of $n$ sets of this vector mode and its Hessian matrix, \citet{Rizopoulos2012} highlight that the (log) density $\log f\lb\Y,T_i,\Delta_i;\bO\rb$ is dominated by the (log) density associated with the linear mixed effects model $\log f\lb\Y|\b;\bO\rb$, which resembles the shape of some multivariate normal distribution. They argue then that the centering and scaling of abscissae for each individual need only be carried out once, prior to commencement of any EM algorithm. In a (very) similar fashion to \eqref{eq:numint-aGH}, we approximate
+\begin{align}
+    \int_{-\infty}^\infty g\lb\b\rb &f\lb\b|T_i,\Delta_i,\Y;\bO\rb d\b \approx \nonumber\\
+    & 2^{q/2}|\tilde{\mathrm{C}}_i|\sum_{l_1=1}^\varrho\dots\sum_{l_q=1}^\varrho w_l g\lb \tilde{\bm{v}}_l\rb f\lb \tilde{\bm{v}}_l|T_i,\Delta_i,\Y;\bO\rb\exp\lbr||\bm{v}_l||^2\rbr.
+\label{eq:numint-paGH}
+\end{align}
+Here, $\tilde{\bm{v}}_l=\tilde{\bm{b}}_i+\sqrt{2}\tilde{\mathrm{C}}_i\bm{v}_l$ and $\tilde{\mathrm{C}}_i$ is the lower Choleski of $\tilde{\mathrm{H}}_i^{-1}$, where
+\begin{align}
+    \tilde{\bm{b}}_i=\arg\!\max{}\!_{\b}\lbr\log f\lb\Y, \b;\bO\rb\rbr, 
+\label{eq:pargmaxb}
+\end{align}
+and $\tilde{\mathrm{H}}_i$ subsequently defined in a corresponding way to \eqref{eq:Hessb}, with the log density $\log f\lb\Y,\b;\bO\rb$ at mode $\tilde{\bm{b}}_i$. Given the aforementioned domination of the complete data log-density by the log-density contributed by the linear mixed model, \citet{Rizopoulos2012} propose, under general regularity conditions,
+\begin{equation}
+    \log f\lb\b|T_i,\Delta_i,\Y;\bO\rb\overset{\mathrm{P}}{\rightarrow}N\lb\tilde{\bm{b}}_i,\tilde{\mathrm{H}}_i^{-1}\rb.
+\label{eq:rizappx}
+\end{equation}
+
+With this `pseudo-adaptive' method laid out, an immediately obvious advantage is the elusion of repeated (re-)calculation of abscissae for the sample at each EM iteration; compounded by the ease at which \textit{both} $\tilde{\bm{b}}_i$ \textit{and} $\tilde{\mathrm{H}}_i,\ \forall\ i=1,\dots,n$ can be obtained by readily-available software (e.g. \tt{nlme} \citep{R-nlme}, \tt{lme4} \citep{R-lme4}), with such routines very often used in obtaining initial conditions for $\bO$. This, along with the `adaptive' routine outlined in Section \ref{sec:numint-aGH}, which acts as the foundation for \textit{this} routine, necessitating fewer quadrature points than the `standard' (Section \ref{sec:numint-GH}), results in this `pseudo-adaptive' quadrature method an attractive avenue. 
+
+We note that although \eqref{eq:numint-aGH} and \eqref{eq:numint-paGH} reduce the number of abscissae required to reliably approximate the integral, the number of evaluations they necessitate still increases exponentially with the dimension of the integrand determined by the number of random effects $q$.
+
+\subsection{Monte Carlo methods}\label{sec:numint-MC}
+Monte Carlo integration is perhaps an obvious alternative to these quadrature methods, as it provides a probabilistic representation of the integral \eqref{eq:numint-target} \citep{Lemieux2009}. In Section \ref{sec:methods-Estepdetails}, we showed that the conditional expectation $\Expi{g\lb\b\rb|T_i, \Delta_i, \Y; \bO}$ can be written as
+\begin{align}
+    \Expi{g\lb\b\rb|T_i, \Delta_i, \Y; \bO}=\frac{\int_{-\infty}^\infty g\lb\b\rb f\lb T_i,\Delta_i|\b;\bO\rb f\lb\b|\Y;\bO\rb d\b}{\int_{-\infty}^\infty f\lb T_i,\Delta_i|\b;\bO\rb f\lb\b|\Y;\bO\rb d\b}.
+\label{eq:numint-fullcondexp}
+\end{align}
+where the density $f\lb T_i,\Delta_i|\b;\bO\rb$ is known from \eqref{eq:methods-loglik-survival} and, operating under an assumption of multivariate normality in $\Y|\b$, the density $f\lb\b|\Y;\bO\rb$ can be calculated from multivariate normal theory, as given in \eqref{eq:b-cond-mvn}. 
+
+Monte Carlo integration can therefore be used to approximate \eqref{eq:numint-fullcondexp} by first sampling $N$ realizations from \eqref{eq:b-cond-mvn} for each subject and then calculating the ratio of sample mean values for the numerator and denominator integrands present in \eqref{eq:numint-fullcondexp}. That is,
+\begin{align}
+    \Expi{g\lb\b\rb|T_i, \Delta_i, \Y; \bO}\approx\frac{\frac{1}{N}\sum_{l=1}^N g\lb\b^{(l)}\rb f\lb T_i,\Delta_i|\b^{(l)};\bO\rb}{\frac{1}{N}\sum_{l=1}^Nf\lb T_i,\Delta_i|\b^{(l)};\bO\rb}.
+\label{eq:numint-MC}
+\end{align}
+To be explicit, the draws $\b^{(l)},\ l = 1,\dots,N$ are sampled from the multivariate normal distribution given in \eqref{eq:b-cond-mvn} using, for instance, \tt{rmvnorm} available in package \tt{mvtnorm} \citep{R-mvtnorm} or \tt{mvrnorm} from package \tt{MASS} \citep{R-MASS}. 
+
+\citet{Henderson2000} utilised antithetic Monte Carlo sampling to halve the number of samples required, producing $N$ negatively correlated sample pairs; the negative correlation between these pairs leading to smaller variance in the sample means in \eqref{eq:numint-MC}. It is worth mentioning that there is little guidance available with respect to a tactful choice of $N$. \citet{Philipson2020} outline in greater detail these properties, and additionally draw attention to quasi-Monte Carlo methods for sampling of $\b|\Y;\bO$ couched within the E-step of a joint model. 
+
+Notably, Monte Carlo methods do not suffer the same curse of dimensionality as quadrature: The integral approximation given in \eqref{eq:numint-MC} does \textit{not} directly depend on $q$. However, the random samples from the distribution of $\b$ may themselves become computationally prohibitive at larger $q$.
+  
+  \section{Calculation of standard errors}\label{sec:methods-SEs}
+  With our maximum likelihood estimates $\hbO$ obtained from an EM algorithm as delineated in Sections \ref{sec:methods-estimation-EM} and \ref{sec:methods-Estepdetails}, we now turn attention to obtaining standard errors (SEs) for the MLEs in order to `complete' inference for the fitted joint model. Doing so allows us the form the usual Wald confidence intervals for the parameter estimates, obtain $p$-values, and so on. Generally, standard errors are found by inversion of the information matrix, $\mathcal{I}\big(\hbO\big)$. 
+  
+  The lack of \textit{automatic} provision of $\cal I$ by the EM algorithm lead to several proffered methods to calculate, or approximate, the \textit{observed} information matrix, $\mathcal{I}_o\big(\hbO\big)$. Instead of surveying the general-case methods laid out in \citet{Mclachlan08}, we focus here on outlining methods for estimating standard errors using the EM algorithm for the joint model specifically.
+
+  \citet{Hsieh2006} highlight the major challenge with standard error estimation for joint models is presence of the unspecified (\ie non-parametric) baseline hazard $\lo\lb\cdot\rb$, so the standard asymptotic properties for the MLE $\hbO$ afforded by the EM algorithm do not apply. In Section \ref{sec:jm-em-jm} we therefore essentially considered the \textit{profile} likelihood in parameter updates. This profile likelihood with nonparametric MLE $\hat{\lambda}_0$ shouldn't be dependent upon $\lo$. However, \citet{Hsieh2006} admonish that this is \textit{not} the case, since the estimate for $\lambda_0\lb\cdot\rb$ appearing in \eqref{eq:methods-classicMstep} holds implicit membership in $\bO$ upon which the distribution of the random effects is conditionally dependent in \eqref{eq:numint-form-of-expectation} \ie itself involves the density $f\lb T_i,\Delta_i|\b;\bg,\bz,\lo\rb$.
+
+  In light of the challenges stemming from the unspecified $\lo$, we present three methods for calculation of SEs. We explore the bootstrap, and two methods which attempt to approximate $\mathcal{I}_o\big(\hbO\big)$ in the next sections. We do not compute the standard errors for the baseline hazard $\hat{\lambda}_0$ in all simulations and applications in proceeding chapters: Its high dimensionality, determined by the number of unique event times, could lead to instability in any obtained information matrix, and, moreover, they are likely not of interest considering $\lo$ is set as a nuisance parameter at the outset.
+  
+  \subsection{The bootstrap}\label{sec:methods-SE-bootsrap}
+  In a scenario where establishing a handle on uncertainty in parameter estimates is supposedly not clear or straight-forward, bootstrapping is perhaps an obvious choice. Consider having the `original' joint model which is fit to the set of observed data constructed by available measurements for $n$ subjects, $\mathcal{D}=\lbr\mathcal{D}_1,\dots,\mathcal{D}_n\rbr$ where $\mathcal{D}_i=\lbr T_i, \Delta_i, \bm{Y}_i\rbr$. Subsequently, we sample with replacement across the \textit{subjects}, such that for each bootstrap replicate $b=1,\dots,N$ we obtain a set of `new' data denoted $\mathcal{D}^{(b)}$. It is important to emphasise that the sampling is done over the subjects, and not individual data points which one may carry out in the case of ungrouped data. For each set of `new' data, we obtain $\hbO^{(b)}$ by fitting a joint model to said data. Sample quantities of interest (median value, standard deviation, 95\% CI etc.) can then be trivially found by calculation over the $N$ sets of bootstrapped MLEs.
+  
+  Despite ease of carrying out the bootstrap method, there are several reasons why this avenue is unattractive. Firstly, bootstrapping will obviously be a slow method, and $N$ typically needs to be quite large, with its computation time dependent on the time taken for the EM algorithm itself. However \citet{Hickey2018} point out simply starting the EM algorithm on resampled data at the the MLEs obtained by the joint model fit to the original data lessens this burden. Secondly, there are no guarantees that resampling won't produce a problematic set of data which could lead to convergence problems in the EM algorithm. Finally both \citet{Hsieh2006} and \citet{Xu2014} note that the bootstrap method overestimated the standard errors in the joint model.
+  
+  \subsection{Observed empirical information matrix}\label{sec:methods-SE-obsemp}
+  \citet{Hickey2018} approximate the so-called observed empirical information matrix $\mathcal{I}_e$ to obtain SEs for $\hbO$. After convergence of the EM algorithm, we have the vector of parameter estimates \textit{and} the estimates for the unspecified baseline hazard $\hat{\lambda}_0\lb t\rb$. Using the Breslow estimator for the baseline hazard given in \eqref{eq:methods-classicMstep}, we calculate
+  \begin{equation}
+      \mathcal{I}_e\big(\hbO\big)=\lbr\Si s_i\big(\hbO\big)s_i^\top\big(\hbO\big)\rbr-n^{-1}S\big(\hbO\big) S^\top\big(\hbO\big),
+  \label{eq:methods-obsemp}
+  \end{equation}
+  where $s_i\big(\hbO\big)$ denotes the gradient vector of the conditional expectation of complete data (profile) log-likelihood function \eqref{eq:methods-E-step} evaluated at $\hbO$ \ie the score statistic and $S\big(\hbO\big)=\sum_is_i\big(\hbO\big)$. We note that whilst the bootstrap surveyed in the previous section is known to \textit{overestimate} the standard errors, those produced by the approximation of the information matrix here are known to \textit{underestimate} the uncertainty in our parameter estimates owing to the usage of the profile log-likelihood outlined previously in the obtention of score vectors  \citep{Hsieh2006}.
+  \subsection{Numerical differentiation of the Fisher score}\label{sec:methods-SE-xu2014}
+  \citet{Xu2014}, like the method outlined in the previous section, seek to approximate $\mathcal{I}_o$, and provide four methods based on numerical differentiation to do so. All four presented use either the forward differencing method, or the Richardson extrapolation. Said differentiation is carried out on either the M-step update \eqref{eq:em-gen-mstep} or the Fisher score vector of the complete data log-likelihood; in both cases a profile technique is used. Owing to its similarity with the method shown in Section \ref{sec:methods-SE-obsemp}, we present only the approach using the profile Fisher score vector and present numerical differentiation techniques in Appendix \ref{sec:appendix-numdiff}.
+
+  Essentially, \citet{Xu2014} recommend that for each element of $\hbO$ which undergoes perturbation in the numerical differentiation routine of choice, the baseline hazard is then re-maximised at this perturbed vector, and the differentiation of this profile Fisher score carried out as normal. Therefore, computational expense is related to the number of parameters and/or the number of random effects as well as the choice of differentiation routine. After convergence, we have the vector of MLEs $\hbO$ which has length
+  \begin{equation}
+      L=\mathrm{len}\big(\hbO\big)=\frac{q\lb q+1\rb}{2}+p_1+\dots+p_K+p_s+K,
+  \label{eq:methods-length-of-omega}
+  \end{equation}
+  determined by the joint model specification. In order to obtain the standard errors of $\hbO$ by the method in \citet{Xu2014} we perturb, in turn, each of the $l=1,\dots,L$ parameters under the numeric differentiation routine. For each perturbation per parameter, we re-calculate the baseline hazard $\hat{\lambda}^{(l)}_0$, and evaluate the profile Fisher score at this $l^{\mathrm{th}}$ perturbed vector, thereby obtaining the $l^{\mathrm{th}}$ column in the approximated $\mathcal{I}_o$, which is then formed `over' the numerical differentiation routine. This method of obtaining SEs is notably less computationally expensive under forward differencing, since only one perturbation occurs, compared to the four undertaken by the Richardson extrapolation.
+  
+  \section{\label{sec:methods-simulation}Simulation}
+  Simulation studies are important statistical tools: Investigating performance properties and adequacy of statistical models in pre-specified situations. We briefly illustrate how we undertake simulation for the longitudinal and survival sub-models before outlining how we simulate data under the `combined' joint modelling framework. The method(s) outlined are then carried forward in all simulated datasets used. In practice we employ bespoke code which allows for fine-tuning of simulation scenarios we present. 
+  
+  The remainder of this section briefly outlines data simulation under a linear mixed model; simulation of event times; and simulation under the joint modelling framework. We bring the chapter to a close by outlining numerous considerations one may take into account when simulating the data under a joint model.
+  
+  \subsection{\label{sec:sim-longit}Simulating the longitudinal response}
+  Simulation of a response under a linear mixed effects model \eqref{eq:methods-lmm} is relatively straight-forward. For some candidate parameter vector $\bO_{\D,\bb,\sigma^2_\varepsilon}^{(\mathrm{TRUE})}=\lb\vech\lb\D\rb^\top,\bb^\top,\sigma^2_\varepsilon\rb^\top$, which denotes the `true' values of the necessary parameters, we carry out the following steps:
+  \begin{enumerate}
+      \item Simulate the random effects $\b$ for all $n$ desired subjects. In practise, the function \tt{mvrnorm} from the \tt{R} package \tt{MASS} \citep{R-MASS} is used with zero-mean and the positive semi-definite covariance matrix $\D$ supplied.
+      \item Define the design matrices $\X_i$ and $\Z_i$. For all simulations, $\X_i$ is defined -- unless otherwise stated -- as the matrix formed by the horizontal concatenation of an intercept, the vector of follow-up times, a single standard normal deviate and a single Bernoulli draw ($p=0.5$). We define the vector of follow-up times for each subject as $\bm{t}_i=\lb0,\dots,\kappa\rb$ with $\kappa$ the maximal follow-up time. The vector $t_i$ is regularly spaced according to the length of the profile $r$. Both $\kappa$ and $r$ are controlled in simulations. The specification of $\Z_i$ is simulation dependent: For instance if a random intercept and slope random is desired, then it is defined as the horizontal concatenation of the intercept column and $\bm{t}_i$.
+      \item Define $\bm{\eta}_i=\X_i\bb+\Z_i\b$ and simulate $\Y$ using \tt{rnorm} with mean $\bm{\eta}_i$ and standard deviation $\sqrt{\sigma^2_\varepsilon}$.
+  \end{enumerate}
+  The above steps then produce $n$ sets of $r$-vectors of the simulated Gaussian response. That is, $\Expi{\Y|\b;\bO_{\D,\bb,\sigma^2_\varepsilon}^{(\mathrm{TRUE})}}$ is conditionally (multivariate) normal. One can then trivially extend this to produce $K$ vectors with differing \eg fixed effects. In circumstances where the response one wishes to simulate is non-Gaussian, then some requisite inverse-link function is used on $\bm{\eta}_i$, as we go on to detail in Chapter \ref{cha:flexible}. 
+  
+  Of course, these $r$-vectors of response(s) are truncated at the subject's simulated event time in the joint model setting. We outline methodology to simulate failure times in the general case in the next section and under a joint model in Section \ref{sec:sim-joint}.
+
+  \subsection{\label{sec:sim-survtime}Simulation of survival times}
+  Cox proportional hazards regression is the ubiquitous approach to modelling the effect of a the covariate vector $\bm{S}_i$ on the hazard of some time-to-event outcome. Simplifying the Cox PH regression model \eqref{eq:methods-survival} to the usual $\lambda_i\lb t|\bm{S}_i\rb=\lambda_0(t)\exp\lbr \bm{S}_i^\top\bz\rbr$, with $\lo(t)$ and $\bz$ previously defined in Section \ref{sec:methods-notation}. The survival function, which gives probability that subject $i$ survives past time $t$ is then $S(t)=\exp\ls-\Lambda_0(t)\exp\lbr\bm{S}_i^\top\bz\rbr\rs$, where $\Lambda_0=\int_0^t\lo(u)du$ denotes the cumulative baseline hazard. The distribution of survival times under this Cox PH regression is then $F\lb t|\bm{S}_i\rb=1-S(t|\bm{S}_i)$. \citet{Bender2005} demonstrate that one can simulate the true event time of subject i by
+  \begin{align*}
+      T_i^*=\Lambda_0^{-1}\ls-\log U\exp\lbr-\bm{S}_i^\top\bz\rbr\rs,\quad U\sim\text{Unif}\lb0,1\rb.
+  \end{align*}
+  Therefore, survival times can be generated for any baseline hazard which has an invertible cumulative baseline hazard function $\Lambda$: \citet{Bender2005} noted that only the exponential, Weibull and Gompertz baseline hazard functions satisfy not only this criterion, but additionally share the assumption of proportional hazards with the Cox PH model. The formula required for simulation of survival times for each of these three candidate distributions are given in Table \ref{tab:simulation-parameterisation}
+  \begin{table}[t]
+      \centering
+      \rowcolors{2}{lightgray!20}{white}
+      \small
+      \begin{tabular}{lcr}
+           Distribution & Parameter(s) & Formula for simulation \\ \midrule
+           Exponential  &  Scale $\nu>0$ & $T_i^*=-\frac{\log U}{\nu\exp\lbr\bm{S}_i^\top\bz\rbr}$\\
+           Weibull & Scale $\nu>0$, shape $\alpha>0$ & $T_i^*=\lb-\frac{\log U}{\nu\exp\lbr\bm{S}_i^\top\bz\rbr}\rb^{1/\alpha}$\\
+           Gompertz &  Scale $\nu>0$, shape $-\infty<\alpha<\infty$ & $T_i^*=\frac{1}{\alpha}\log\ls1-\frac{\alpha\log\lb U\rb}{\nu\exp\lbr\bm{S}_i^\top\bz\rbr}\rs$
+      \end{tabular}
+      \caption{Simulation of event times for a given subject $i$ under the exponential, Weibull and Gompertz distributions. $U$ denotes a uniform draw in each case and $\bm{S}_i$ is subject $i$'s vector of baseline covariates.}
+      \label{tab:simulation-parameterisation}
+  \end{table}
+  \newline Going forward, owing to its wide use in survival analysis, we use the Gompertz as our baseline hazard of choice. The simulated event time $T_i^*$ is given by
+  \begin{align}
+      T_i^*=\frac{1}{\alpha}\log\ls1-\frac{\alpha\log\lb U\rb}{\nu\exp\lbr\bm{S}_i^\top\bz\rbr}\rs,\quad U\sim\text{Unif}\lb0,1\rb,
+  \label{eq:sim-bender}
+  \end{align}
+  where $\alpha$ and $\nu$ are the shape and scale, respectively, of the Gompertz distribution. As was the case for simulation of the longitudinal process in Section \ref{sec:sim-longit}, we are able to fine-tune the survival process by choice of parameter $\bz$, in addition to the underlying baseline hazard by $\nu$ and $\alpha$, which are defined for the Gompertz distribution in Table \ref{tab:simulation-parameterisation}. This fine-tuning is done \textit{independently} of the longitudinal process at this stage; we consider simulation under the joint modelling framework proper in the next section. 
+  
+  We note in passing that another way to simulate $T_i^*$ is to directly solve the survival function $S\lb t\rb$ for each subject given their covariates $\bm{S}_i$ via a root-finding algorithm (such as \tt{uniroot} in base \tt{R}); a useful alternative if the distribution of interest is non-invertible or the baseline hazard is otherwise specified. 
+  
+  \subsection{\label{sec:sim-joint}Simulation under a joint modelling framework}
+  Advantages of using Cox PH regression are its ability to incorporate both (a): Time-varying covariate effects, that is, a covariate whose value is fixed at baseline, but effect on the hazard is time-varying; and (b): Time-varying covariates, that is a covariate whose value changes over time, e.g. cumulative dosage received in a clinical trial \citep{Austin2012}. Under the Cox PH specification in the joint modelling framework with a random intercept-and-slope specification we indeed have a time varying covariate in the form of the $K$ slope terms across random effects $\b{_1}=\lb b_{i11}, b_{i21},\dots,b_{iK1}\rb^\top$ thereby falling into category (b). When a random intercepts-only structure is instead desired, the formulation \eqref{eq:sim-bender} suffices, with the term including covariate information expanded to include our association parameters and random intercept terms: $\exp\lbr\bm{S}_i^\top\bz+\Sk\gamma_kb_{ik0}\rbr$. 
+  
+  Given inclusion of random slope terms $\b{_1}$, we follow closely the work of \citet{Austin2012}, who expand work outlined in the previous section by \citet{Bender2005} to the case with such a time-varying covariate. Rewriting the Cox PH formulation \eqref{eq:methods-survival}
+  \begin{equation}
+  \begin{aligned}
+      \lambda(t|\bm{S}_i,\b;\bz,\bg)=&\lo(t)\exp\lbr\lb\bm{S}_i^\top\bz+\Sk\gamma_kb_{ik0}\rb + 
+      \lb\Sk\gamma_kb_{ik1}\rb t\rbr,\\
+      \lambda(t|\cdot)=&\lo(t)\exp\lbr P + Qt\rbr
+  \end{aligned}
+  \label{eq:sim-rewrite}
+  \end{equation}
+  where we have collected time-invariant and time-varying terms together into the arbitrarily-named $P$ and $Q$, respectively. Then, given that the Gompertz baseline hazard is $\lambda_0(t)=\nu\exp\lbr\alpha t\rbr$, with shape $-\infty<\alpha<\infty$ and scale parameter $\nu>0$. We obtain from \eqref{eq:sim-rewrite},
+  \begin{align*}
+      \Lambda(t|\cdot)&=\intzt\lambda(u|\cdot)du=\intzt\exp\lbr P+Qu\rbr\nu\exp\lbr\alpha u\rbr du\\
+      &=\nu\exp\lbr P\rbr\intzt\exp\lbr (Q + \alpha)u\rbr du\\
+      &=\nu\exp\lbr P\rbr\ls\frac{1}{Q + \alpha}\exp\lbr\lb Q + \alpha\rb u\rbr\rs^t_0\\
+      \Lambda(t|\cdot)&=\frac{\nu\exp\lbr P\rbr}{Q + \alpha}\ls\exp\lbr\lb Q+\alpha\rb t\rbr-1\rs.
+  \end{align*}
+  Then, setting the survival function $S(t)$ equal to a random uniform draw, $U$, and rearranging for $t$ we obtain
+  \begin{align*}
+      U&=S\lb t\rb=\exp\lbr-\frac{\nu\exp\lbr P\rbr}{Q + \alpha}\ls\exp\lbr\lb Q + \alpha\rb t\rbr-1\rs\rbr\\
+      \exp\lbr\lb Q + \alpha\rb t\rbr&=1-\frac{\nu\exp\lbr P\rbr}{Q + \alpha}\log U\\
+      \implies t&=\log\lb1-\frac{Q + \alpha}{\nu\exp\lbr P\rbr}\log U\rb\bigg /\lb Q + \alpha\rb.
+  \end{align*}
+  Finally then, our true event time $T_i^*$ can be generated by
+  \begin{equation}
+      T_i^*=\simsurvofrac\log\ls1-\frac{(Q+\alpha)\log U}{\nu\exp\lbr P\rbr}\rs,\quad U\sim\text{Unif}\lb0,1\rb,
+  \label{eq:sim-jm}
+  \end{equation}
+  where $P$ and $Q$ are defined in \eqref{eq:sim-rewrite}. Similar derivations for Weibull and exponential baseline hazards are given in Appendix \ref{sec:appendix-survtimes}. 
+
+  In addition to the survival time as outlined in this section and the last, we additionally generate $n$ censor-times, $C_i\sim\mathrm{Exp}\lb \Upsilon\rb$ where $\Upsilon$ denotes the rate parameter; representing yet more control over the simulated data. With both what is the `true' failure time $T_i^*$ and censor time $C_i$ simulated, we set each observed event time $T_i=\min\lb T_i^*,C_i\rb$ and generate $\Delta_i$ accordingly. If $T_i>\kappa$ then it is truncated to value $T_i=\kappa+0.1$ for analysis purposes and $\Delta_i$ is set to zero. The baseline covariates used in simulating the failure time for subject $i$ throughout the thesis are the same single standard normal and Bernoulli draws obtained in Section \ref{sec:sim-longit}. 
+  
+  \subsection{Simulation beyond an intercept and slope structure\label{sec:sim-quad}}
+  The mechanisms for simulation for a joint model under an intercept-only and intercept-and-slope random effects structure has been outlined in the previous section: The intercept-only random effects formulation is encapsulated in previous work by \citet{Bender2005} presented in \eqref{eq:sim-bender}, and the inclusion of a random slope in addition lead us to consider work by \citet{Austin2012} in treating these as time-varying covariates \eqref{eq:sim-jm}.
+  
+  However, simulations are also necessary when working with more complex random effects structures. For instance, under a quadratic formulation in the simulated response, or when spline terms are included with $M$ internal knots, taking form $\sum_{m=0}^M(\alpha_m+b_{im})B_m(t)$, where $\bm{\alpha}=\lb\alpha_0,\dots,\alpha_M\rb$ are B-spline coefficients and $\lbr B(t)\rbr$ the truncated linear basis (see e.g. \citet{Barrett2017} for a joint model with such a spline specification). Under such examples, the integration outlined in the previous section becomes awkward and unappealing, and so we utilise previously-used methods \citep{R-joineR} to generate data under more complex random effects structures.
+  
+  We expand the time-varying term $Q\rightarrow Q(\b, t)$ here to encapsulate any functional form of the random effects. For example, utilising a quadratic random effects structure arbitrarily across all $k$ responses results in 
+  \begin{align*}
+    Q(\b, t)=\Sk\gamma_k\lb b_{ik1}t+b_{ik2}t^2\rb, 
+  \end{align*}
+  and likewise any polynomial of order $p$ gives
+  \begin{align*}
+    Q(\b,t)=\Sk\gamma_k\lb b_{ik1}t+\dots+b_{ikp}t^p\rb    
+  \end{align*}
+  as well as \eg spline term(s). Given the definition of the hazard $\lambda(t|\cdot)$ is 
+  \begin{align}
+      \underset{\Delta t\rightarrow 0}{\lim}\frac{\Pr(t\le T\le t + \Delta t|T\ge t,\ \cdot)}{\Delta t},
+  \label{eq:haz-def}
+  \end{align}
+  which we can trivially rearrange to
+  \begin{align}
+    \underset{\Delta t\rightarrow0}{\lim}\lambda(t|\cdot)\Delta t = 
+    \underset{\Delta t\rightarrow0}{\lim}\Pr(t\le T\le t + \Delta t|T\ge t,\ \cdot),
+    \label{eq:haz-def-dt}
+  \end{align}
+  with the hazard $\lambda(t|\cdot)$ given by \eqref{eq:sim-rewrite}. Therefore failure times, simulated under a host of random effects specifications given by $Q\lb\b,t\rb$, are available. 
+  
+  Choosing a nominally small value for $\Delta t$ allows us to generate a sufficiently fine grid which multiplies the hazard. This scaled hazard is equivalent to the probability of failure occurring in the fine-grid time interval $(t, t + \Delta t)$. We also generate a vector of possible times for each individual from time $0$ to the truncation time $\kappa$ with step-size $\Delta t$. Each of the generated probabilities can be compared to a $\text{Unif}\lb0,1\rb$ draw. If the probability does not exceed the uniform deviate then the survival time is set as $\kappa$, otherwise the survival time takes the value of the minimum candidate time (i.e. when the event first happened).
+  
+  To illustrate, consider subject $i$ with step-size $\Delta t=0.02$ and truncation time $\kappa=5$. We would generate vector of candidate times $\bm{t}=(0.00, 0.02,\dots,2.50,2.52,\dots,4.98,5.00)^\top$. The probability of an event occurring at each $t\in\bm{t}$ is then calculated, dependent on form of chosen $Q(\b,t)$. These probabilities are then compared against $\text{Unif}\lb0,1\rb$ realizations to obtain, say, $\bm{t}^*=(\kappa,\kappa,\dots,\kappa,2.52,\dots,4.98,\kappa)^\top$. The minimal value of $\bm{t}^*$ is then set as the true failure time for this subject, $T_i^*=2.52$. Subject $i$ additionally has censor-time simulated as outlined in Section \ref{sec:sim-joint}, which allows us to allocate $T_i$ in an identical manner.
+  
+  Although this methodology allows for a wide breadth of random effects structures, the use of potentially very large (owing to elected step-size) matrices can slow down data generation considerably. Additionally, the vector of candidate times $\bm{t}$ are effectively discrete times, which could have the effect of many subjects having the same simulated failure time, which could be troublesome in certain simulation scenarios. Of course, this could be circumvented by choosing a finer value for $\Delta t$, at greater computational cost.
+  
+  \section{\label{sec:sim-considerations}Simulation considerations}
+  Simulation of survival times is a task which is hard to control with absolute perfection: More so an act of balancing several different aspects which come from the specification of parameters $\bg$ and $\bz$; the underlying Gompertz baseline hazard via scale and shape parameters $\nu$ and $\alpha$, respectively; as well as the magnitude of the random effects via their allocated variance in $\D$. A delineation of how these different facets -- which we control in simulation settings -- combine to allow one to obtain $n$ failure times time was given in Section \ref{sec:sim-joint}. In this section we consider these three factors which can alter both the incidence of failure in $[0,\kappa]$ as well as the distribution of simulated $T_i^*$.
+  
+  \subsection{The baseline hazard}\label{sec:sim-considerations-basehaz}
+  We exclusively simulate under a Gompertz baseline hazard of the form $\lo(t)=\nu\exp\lbr\alpha t\rbr$. The scale parameter $\nu$ can be thought of as baseline hazard's intercept term: If the shape parameter $\alpha$ is zero then the baseline hazard is stationary through time, and values of $\gamma$ and $\zeta$ mainly drive the failure times with no inclusion of time itself contributing to the underlying baseline hazard. The shape parameter itself therefore allows the baseline hazard to increase or decrease over time.
+  
+  Setting the survival parameters to zero, such that they do not impact the hazard, we select a set of values for $\log\nu=\lbr-4,-3,-2,-1\rbr$ and $\alpha=\lbr-0.4, -0.2, 0.2, 0.4\rbr$ and simulate one hundred sets of data, collating the simulated failure times from each simulated data set. 
+  
+  Figure \ref{fig:sim-alphanu} shows the distribution of survival times under each combination of $\lbr\log\nu\rbr$ and $\lbr\alpha\rbr$ above. At lower values of $\log\nu$ we note the distribution of event times changes as $\alpha$ increases from a negative to positive value: Failures occur earlier on in follow-up (driven by $\log\nu$) with visible drop-off in frequency over time owing to the negative $\alpha$, and vice versa for $\alpha>0$.
+
+  For $\log\nu>=-2$ this change in distribution is less pronounced owing to the underlying Gompertz baseline hazard (arising from this scale parameter) being already adequately high. The failure times are more concentrated around the start of simulated follow-up at largest $\alpha=0.4$, whereas for $\alpha=-0.4$ there is still a somewhat noticeable `tail' of failure times comparatively.
+  \begin{figure}[t]
+    \centering
+    \includegraphics[width=140mm, height = 90mm]{Figures_Chapter2/alpha_nu_failure_corrections.png}
+    \caption{Distribution of simulated survival times under different parameterisations of the Gompertz baseline hazard.}
+  \label{fig:sim-alphanu}
+  \end{figure}
+  
+  \subsection{Magnitude of survival parameters}\label{sec:sim-considerations-gammazeta}
+  Next, we consider altering the magnitude and sign of the survival parameters. Specifically, we simulate a univariate model with candidate association parameters $\gamma=\lbr-1.0, -0.5, 0.0, 0.5, 1.0\rbr$ and the coefficient attached to the binary baseline covariate in the survival model, taking values $\zeta_2=\lbr-1.0, -0.3, 0.3, 1.0\rbr$. Across each of these combinations of $\lbr\gamma\rbr$ and $\lbr\zeta_2\rbr$, we hold the parameters controlling the baseline hazard constant at $\log\nu=-1$ and $\alpha = 0$ in order to simulate a time-invariant baseline hazard. The covariance matrix on the random effects is set as a diagonal matrix of dimension two. With these set out, we expect the changes in simulated failure time densities to be driven by the changing values of $\lbr\gamma\rbr$ and $\lbr\zeta_2\rbr$.
+  
+  Figure \ref{fig:sim-gammazeta} illustrates the effect of different magnitudes of $\gamma$ and $\zeta_2$. The effect of an increased $\zeta_2$ is perhaps best exemplified in the `column' for $\gamma = 0$. Here, we infer that the increasing value of $\zeta_2$ simply increases the underlying baseline hazard, illustrated by the greater incidence of failures due to said higher baseline hazard. Interestingly, the distribution of failure times for the positive-negative pairs of values for $\gamma$ are visually (almost) identical. This is due to the simulation of the random effects producing an approximate half-and-half `split' of those who are above the global trajectory (thus their hazard \textit{increases} with positive $\gamma$) and those below it (\textit{increasing} with negative $\gamma$). We see as $|\gamma|$ increases, more failures occur earlier in the period of follow-up, which is exacerbated by higher values of $\zeta_2$.
+  \begin{figure}[t]
+    \centering
+    \includegraphics[width=140mm, height = 90mm]{Figures_Chapter2/gamma_zeta_failure2_corrections.png}
+    \caption{Distribution of simulated survival times under different parameterisations of the survival parameters $\gamma$ and $\zeta_2$.}
+  \label{fig:sim-gammazeta}
+  \end{figure}
+  
+  \subsection{Magnitude of the random effects}\label{sec:sim-considerations-D}
+  In a similar spirit to our investigation of the effect of survival parameter magnitude, we set the baseline hazard constant at $\log\nu=-1$ and $\alpha=0$. We hold the association parameter constant at a moderate $\gamma = 0.5$ and $\bz=\bm{0}$, such that failures occurring are likely to be due to ones deviation from a global trend, as dictated by the parameterisation of the covariance matrix $\mathrm{D}$. We set off-diagonal parameters $\mathrm{D}_{12}=\mathrm{D}_{21}=0$ and consider all $16$ possibilities for the diagonal of $\D$ from candidate intercept variances $\mathrm{D}_{11} = \lbr3.0, 1.0, 0.5, 0.5^2\rbr$ and slope variances $\mathrm{D}_{22} = \lbr1.0, 0.5, 0.25, 0.25^2\rbr$.
+  
+  Figure \ref{fig:sim-intslope} illustrates how the distribution of simulated survival times changes when the variance of random effects (thus the average magnitude of the random effects) increases. When the random effects can take larger values (\ie $D_{11}$ and/or $D_{22}$ are larger), an overall increase in the number of failure times as time progresses occurs. When the random intercept variance is greatest at $D_{11}=3$ the simulated failure times are most concentrated at start of follow-up occurs, especially when $D_{22}$ is comparatively smaller. Conversely, when random slope variance is greater, the distribution of simulated failure times have an elongated tail, demonstrating the impact of the simulated random slopes on the hazard.
+  \begin{figure}[t]
+    \centering
+    \includegraphics[width=140mm, height = 90mm]{Figures_Chapter2/int_slope_failure.png}
+    \caption{Distribution of simulated survival times under different magnitudes of random effect variance.}
+  \label{fig:sim-intslope}
+  \end{figure}
+
+\end{chapter}

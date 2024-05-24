@@ -1,0 +1,26 @@
+\documentclass{article}
+\input{00Preamble}
+\usepackage[round]{natbib}  
+\usepackage{geometry}
+\geometry{
+    left = 15mm, right = 15mm,
+    top = 10mm
+}
+
+\pagenumbering{gobble}
+\begin{document}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.5\textwidth]{logo.jpg}
+    \end{figure}
+    \section*{Faster fitting for joint models of survival and multivariate longitudinal data}
+
+    % Introduction, \ie brief summary of what we set out to do -->
+    Some twenty-five years after the first introduction of joint modelling in \citet{Wulfsohn97}, clinical trials across multiple disease areas routinely collect information on many longitudinal biomarkers. This represents challenges and opportunities: Multivariate data likely provides better discrimination capabilities from a prediction standpoint, furthermore disregarding the multivariate nature of the data is tantamount to ignoring potentially informative correlations between these longitudinal trajectories; on the other hand, the multidimensional integrals which arise as part of parameter estimation under traditional approaches presents significant computational and statistical difficulties.
+
+    % `One line' summary of thesis -->
+    This thesis investigates alternative approaches which enable faster fitting of joint models of survival and \textit{multivariate} longitudinal data. An approximate EM algorithm relatively dormant in the literature \citep{Bernhardt15} is repurposed to lessen the computational burden felt by traditional joint models, leading to faster fitting. Furthermore, we extended beyond the typically-used restrictive longitudinal specifications in such models in favour of flexible, potentially complex specifications.
+    
+    \bibliography{refs.bib}
+    \bibliographystyle{elsarticle-harv}
+\end{document}

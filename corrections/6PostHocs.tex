@@ -1,0 +1,303 @@
+\begin{chapter}{\label{cha:posthoc}Post-hoc Analyses, Prediction, and Prognostic Accuracy}
+With a joint model fit, we turn can now our attention to validation of the model across multiple streams. In this chapter, we consider the residuals of the constituent parts of a fitted joint model; how one may undertake a model-building exercise using long-established testing approaches; and introduce prognostic prediction obtained from a joint model along with arising measures of predictive accuracy. The idea being that they will inform decision-making in the next chapter. For illustration purposes we consider `dummy'/`toy' examples from appropriate models fit to the PBC data first introduced in Section \ref{sec:intro-motivation-pbc}. 
+
+\section{Residuals}\label{sec:posthoc-residuals-intro}
+Residuals are an important byproduct of any modelling process; playing a role in model assessment, diagnostics and improvement. In a joint model, we obtain residuals which are attached to each of the $K$ longitudinal processes, as well as the event-time sub-model \ie no special `joint' residual exists, to the author's knowledge.
+\subsection{Residuals for the longitudinal sub-model(s)}\label{sec:posthoc-residuals-long}
+Remaining firmly couched within the context of the GLMM sub-model specification which we considered in Chapter \ref{cha:flexible}, we are interested in obtaining conditional subject-specific residuals, for the $\kth$ response modelled for subject $i$ at time-point $j$
+\begin{equation}
+    \begin{aligned}
+        \hat{r}_{ikj} &= Y_{ikj} - \hat{Y}_{ikj},\\
+        &= Y_{ikj} - h_k^{-1}\lb\bm{X}_{ikj}^\top\hat{\bb}_k+\bm{Z}_{ikj}^\top\hb{_k}\rb,
+    \end{aligned}
+\label{eq:posthocs-residuals-raw}
+\end{equation}
+where the quantity being subtracted is the predicted value at the MLEs $\hbO$, which notably takes the estimate for $\hb$ determined at $\hbO$, \ie \eqref{eq:approx-bhat} with $\bO$ substituted by $\hbO$. Since we entertain multiple distributions for $\Y{_k}|\b{_k}$, we operate largely under the standardised (or `\underline{P}earson') residuals, 
+\begin{align}
+    \hat{r}_{ikj}^{(P)}=\frac{\hat{r}_{ikj}}{\sqrt{\mathrm{Var}\ls\hat{Y}_{ikj}\rs}},
+\label{eq:posthocs-residuals-pearson}
+\end{align}
+where $\hat{r}_{ikj}$ is given in \eqref{eq:posthocs-residuals-raw} and the variance $\mathrm{Var}\ls\cdot\rs$ was given on a per-distribution basis in Section \ref{sec:flexible-gmvjm-distribs} along with chosen link function $h_k\lb\cdot\rb$ in Table \ref{tab:flexible-distribs}.
+
+These residuals can then be used to quickly ascertain how well the fitted joint model captures the longitudinal responses it incorporates. That is, we can judge post-hoc whether the residuals for the $\kth$ response, $\hat{\bm{r}}_k^{(P)}=\lb\hat{\bm{r}}_{1k}^{(P)^\top},\dots,\hat{\bm{r}}_{nk}^{(P)^\top}\rb^\top$, satisfy the usual assumptions of \eg homoscedasticity across all subjects. As an example, Figure \ref{fig:posthocs-example-residuals} shows the resultant  standardised residuals against fitted value plots from three \textit{separate} GLMM fits to albumin (Gaussian) and platelet count (Poisson and generalised Poisson), each fit with a random intercept and slope with fixed effects of a drug-time interaction. Albumin looks to aptly conform to the usual assumptions. Under the Poisson distribution platelet counts appears to violate the modelling assumptions more seriously than under the alternative generalised Poisson.
+
+\begin{figure}
+    \centering
+    \includegraphics{Figures_PostHocs/exampleResids.png}
+    \caption{Plots of (standardised) residuals $\hat{\bm{r}}^{(P)}$ against fitted values $\hat{\bm{Y}}$ for three \textit{separate} GLMMs fit with \tt{glmmTMB}. An orange LOESS line is super-imposed to better reveal underlying trends.}
+    \label{fig:posthocs-example-residuals}
+\end{figure}
+
+\subsection{Residuals for the survival sub-model}\label{sec:posthocs-residuals-surv}
+We can produce residuals for the time-to-event process modelled by the survival sub-model; providing insight into how well the joint model, \ie the longitudinal process(es) in addition to the baseline covariates modelled, captures underlying patterns of survival in the observed data.
+
+Many residuals have been proposed for the Cox PH model constructing the survival sub-model, and the interested reader is referred to Chapter 4 in \citet{Therneau2000}. Since such discussions are outside of the scope of the presented work, and introduce concepts not considered elsewhere in the thesis, we opt instead to continue with sole consideration of \textit{one} residual, namely the Cox-Snell residual \citep{CoxSnell1968}
+\begin{align}
+    \hat{r}_i^{(CS)} = \int_0^{T_i}\hat{\lambda}_0\lb u\rb\exp\lbr\bm{S}_i^\top\hat{\bz}+\Sk\hat{\gamma}_k\bm{W}_k\lb u \rb^\top\hb{_k}\rbr du,
+\label{eq:posthocs-residuals-coxsnell}    
+\end{align}
+which represents the cumulative hazard under the fitted model for each subject evaluated at their observed failure time. This notably includes the estimate for the baseline hazard which we detailed in Section \ref{sec:approx-Mstep-l0} and $\hb$ is calculated at the MLEs $\hbO$ in the same manner outlined in the previous section.
+
+To assess the goodness of fit of the residuals obtained in \eqref{eq:posthocs-residuals-coxsnell}, the Kaplan-Meier estimate of their survival function obtained by the \tt{survfit} function from the \tt{R} package \tt{survival} \citep{R-survival} is compared against the theoretical survival function under the null hypothesis, $S_0\lb t\rb=\exp\lbr-\Lambda_0\lb t\rb\rbr$, with evaluations at observed failure times $S_0\lb T_i\rb,\ i=1,\dots,n$; \citet{RizopoulosJMbook} detail that this is the unit exponential distribution.
+
+As an example, we consider two Cox proportional hazards models fit to the PBC data, one which models the hazard of mortality by recipiency of the study drug, and another by the subject's sex. The produced graphical representations are presented in Figure \ref{fig:posthocs-example-coxsnell}. A sign of a well-fitting model is for the Kaplan-Meier estimate to roughly follow the superimposed unit exponential. For the two univariate Cox PH models fit here, we note that although both appear to generally fit the data well, there is some lack of fit for the model only considering the subject's sex, particularly for higher values of $\hat{r}_i^{(CS)}$. This phenomena is not replicated in the `drug' pane, where the survival function of the Cox-Snell residuals follow this theoretical distribution more snugly, lying within the 95\% confidence band for the survival function.
+
+\begin{figure}
+    \centering
+    \includegraphics{Figures_PostHocs/exampleCoxSnell.png}
+    \caption{Cox-Snell residuals for two separate applications to the PBC data. The solid black line is the Kaplan Meier estimate for the survival function, and dashed black lines its 95\% confidence interval. The overlaid orange line is the survival function of the unit exponential distribution.}
+    \label{fig:posthocs-example-coxsnell}
+\end{figure}
+
+\section{Hypothesis testing and model selection for joint models}\label{sec:posthocs-hypothesis-testing-model-selection}
+Joint models enjoy readily-available inference: The model fit under maximum likelihood estimation carried out as described in Section \ref{sec:methods-estimation-EM} leads directly to standard likelihood inference tests. For instance, we can employ the usual Wald statistic $W=\hat{\beta}_x/\mathrm{SE}(\hat{\beta}_x)$ for some generic fixed-effect $\hat{\beta}_x\in\hat{\bb}$, testing for significance of this parameter by vetting of its corresponding $p$-value obtained from the standard normal distribution 
+\begin{equation*}
+    p_{W}=2\Pr\lb |W| > z\rb,
+\end{equation*}
+where the above described procedure is analogous to the comparison of $\hat{\beta}_x^2/\mathrm{Var}[\hat{\beta}_x]$ to the $\chi^2$ distribution.
+
+We can compare two \textit{nested} fitted joint models $\mathcal{M}_0$ and $\mathcal{M}_1$ -- the former nested within the latter -- by means of the likelihood ratio test (LRT), 
+\begin{equation}
+    \begin{aligned}
+        \mathrm{LRT} &= -2\log\lb\ell\lb\mathcal{M}_1\rb-\ell\lb\mathcal{M}_0\rb\rb\\
+        \mathrm{LRT} &\sim \chi^2_{{}_{P\lb\mathcal{M}_1\rb-P\lb\mathcal{M}_0\rb}}
+    \end{aligned}
+\label{eq:posthocs-LRT}    
+\end{equation}
+where $\ell\lb\cdot\rb$ is the log-likelihood evaluated at $\big\{\hbO,\hb\big\}$ from each of the fitted models and $P\lb\cdot\rb$ returns the number of parameters \ie the length of the parameter vector \eqref{eq:methods-length-of-omega}. In addition, the LRT could be used in an analogous manner on a `per-parameter' basis to the Wald test previously described, at (greatly) increased computational expense. Hereafter we compare two nested joint models by LRT and appraise individual parameter significance by the Wald test.
+
+One drawback for the comparison of two joint models -- moreover two GLMMs -- fit under different random effects specifications is that critical issues arise when testing whether or not the additional random effect(s) should be included. Inclusion of more random effects will account for (extra) variability amongst the subjects, only serving to increase the dimension of $\D$. The LRT carried out on the two models then essentially sets an element of $\diag{\D}$ (\ie the variance) to zero, thereby precluding standard asymptotic inference since this value exists outside of its parameter space \citep{RizopoulosJMbook}.
+
+In the nested case (\eg when \textit{only} additional fixed effects, or survival covariates distinguish the two joint models), then the LRT laid-out in \eqref{eq:posthocs-LRT} is sufficient in determining the superior model. If the two models are \textit{not} nested, due to presence of additional longitudinal processes and/or more complex random effects structures, these standard asymptotic tests are inappropriate, and instead standard information criteria are used to compare these non-nested joint models. Namely, we consider the ubiquitous Akaike's information criterion (AIC, \citet{Akaike1974}) and Bayesian information criterion (BIC, \citet{Schwarz1978}), defined for a fitted joint model $\mathcal{M}$ as
+\begin{equation}
+    \begin{aligned}
+        \mathrm{AIC} &= -2\ell\lb\cal M\rb + 2P\lb\cal M\rb\\
+        \mathrm{BIC} &= -2\ell\lb\cal M\rb + P\lb\cal M\rb\log n_{\rm obs},
+    \end{aligned}
+\label{eq:posthocs-AIC-BIC}
+\end{equation}
+with $\ell\lb\cdot\rb$ and $P\lb\cdot\rb$ defined earlier and $n_{\mathrm{obs}}$ the number of observations in the data (\ie the number of `rows'). Lower values are preferable across both criteria. These criteria usually `prefer' (or `declare best') different models: AIC penalises model complexity far less harshly than BIC, \ie generally speaking the penalty term under BIC is larger than AIC's, $P\lb\cal M\rb\log n_{\rm obs} > 2P\lb\cal M\rb$, leading to BIC preferring simpler models in general; especially when the sample size is relatively small.
+
+In reality then, selecting between two competing joint models involves careful consideration of a multitude of factors, including the information criteria \eqref{eq:posthocs-AIC-BIC}; behaviour of the standardised residuals for the longitudinal process(es) as introduced in Section \ref{sec:posthoc-residuals-long}, as well as checking conformity of the Cox-Snell residuals discussed in Section \ref{sec:posthocs-residuals-surv}. The user also needs to contemplate whether or not the two candidate joint models are indeed nested or not. 
+
+In the next section, we introduce prognosis based upon a fitted joint model, and in Section \ref{sec:posthoc-prognostics} introduce measures to quantify predictive accuracy; which may be additional characteristics we contemplate in ascertaining the preferred joint model.
+
+\section{Dynamic predictions}\label{sec:posthoc-dynpreds-intro}
+Thus far, we have largely considered joint models in vacuo: Focussing on parameter estimates, particularly for the association parameters $\hat{\bg}$, with allusions of basic statistical inference upon them. One avenue for using a joint model (or indeed any statistical model) is to obtain predictions for some outcome of interest: In our case, survival.
+
+\citet{Rizopoulos2011} outlined one such method for bridging between a fitted joint model and a prognostic one, producing predictions of survival probabilities. Owing to the longitudinal nature of the data, potentially important information may be added a `future' follow-up time; the \textit{dynamic} nature of the predictions are a unique selling point over \eg simply using a Cox model.  
+
+These so-called `\textit{dynamic predictions}' allow us to estimate the probability that a certain subject $i$, with longitudinal information available up to follow-up time $t$, survives future time $u$. This subject-specific prediction is then particularly appealing in an era of personalised medicine \citep{RizopoulosJMbook}.
+
+More formally, consider having successfully fitted joint model to the `full' set of observed data $\mathcal{D}=\lbr\mathcal{D}_i,\ i=1,\dots,n\rbr$, with resultant parameter estimates $\hbO$. Then, we want to estimate for a \textit{new} subject $i$ with the generic set of observed data up to time $t$, $\mathcal{D}_i\lb t\rb=\lbr\Y{_1}\lb t\rb,\dots,\Y{_K}\lb t\rb,\bm{S}_i\rbr$ with all other design measures (\eg $\X_{ik}\lb t\rb$) holding implicit membership,
+\begin{equation}
+    \pi_i\lb u|t\rb = \Pr\lb T_i^*\ge u|T_i^*>t,\mathcal{D}_i\lb t\rb,\mathcal{D};\hbO\rb.
+\label{eq:posthoc-prob(u|t)}
+\end{equation}
+The \textit{dynamic} property materialises owing to the conditioning on follow-up time $t$, since $\pi_i\lb u|t\rb\neq\pi_i\lb u|t+\delta\rb$ for some period of follow-up $\delta$ having occurred (\ie new information becomes available). 
+
+\subsection{Estimation of \texorpdfstring{$\pi_i\lb u |t\rb$}{piut}}\label{sec:posthoc-dynpreds-estimation}
+For a given follow-up time $t$ we have the previously defined set of observed data up to time $t$, $\mathcal{D}_i\lb t \rb$. Evaluation of the probability of interest \eqref{eq:posthoc-prob(u|t)} on the \textit{observed data} requires we utilise the conditional independence of the longitudinal process(es) and the survival outcome given the random effects \eqref{eq:methods-cond-indep} to obtain \citep{RizopoulosJMbook}
+\begin{align}
+    \nonumber \pi_i\lb u|t\rb &= \Pr\lb T_i^*\ge u|T_i^*>t,\mathcal{D}_i\lb t\rb;\hbO\rb,\\
+    \nonumber &= \int\Pr\lb T_i^*\ge u|T_i^*>t,\mathcal{D}_i\lb t\rb, \b;\hbO\rb f\lb \b|T_i^*>t,\mathcal{D}_i\lb t\rb; \hbO\rb d\b,\\
+    &= \int\frac{S( u|\b, \mathcal{D}_i\lb u\rb; \hbO)}{S( t|\b, \mathcal{D}_i\lb t\rb; \hbO)}f\lb \b|T_i^*>t,\mathcal{D}_i\lb t \rb; \hbO\rb d\b,
+\label{eq:posthoc-prob(u|t)-rewrite}
+\end{align}
+with the survival function $S\lb t|\cdot\rb$ denoting the probability of survival past time $t$ given by 
+\begin{align}
+    S(t|\b, \mathcal{D}_i\lb t\rb; \hbO) = \exp\ls-\int_0^t\lo\lb t \rb\exp\lbr\bm{S}_i^\top\bz+\Sk\gamma_k\bm{W}_k\lb t\rb\b{_k}\rbr dt\rs.
+\end{align}
+We can appraise the quantity \eqref{eq:posthoc-prob(u|t)-rewrite} using both a first-order estimate as well as Monte Carlo simulation, which we explore in upcoming sections.
+
+\subsection{First-order estimate for \texorpdfstring{$\pi_i\lb u |t\rb$}{piut}}\label{sec:posthoc-dynpreds-estimation-FO}
+We can employ the empirical Bayes estimator for the data available up to time $t$, defined as 
+\begin{align}
+    \hb^{(t)}=\argmax{\b}\lbr\log f\lb \b,\mathcal{D}_i\lb t\rb |T_i^*>t;\hbO\rb\rbr,
+\label{eq:posthoc-empiricalbayes}    
+\end{align}
+\ie in a similar spirit to \eqref{eq:approx-bhat} with additional conditioning on the available data which forms the complete data log-likelihood in \eqref{eq:posthoc-empiricalbayes}. 
+
+Previously \citet{Rizopoulos2011} found the modal estimate $\hb^{(t)}$ utilising available longitudinal information \textit{only}. However, in keeping with methodologies employed in the thesis outlined \eqref{eq:approx-bhat}, and as carried out by existing software packages (\tt{joineRML}, \citet{Hickey2018}), we include the survival sub-model's contribution to this complete data log-likelihood in calculation of $\hb^{(t)}$.
+
+Substituting $\hb^{(t)}$ into \eqref{eq:posthoc-prob(u|t)-rewrite} we obtain the approximated probability
+\begin{align}
+    \tilde{\pi}_i\lb u|t\rb=\frac{S(u|\hb^{(t)},\mathcal{D}_i(u);\hbO)}{S(t|\hb^{(t)},\mathcal{D}_i(t);\hbO)}
+\label{eq:posthoc-prob(u|t)-FO}
+\end{align}
+The estimates produced by \eqref{eq:posthoc-prob(u|t)-FO} perform well in practice \citep{Rizopoulos2011}. However, establishing a handle on variability of $\tilde{\pi}_i\lb u|t\rb$, is difficult since the variability is effectively `double-barrelled', \ie one must account for both $\mathrm{Var}[\hbO]$ and $\mathrm{Var}[\hb^{(t)}]$. If uncertainty in the approximated point estimate(s) of $\tilde{\pi}_i\lb u|t\rb$ are of interest (which they most likely are), then it is perhaps wiser to undertake the Monte Carlo scheme outlined in the next section.
+
+\subsection{Estimate for \texorpdfstring{$\pi_i\lb u |t\rb$}{piut} by Monte Carlo simulation}\label{sec:posthoc-dynpreds-estimation-MC}
+Recalling the quantity \eqref{eq:posthoc-prob(u|t)}, we note \citet{Rizopoulos2011} considered its expected value taken against the posterior probability density of the parameters given the data to which the joint model was fit,
+\begin{align}
+    \nonumber \pi_i\lb u|t\rb &= \Pr\lb T_i^*\ge u|T_i^*>t,\mathcal{D}_i\lb t\rb,\mathcal{D}; \bO\rb,\\
+    &=\int\Pr(T_i^*\ge u|T_i^*>t,\mathcal{D}_i\lb t\rb;\bO)f(\bO|\mathcal{D})d\bO,
+\label{eq:posthoc-prob(u|t)-posteriorExp}
+\end{align}
+\ie its posterior expectation.
+
+In the above, the quantity $\Pr(T_i^*\ge u|T_i^*>t,\mathcal{D}_i\lb t\rb;\bO)$ is given by the ratio of survival functions averaged over the random effects distribution previously written \eqref{eq:posthoc-prob(u|t)-rewrite}. Attention then sensibly turns to a candidate distribution which well-approximates $f(\bO|\mathcal{D})$. For a suitably large sample size $n$, \citet{Rizopoulos2011} utilise the multivariate normal centered at $\hbO$ with variance-covariance $\mathcal{I}^{-1}\big(\hbO\big)$, with $\cal I$ being approximated by methods described in Section \ref{sec:methods-SEs}. 
+
+In order to obtain $l=1,\dots,N$ realizations of the conditional survival probability $\pi_i\lb u|t\rb$, and compute summaries of interest, we proceed with the following Monte Carlo scheme:
+\begin{enumerate}
+    \item Draw $\bO^{(l)}\sim N\big(\hbO,\mathcal{I}^{-1}\big(\hbO\big)\big)$;
+    \item Draw $\hb^{(l)}\sim \b|T_i^*>t,\mathcal{D}_i\lb t\rb;\bO^{(l)}$;
+    \item Calculate the $l^{\mathrm{th}}$ ratio of conditional survival probabilities:
+    \begin{equation*}
+        \pi_i^{(l)}\lb u|t\rb=\frac{S\big(u|\hb^{(l)},\mathcal{D}_i(u); \bO^{(l)}\big)}{S\big(t|\hb^{(l)},\mathcal{D}_i(t); \bO^{(l)}\big)};
+    \end{equation*}
+    \item Repeat steps 1.--3. $N$ times and compute relevant summary statistics from the obtained probabilities $\bm{\pi}_i\lb u|t\rb=\lb\pi^{(1)}_i\lb u|t\rb,\dots,\pi^{(N)}_i\lb u|t\rb\rb^\top$.
+\end{enumerate}
+
+Sampling from the multivariate normal $N\big(\hbO,\mathcal{I}^{-1}\big(\hbO\big)\big)$ is trivial, and the draw for $\hb$ is recommended to be carried out from the multivariate $t$ distribution, $t_4\big(\hb,\hS\big)$, with location $\hb$ previously given \eqref{eq:posthoc-empiricalbayes} and variance $\hS$ found by e.g. \eqref{eq:approx-Sigmahat}. In practise the random effects sampling is carried out by a Metropolis-Hastings scheme.
+
+\section{Prognostic accuracy measures for joint models}\label{sec:posthoc-prognostics}
+With routines to obtain survival probabilities established, we now seek to lay out measures of predictive performance which utilise and appraise said probabilities. Such performance measures are invaluable tools to \eg clinical practitioners, assigning levels of confidence when informing interested parties -- facilitating medical decision making in an effort to improve health outcomes -- of clinical predictions \citep{vanSmeden2021}. We briefly declare our interest in \textit{prognostic} prediction, rather than \textit{diagnostic} prediction. \citet{vanSmeden2021} neatly distinguish the latter here as being cross-sectional in nature, whereas the former is longitudinal; marrying-up with the \textit{dynamic} predictions we introduced in the previous section.
+
+The quality of a fitted joint model -- that is, both the longitudinal and survival parts -- can be inferred from information criteria previously outlined in \eqref{eq:posthocs-AIC-BIC}; allowing for comparison of alternate models fit to the same data. However, interest may fall on the event-time, and within the joint modelling context this provides insight into how well the longitudinal measure(s) can predict this survival outcome. 
+
+\citet{RizopoulosJMbook} report something of a schism between calibration and discrimination measures. The former assesses how well the predicted probabilities from the model match the actual outcomes; \ie evaluating whether the predicted probabilities are accurate estimates of the true likelihood of event occurrence. For example, \citet{Henderson2002} utilise a calibration-based approach to verify three candidate models fit to cirrhosis data, reporting the agreement between the observed Kaplan-Meier plots and those generated by simulation from each fitted joint model. On the other hand, discrimination measures evaluate how well the fitted model can distinguish between those groups of subjects who experience the event and those who do not. These discrimination approaches give rise to \eg the widely-digested receiver operating characteristic (ROC) curves, which we go on to detail in Section \ref{sec:posthoc-prognostics-ROC}; calibration measures are outlined separately in Section \ref{sec:posthoc-prognostics-calibration}.
+
+\subsection{Setting out follow-up windows and probabilities of interest}\label{sec:posthoc-prognostics-setup}
+Consider we have subject(s) each having longitudinal information available up to predetermined follow-up time $\Tstart$, and denote these subjects $i=1,\dots,\nalive,\ \nalive=\Si I\lb T_i^*>\Tstart\rb$. We wish to investigate whether each of the $\nalive$ subjects survive past a future \textit{horizon} time-point $h=\Tstart+\delta$, with $\delta$ some period of elapsed time. The idea being that a practitioner could intervene for certain subjects if their survival outcome was deemed poor. We can then determine discriminatory capabilities of the fitted joint model in the window of follow-up $w=(\Tstart,h]$. 
+
+The time-window of interest $w$ provides an $f$-vector of failure times, $\bm{u}_w=\lb u_1,\dots,u_f\rb^\top, \Tstart < u_j \le h\ \forall\ j=1,\dots,f$, which occur in the set of data the joint model was fit to $\cal D$ between the start and horizon times. The routines carried out in Sections \ref{sec:posthoc-dynpreds-estimation-FO} and \ref{sec:posthoc-dynpreds-estimation-MC} therefore produce $f$ conditional probabilities for each of the $\nalive$ subjects: $\hat{\pi}_i\lb u_1|\Tstart\rb,\dots,\hat{\pi}_i\lb u_f|\Tstart\rb$. However, since we are interested only in failure \textit{within} the window $w$ (or equivalently, survival \textit{past} future time-point $h$), we elect some summary measure on these probabilities, say $g\lb\cdot\rb$, and produce \textit{one} probability for the window $w$ for \textit{each} subject
+\begin{align*}
+    \hat{\pi}_i\lb w\rb=g\lb\hat{\pi}_i\lb u_1|\Tstart\rb,\dots,\hat{\pi}_i\lb u_f|\Tstart\rb\rb.
+\end{align*}
+In practise one may set $g\lb\cdot\rb$ to return the minimum value \ie the `worst-case' scenario for subject $i$; or to simply return the probability calculated for the final candidate follow-up time \ie probability of surviving the window. If the latter is chosen here then we note $\hat{\pi}_i\lb w\rb=\hat{\pi}_i\lb u_f|\Tstart\rb$.
+
+Next, we can define the usual `hit'/error outcomes in what are effectively binary terms. We introduce candidate thresholding probabilities $\bm{c}=\lb0.00,0.01,0.02,\dots,0.99,1.00\rb^\top$ against which $\hat{\pi}_i\lb w\rb$ can be compared to declare subject $i$ having failed/survived in $w$ at different probabilistic thresholds $c_j\in\bm{c}$. Namely, we begin with quantifying the correct identification of a failure in $w$ (true positive) and correct declaration of survival past $u_f$ (true negative), as determined by $\hat{\pi}_i\lb w \rb$ and $c_j$ \citep{Andrinopoulou2021}
+\begin{equation}
+    \begin{aligned}
+        \mathrm{True\ Positive} &= \Pr\lb\hat{\pi}_i\lb w \rb \le c_j|\Tstart < T_i^* < h\rb,\\
+        \mathrm{True\ Negative} &= \Pr\lb\hat{\pi}_i\lb w \rb > c_j|T_i^*> u_f\rb.
+\end{aligned}
+\label{eq:posthocs-sens-spec}
+\end{equation}
+In reality, the example measures in \eqref{eq:posthocs-sens-spec} as well as further measures consolidated in the next section are found column-wise using the $\nalive\times101$ matrix 
+\begin{equation*}
+    \mathrm{M}=\hat{\pi}_i\lb w\rb\overset{\le}{\otimes}\bm{c},
+\end{equation*}
+where $\bm{x}\overset{\le}{\otimes}\bm{y}$ denotes the outer product of the elements of vectors $x_i\in\bm{x}$ and $y_j\in\bm{y}$ with the $(i,j)^{\mathrm{th}}$ element of the resultant matrix taking value $1$ if $x_i\le y_j$ and zero otherwise. Moreover, the rows of $\mathrm{M}$ contain $\hat{\pi}_i\lb w\rb,  i=1,\dots,\nalive$ compared against threshold probability $c_j\in\bm{c}$, which construct its columns.
+
+\begin{remark}
+    One notes by the definition of $w$ that these classifiers, furthermore their ensuing contributions to ROC and AUC measures in the next section, are time-dependent in nature. This means that the capability of a biomarker (or indeed, the `whole' fitted joint model) to distinguish between those who will/won't fail over a certain period of follow-up may well improve -- or indeed deteriorate -- as follow-up progresses. Under the joint modelling approach then (compared to e.g. diagnostic prediction by logistic regression, or prognostic prediction via a Cox model using only baseline covariates), the evolution of the exogenous biomarker(s) is an important feature of follow-up.
+\end{remark}
+
+\subsection{Discrimination measures}\label{sec:posthoc-prognostics-ROC}
+We first introduce the `true failure' indicator function $\Delta_i\lb w\rb=I\lb \Tstart<T_i\le h\rb\cap I\lb\Delta_i=1\rb$, with $w$ defined in the previous section, and the `predicted failure' indicator function determined by some probabilistic threshold $c_j$, $\hat{\Delta}_i\lb w,c_j\rb=I\lb\hat{\pi}_i\lb w\rb\le c_j\rb$. We `build on' the true positives and negatives described in \eqref{eq:posthocs-sens-spec} and complete the usual contingency table presented in Table \ref{tab:posthocs-ROC}. We briefly note that false negatives constitute type II error, and false positives type I.
+\begin{table}[h]
+    \centering
+    \begin{tabular}{cc|c|c|}
+        \multicolumn{2}{c}{} & \multicolumn{2}{c}{Predicted status $\hat{\Delta}_i\lb\cdot\rb$} \\
+        \cline{3-4}
+        \multicolumn{2}{c|}{} & Positive & Negative \\
+        \cline{2-4}
+        \multirow{2}{*}{Actual $\Delta_i\lb\cdot\rb$} & Positive & True Positive (TP) & False Negative (FN) \\
+        \cline{2-4}
+        & Negative & False Positive (FP) & True Negative (TN) \\
+        \cline{2-4}
+    \end{tabular}
+    \caption{$2\times2$ contingency table for outcomes of the (pseudo-)binary classifier of survival in time-window $w$. `Positive' refers to the indicator function(s) $\Delta_i\lb\cdot\rb$ and $\hat{\Delta}_i\lb\cdot\rb$ returning value 1 \ie failure (is deemed to have) occurred.}
+    \label{tab:posthocs-ROC}
+\end{table}
+
+A swathe of further evaluation metrics relating to the probability of detection, and accuracy, are derived purely based on the four outcomes in Table \ref{tab:posthocs-ROC} and are presented in Table \ref{tab:posthocs-ROC-more}.
+\begin{table}[t]
+\begin{center}
+    \begin{tblr}{
+        colspec = {Q[c,m] Q[c,m] Q[c,m]},
+        columns = {leftsep = 3pt, rightsep = 3pt},
+        row{odd[2]} = {bg=lightgray!20},
+        width=\textwidth
+    }
+    \SetRow{}
+    Name (abbv.) & Formula & Description\\
+    \hline 
+    {True positive rate\\(TPR)} & {$\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}}$} & {\textbf{Sensitivity}: Probability that a true positive will\\test positive \ie $\Delta_i\lb\cdot\rb=1\cap\hat{\Delta}\lb\cdot\rb=1$}\\
+    {False positive rate\\(FPR)} & {$\frac{\mathrm{FP}}{\mathrm{FP}+\mathrm{TN}}$} & {\textbf{1-Specificity}: Probability that a true negative will\\test positive \ie $\Delta_i\lb \cdot\rb=0\cap\hat{\Delta}_i\lb\cdot\rb=1$}\\
+    {Accuracy\\(Acc.)} & {$\frac{\mathrm{TP}+\mathrm{TN}}{\nalive}$} & {Proportion of correct predictions (both\\true positives and true negatives) among the\\total number of cases examined}\\
+    {Positive predictive\\value (PPV)} & {$\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}}$} & {Probability that those deemed to experience the\\event experience it in actuality. Sometimes\\called \textbf{precision}}\\
+    {Negative predictive\\value (NPV)} & {$\frac{\mathrm{TN}}{\mathrm{TN}+\mathrm{FN}}$} & {Probability that those deemed to \textit{not}\\experience the event do not experience\\it in actuality.}\\
+    \end{tblr}
+\end{center}
+\caption{Further evaluation metrics to be calculated using the four outcomes in Table \ref{tab:posthocs-ROC}.}
+\label{tab:posthocs-ROC-more}
+\end{table}
+We additionally consider two proffered summary measures, which aim to capture something of a `trade-off' amongst the measures given in Table \ref{tab:posthocs-ROC-more}. The first, Youden's $J$ statistic, $J_Y$, aims to provide a single statistic for a dichotomous (\ie failure/survival) outcome \citep{Youden1950}, with larger values better. Secondly, the $F_1$ score is another measure of the test's accuracy:
+\begin{equation}
+    \begin{aligned}
+        J_Y &= \mathrm{Sensitivity} + \mathrm{Specificity} - 1 = \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}} + \frac{\mathrm{TN}}{\mathrm{TN}+\mathrm{FP}} - 1\\
+        F_1 &= \frac{2\mathrm{PPV} \times \mathrm{Sensitivity}}{\mathrm{PPV}+\mathrm{Sensitivity}} = \frac{2\mathrm{TP}}{2\mathrm{TP}+\mathrm{FP+\mathrm{FN}}};
+    \end{aligned}
+\label{eq:posthoc-youden-F1}
+\end{equation}
+since we consider many probabilistic thresholds to obtain measures of discriminatory performance, these two summary measures could be used to identify the best-performing candidate probability threshold $c_j\in\bm{c}$. We note that the $F_1$ score has come under some criticism in wider literature, one such example being \citet{Fscorebad}, and this identification of the `best' probability threshold will be carried out using $J_Y$. 
+\begin{figure}
+    \centering
+    \includegraphics{Figures_PostHocs/exampleROC.png}
+    \caption{Example receiver operator characteristic (ROC) curve obtained from a Cox PH model fit to PBC data. The dashed line indicates the minimal $Y_J$ value and was obtained for $c_j = 0.210$}
+    \label{fig:posthocs-example-ROC}
+\end{figure}
+
+The ROC curve provides a visual representation of the true positive rate (the proportion of correctly predicted failures out of all actual occurring failures), and the false positive rate (the proportion of false positives out of all actual non-failures). The curve itself is generated by the probability `grid' $\bm{c}$, which results in adjustments to the FPR and TPR. A ROC curve from a `dummy' example fit to the PBC data, with sole covariate of drug recipiency is given in Figure \ref{fig:posthocs-example-ROC}. The area under the ROC curve (`AUC-ROC', or simply `AUC') is determined by the integral
+\begin{equation}
+    \mathrm{AUC} = \int_0^1\mathrm{ROC}\lb c\rb dc,
+\label{eq:posthocs-AUC-int}
+\end{equation}
+and provides a summary measure of the predictive accuracy index of the model. In practise we calculate the AUC using the formula for the area under a trapezoid (half of the length of the parallel sides (FPR) multiplied by the height (TPR)) calculated at each consecutive probability threshold `pair' $c_j$ and $c_{j+1}$
+\begin{equation}
+    \mathrm{AUC} =\sum_{j=1}^{100}\frac{1}{2}\times\lb\mathrm{TPR}_j+\mathrm{TPR}_{j+1}\rb\times\lb\mathrm{FPR}_{j+1}-\mathrm{FPR}_{j}\rb.
+\label{eq:posthocs-AUC-trapz}    
+\end{equation}
+We expect $\mathrm{AUC}$ to lie between 0.5 and 1.0, with higher values indicating better discriminatory power; an AUC less than $0.5$ signifies that flipping a coin would provide better discrimination between subjects. Lastly, the dashed line in Figure \ref{fig:posthocs-example-ROC} -- representing $J_Y$ -- indicates for this example model that the optimal trade-off between sensitivity ($\mathrm{TPR}=0.512$) and specificity ($\mathrm{FPR} = 0.091$) occurs at $c_j=0.21$; a balance is struck between correctly identifying positive and negative cases. That is, if $\pi_i\lb u|t\rb\le 0.21$ then we can be reasonably confident that there are grounds for intervention, given the overall \textit{decent} discriminatory ability of the model ($\mathrm{AUC}=0.731$), with the aforementioned `optimal' trade-off between sensitivity and specificity for this example observed here.
+
+\subsection{Calibration measures}\label{sec:posthoc-prognostics-calibration}
+Finally, we outline calibration measures alluded to in Section \ref{sec:posthoc-prognostics}. Calibration for survival outcomes is based on the expected error of forecasting future events. As was remarked upon in the Section \ref{sec:posthoc-prognostics-setup}, these measures are time-dependent in nature since they take into account the dynamic nature of the longitudinal outcome. 
+
+Setting out our calibration metrics in a similar `windows' as our discriminatory ones, we define the prediction error in a similar manner to \eg \citet{Rizopoulos2017}
+\begin{align}
+    \mathrm{PE}\lb w\rb = \Exp\ls\mathcal{L}\lb I\lb T_i^*>h\rb - \hat{\pi}_i\lb w\rb\rb\rs,
+\end{align}
+where $\cal L$ is a loss function of choice. We note that the predictive error is the same as the Brier score when the square loss function is chosen. We utilise the estimate given by \citet{Henderson2002} for $\mathrm{PE}\lb w\rb$ which accounts for censoring,
+\begin{equation}
+    \begin{aligned}
+        \widehat{\mathrm{PE}}\lb w\rb = \frac{1}{\nalive}\sum_{i=1}^{\nalive}&I(T_i>h)\cL\lb1-\hpw\rb 
+        + \Delta_i\lb w\rb\cL\lb0-\hpw\rb \\&+ C_i\lb w\rb\lb\hpw\cL\lb1-\hpw\rb+\lb1-\hpw\rb\cL\lb0-\hpw\rb\rb
+    \end{aligned}
+\label{eq:posthocs-PE-censoring}
+\end{equation}
+where $C_i\lb w\rb=I\lb\Tstart<T_i\le h\rb\cap I(\Delta_i=0)$ \ie censored in the window of interest. The first term measures how well the model predicts survival, contributing to the prediction error when the subject survives past horizon time $h$ with the loss function $\cL$ quantifying accuracy of the survival prediction. The second term similarly contributes how well the model predicts failures in the window to the prediction error. The final term adjusts the prediction error for those who were censored; needing to account for both the possibility they survived or failed. Within this censoring adjustment the quantity $\hpw\cL\lb1-\hpw\rb$ assesses the model's prediction error when the subject is censored but predicted to survive, with the remaining term its complement. In summary, \eqref{eq:posthocs-PE-censoring} aggregates the prediction error over those who survived past time $h$, failed in the window $w$, or were censored in the window. 
+
+\citet{Rizopoulos2017} point out that this estimated measure \eqref{eq:posthocs-PE-censoring} can be used to compare two nested joint models $\mathcal{M}_0$ and $\mathcal{M}_1$ -- the former nested within the latter -- by 
+\begin{equation}
+    R\lb w\rb = 1 - \frac{\widehat{\mathrm{PE}}_{\mathcal{M}_1}\lb w\rb}{\widehat{\mathrm{PE}}_{\mathcal{M}_0}\lb w\rb},
+\label{eq:posthocs-Rvalue}
+\end{equation}
+this quantity $R$ measures how much the additional information (\eg an additional biomarker) used to fit $\mathcal{M}_1$ improves prognostic accuracy by in the window $w$.
+
+\subsection{Correcting for optimism}\label{sec:posthocs-prognostics-correction}
+Unfortunately, simply evaluating the prognostic performance for the fitted joint model $\cal M$ on the same data to which the model was fit, $\cal D$, will lead to estimates for \eg $\mathrm{AUC}\lb\cdot\rb$ which are optimistic in nature \citep{Andrinopoulou2021, vanSmeden2021}: Essentially, the model $\cal M$ has adequately captured \eg trajectories and relationships in the data to which it is evaluated against, leading to these inflated estimates. 
+
+We correct for this optimism via internal validation, specifically by a bootstrapping approach given in \citet{Andrinopoulou2021}. For a pre-determined window of interest $w$, we have the following quantities which are calculated from the joint model fit $\cal M$ on the original data, $\mathrm{AUC}_{\mathcal{M}}\lb w\rb$ and $\widehat{\mathrm{PE}}_{\mathcal{M}}\lb w\rb$. We then seek to create $b=1,\dots,B$ corrected measures by the following scheme:
+\begin{enumerate}
+    \item Create a bootstrap sample of the data, $\mathcal{D}^{\lb b\rb}$, and (re)fit the joint model, obtaining $\mathcal{M}^{\lb b\rb}$.
+    \item Calculate the prognostic performance measures using $\mathcal{M}^{\lb b\rb}$ on $\mathcal{D}^{\lb b\rb}$, obtaining $\mathrm{AUC}_b\lb w\rb$ and $\widehat{\mathrm{PE}}_b\lb w\rb$. 
+    \item Calculate the prognostic performance measures using $\mathcal{M}^{\lb b\rb}$ on $\cal D$, obtaining $\mathrm{AUC}_{b^*}\lb w\rb$ and $\widehat{\mathrm{PE}}_{b^*}\lb w\rb$.
+    \item Calculate the optimism $o$ in the $b^{\mathrm{th}}$ replicate 
+    \begin{align*}
+        \mathrm{AUC}_{o}\lb w\rb &= \mathrm{AUC}_{b}\lb w\rb-\mathrm{AUC}_{b^*}\lb w\rb,\\
+        \widehat{\mathrm{PE}}_o\lb w\rb &= \widehat{\mathrm{PE}}_{b}\lb w\rb-\widehat{\mathrm{PE}}_{b^*}\lb w\rb.
+    \end{align*}
+    \item Calculate the $b^{\mathrm{th}}$ corrected estimate for the prognostic performance measures
+    \begin{align*}
+        \mathrm{AUC}_{\mathrm{corr}}^{\ \lb b \rb}\lb w\rb = \mathrm{AUC}_{\mathcal{M}}\lb w\rb - \mathrm{AUC}_{o}\lb w\rb,\\
+        \widehat{\mathrm{PE}}_{\mathrm{corr}}^{\lb b \rb}\lb w\rb = \widehat{\mathrm{PE}}_{\mathcal{M}}\lb w\rb + \widehat{\mathrm{PE}}_{o}\lb w\rb.
+    \end{align*}
+\end{enumerate}
+Carrying out the above yields $B$ corrected estimates of our two considered measures, upon which we can form summary measures and investigate \eg boxplots of estimates. In order to circumvent some of the increased computational cost incurred by fitting $B$ bootstrapped models, we commence their EM algorithms at the MLEs $\hbO$ from $\cal M$, and set lower convergence criteria thresholds $\xi_1=5\times10^{-3}$ and $\xi_2=1\times10^{-2}$ in \eqref{eq:approx-convcrit}. Additionally, convergence is declared when \textit{either} the absolute or relative criterion are satisfied.
+
+When fitting the $b^{\mathrm{th}}$ model $\mathcal{M}^{(b)}$ back on the original data $\cal D$, it's possible that some subject $i$ is \textit{not} sampled thereby absent in $\mathcal{D}^{(b)}$, potentially omitting an observed failure time in the process. In these scenarios, the `missing' random effects are calculated by \eqref{eq:approx-bhat} with variance \eqref{eq:approx-Sigmahat}, wherein $\bO$ is substituted by $\hbO^{(b)}$. The baseline hazard for the original data given $\mathcal{M}^{(b)}$ is then calculated by \eqref{eq:approx-Mstep-basehaz}. The above routine can additionally be used to find the improvement in prognostic accuracy \eqref{eq:posthocs-Rvalue}, where the bootstrapped data $\mathcal{D}^{(b)}$ is used to fit \textit{both} competing models, predictive error calculated on both bootstrapped and original models, before the original $R\lb w\rb$ is corrected for optimism $B$ times.
+
+\end{chapter}

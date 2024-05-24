@@ -1,0 +1,186 @@
+% Packages --------
+\usepackage[hidelinks]{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+%\usepackage{booktabs}
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{bm}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{arydshln}
+\usepackage{lscape}
+\usepackage{float}
+\usepackage{tcolorbox}
+%\usepackage{makecell}
+\usepackage{tabularray}
+\UseTblrLibrary{booktabs}
+\usepackage{cancel}
+\definecolor{darkred}{rgb}{0.55, 0.0, 0.0}
+\definecolor{darkgreen}{RGB}{4,196,126}
+\definecolor{darkgreencomp}{RGB}{196, 4, 74}
+\definecolor{nclblue}{RGB}{0, 51, 102}
+
+% For internal use // mainly use \update and \TODO...
+\newcommand{\addref}{\textcolor{red}{[[ADD REFERENCE]]}}
+\newcommand{\update}{\textcolor{red}{[[UPDATE THIS]]}}
+\newcommand{\TODO}[1]{\colorbox{darkgreencomp}{\textcolor{darkgreen}{\underline{\textbf{TO DO}}:}} \textcolor{darkgreen}{#1}}
+\newcommand{\addpageref}{\textcolor{red}{[[ADD PAGE/SECTION REFERENCE]]}}
+\newcommand{\jtemp}[1]{\textcolor{darkred}{#1}} % JM Response - temp.
+\newcommand{\alert}[1]{{\huge \textcolor{red}{#1}}}
+
+
+% Roman typefacing for design matrices
+\newcommand{\X}{\mathrm{X}}
+\newcommand{\Z}{\mathrm{Z}}
+\newcommand{\D}{\mathrm{D}}
+
+% Misc notation ----
+\newcommand{\indep}{\perp\!\!\!\!\perp}   % Indendence, from https://tex.stackexchange.com/a/455701
+\newcommand{\vech}{\text{vech}}           % vech text
+\newcommand{\kth}{k^{\text{th}}}          % kth
+\newcommand{\appx}{\overset{\text{appx.}}{\sim}} % Approximately follows
+\renewcommand{\tt}[1]{\texttt{#1}}
+
+% Brackets ----
+\newcommand{\ls}{\!\left[}    % Left Square
+\newcommand{\lb}{\!\left(}    % Left Bracket
+\newcommand{\lbr}{\!\left\{}  % Left BRace
+\newcommand{\rs}{\right]}   % Right Square
+\newcommand{\rb}{\right)}   % Right Bracket
+\newcommand{\rbr}{\right\}} % Right BRace
+
+% Common Notation ----
+\newcommand{\Y}{\bm{Y}_i}     % bold Y_i
+\renewcommand{\b}{\bm{b}_i}   % bold b_i
+\newcommand{\bb}{\bm{\beta}}   % bold \beta
+\newcommand{\sek}{\sigma_{\varepsilon_k}^2} % sigma^2 eps with k subscript
+\newcommand{\se}{\sigma_\varepsilon^2}      % sigma^2 eps
+\newcommand{\K}{\bm{S}_i}      % K
+\newcommand{\bz}{\bm{\zeta}}    % bold \zeta
+\newcommand{\be}{\bm{\eta}_i}    % bold \eta_i
+\newcommand{\li}{\lambda_i}    % \lambda
+\newcommand{\lo}{\lambda_0}    % \lambda_0, baseline hazard
+\newcommand{\bg}{\bm{\gamma}}  % bold \gamma
+\newcommand{\vD}{\vech\lb\D\rb} % vech(D)
+\DeclareMathOperator{\Exp}{\mathbb{E}}
+\newcommand{\Expi}[1]{\mathbb{E}_i\ls#1\rs}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\torm}[2]{#1^{(\mathrm{#2})}}
+
+% Summations and products ----          (sum for {x} = 1, ... ,{y})
+\newcommand{\Si}{\sum_{i=1}^n}                   %i             n 
+\newcommand{\SiN}{\sum_{i=1}^N}                  %i             N 
+\renewcommand{\Pi}{\prod_{i=1}^n}   % (Product)   i             n
+\newcommand{\Sj}{\sum_{j=1}^{m_i}}               %j             m_i
+\newcommand{\Sk}{\sum_{k=1}^K}                   %k             K
+\newcommand{\Sl}{\sum_{l=1}^\varrho}             %l             \rho
+\newcommand{\dsum}{\bigoplus_{k=1}^K} % Direct sum
+
+% Simulation stuff ------
+\newcommand{\Keta}{\bm{S}^\top\bz} % K*eta
+\newcommand{\intzt}{\int_0^t}   % int 0->t
+\newcommand{\simsurvofrac}{\frac{1}{Q+\alpha}} % outside fraction
+\newcommand{\simsurvlog}[1]{1+\frac{(Q+\alpha)#1}{\nu\exp\lbr P\rbr}}
+
+
+% Densities ----
+% Short form: \sf<outcome> - f(<outcome>|\Omega)
+\newcommand{\sfY}{f\lb\Y|\b;\bO\rb}           % short longit
+\newcommand{\sfT}{f\lb T_i,\Delta_i|\b;\bO\rb} % short survival
+\newcommand{\sfRE}{f\lb\b|\bO\rb}             % short RE
+\newcommand{\bY}{f\lb\b|\Y;\bO\rb}     % b|y
+% Full form: \ff<outcome> - f(<outcome>|<everything it's conditional upon; params)
+\newcommand{\ffY}{f(\Y|\mathrm{X}_i,\b;\bb,\sigma^2_{\varepsilon_1},\dots,\sigma^2_{\varepsilon_K})}     %longit
+\newcommand{\ffT}{f(T_i,\Delta_i|\K,\b;\bz,\bg)} %survival
+\newcommand{\ffRE}{f(\b|\mathrm{D})} %REs
+\newcommand{\condb}{f\lb\b|T_i, \Delta_i, \Y; \bO\rb}
+\newcommand{\condbh}{f\big(\b|T_i, \Delta_i, \Y; \hbO\big)}
+\newcommand{\argmax}[1]{\underset{#1}{\rm{argmax}}}
+\newcommand{\cS}{\mathcal{S}_i}
+
+
+% Parameter vector ----
+\newcommand{\bO}{\bm{\mathrm{\Omega}}}       % non-hat notation
+\newcommand{\paramvec}{\bb,\sigma^2_{\varepsilon_1},\dots,\sigma^2_{\varepsilon_K},\be,\bg,\vech(\mathrm{D})} 
+\newcommand{\hbO}{\hat{\bm{\Omega}}}% hat notation
+\newcommand{\hparamvec}{\hat{\bb},\hat{\sigma}^2_{\varepsilon_1},\dots,\hat{\sigma}^2_{\varepsilon_K},
+                        \hat{\be},\hat{\bg},\vech(\hat{D})}
+                        
+% hat notation ----
+\newcommand{\hb}{\hat{\bm{b}}_i}     % bold b_i hat
+\newcommand{\hS}{\hat{\Sigma}_i}     %  \Sigma_i hat
+\newcommand{\hbb}{\hat{\bb}}         % hat bold beta
+% Sigma_i
+\newcommand{\pt}{\partial} 
+\newcommand{\compdata}{f\big(\b,T_i,\Delta_i,\Y;\hbO\big)} %Complete data|parameters
+\newcommand{\Napprox}{N\big(\hb,\hS\big)}
+
+% Parameter Updates
+\newcommand{\tobm}[1]{#1^{(m)}}
+\newcommand{\tobmp}[1]{#1^{(m+1)}}
+\newcommand{\tExpi}[1]{\tilde{\mathbb{E}}_i\ls#1\rs}
+\newcommand{\elli}[1]{\ell_i\lb#1\rb}
+\newcommand{\unsetp}[1]{\underset{#1}{\propto}}
+\newcommand{\crossprod}[2]{#1^\top#2}
+\newcommand{\tcrossprod}[1]{#1#1^\top}
+\newcommand{\bmu}{\bm{\mu}_i}
+\newcommand{\hbmu}{\hat{\bm{\mu}}_i}
+\newcommand{\Amat}{\mathrm{A}_i}
+\newcommand{\btau}{\bm{\tau}_i}
+\newcommand{\diag}[1]{\mathrm{diag}\lb#1\rb}
+\newcommand{\dXdY}[2]{\frac{\pt#1}{\pt#2}}
+\newcommand{\dXdYdY}[2]{\frac{\pt#1}{\pt#2\pt#2^\top}}
+
+% Justifications
+\newcommand{\bOT}{\bO^{(\mathrm{TRUE})}}
+\newcommand{\TRUE}[1]{#1^{(\mathrm{TRUE})}}
+\newcommand{\margfull}{f\lb\bm{b}_i|T_i,\Delta_i,\bm{Y}_i;\bO^{(\rm{TRUE})}\rb}
+\newcommand{\postb}{f\big(\b|\mathcal{D}_i;\bOT\big)}
+\newcommand{\tb}{\tilde{\bm{b}}_i}
+\newcommand{\tS}{\tilde{\Sigma}_i}
+\newcommand{\Rapprox}{N\big(\tb,\tS\big)}
+
+% GLMMs
+\newcommand{\bphi}{\bm{\varphi}_i}
+\newcommand{\bs}{\bm{\sigma}}
+\newcommand{\lgam}[1]{\log\Gamma\lb#1\rb}
+\newcommand{\gam}[1]{\Gamma(#1)}
+\newcommand{\linpRHS}{\X_i\bb+\Z_i\b}
+\newcommand{\linp}{\bm{\eta}_i}
+\newcommand{\linpk}{\bm{\eta}_{ik}}
+\newcommand{\W}{\mathrm{W}_i}
+\newcommand{\boneT}{\bm{1}^\top}
+\newcommand{\bone}{\bm{1}}
+\newcommand{\dotlinp}{\dot{\bm{\eta}}_i}
+\newcommand{\ddotlinp}{\ddot{\bm{\eta}}_i}
+
+% Dynpreds
+\newcommand{\subrm}[2]{#1_{\mathrm{#2}}}
+\newcommand{\Tstart}{\subrm{T}{start}}
+\newcommand{\nalive}{\subrm{n}{alive}}
+\newcommand{\Twindow}{(\Tstart,\Tstart+\delta]}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\hpw}{\hat{\pi}_i\lb w\rb}
+\newcommand{\idx}[1]{\tt{id}\ #1\ }
+\newcommand{\auc}[1]{\mathrm{AUC}_{#1}}
+\newcommand{\wPE}{\widehat{\mathrm{PE}}}
+
+% Remove subsequent subsections from ToC, but keep their numbering.
+\newcommand{\rmtoc}{\addtocontents{toc}{\setcounter{tocdepth}{-10}}}
+% Reset ToC back to whatever it was -->
+\newcommand{\resettocmain}{\addtocontents{toc}{\setcounter{tocdepth}{4}}} % Main (4)
+\newcommand{\resettocappx}{\addtocontents{toc}{\setcounter{tocdepth}{1}}} % Appendix (1)
+
+
+% Tcolorbox --> Largely out-of-use.
+\newtcolorbox{bluebox}{colback = white, colframe = blue!75!black}
+\newtcolorbox{redbox}{colback = gray!15, colframe = red!75!black}
+
+% Shading in diagonals
+\newcommand{\cbb}[1]{\colorbox{lightgray!20}{#1}}
+\newcommand{\redtext}[1]{\textcolor{red}{#1}}
+\PassOptionsToPackage{table}{xcolor}
+
+% Page numbering in landscape environments (used a lot in Supp. Tables).
+\newcommand{\lscapepageno}{\raisebox{5mm}{\makebox[\linewidth]{\thepage}}}

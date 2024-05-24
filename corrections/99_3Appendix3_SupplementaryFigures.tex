@@ -1,0 +1,316 @@
+\chapter{Supplementary Figures}\label{cha:appendix-supplementary-figures}
+Here, additional figures are presented to accompany Chapters \ref{cha:approx}, \ref{cha:justification}, and \ref{cha:app-PBC}.
+% Remove subsequent subsections from ToC, but keep their 
+%  "in-place number"
+
+\section{Additional results from Chapter \ref{cha:approx}}\label{sec:appendix-suppfigs-approx}
+\rmtoc
+\subsection{Bias of parameter estimates under different lengths of follow-up period \texorpdfstring{$r$}{r}}
+Figure \ref{fig:appendix-MVJMresults-r} provides graphical representation for the biases observed in the simulation study carried out in Section \ref{sec:approx-sims-r} already tabulated in Appendix \ref{sec:appendix-MVJMresults-r}. We note \textit{generally} that the parameter estimates are less biased when a longer maximal profile length, $r$, is available.
+\begin{figure}
+    \centering
+    \includegraphics{Figures_Chapter3/r_biases.png}
+    \caption{Square root of absolute biases for all parameters in the simulation study into lengths of follow-up, $r$, carried out in Section \ref{sec:approx-sims-r}. Note that these biases `match' with those tabulated in Appendix \ref{sec:appendix-MVJMresults-r}.}
+    \label{fig:appendix-MVJMresults-r}
+\end{figure}
+\clearpage
+\resettocappx
+
+
+% RESET TOC DEPTH
+\section{Additional results from Chapter \ref{cha:justification}}\label{sec:appendix-suppfigs-justification}
+\rmtoc
+\subsection{Scatterplot visualisations for Section \ref{sec:justification-results-visualisations}}\label{sec:appendix-suppfigs-justification-viz}
+The families presented in the thesis are presented here in alphabetical order across Figures \ref{fig:appendix-justification-binomial}--\ref{fig:appendix-justification-poisson}. Each panel is created using the strategy outlined in Section \ref{sec:justification-strategy}. The random effects are sampled from the distribution $\postb$ using a Metropolis-Hastings scheme; resultant posterior densities are discarded if the acceptance rate was not between $0.20$ and $0.25$. The random slopes are plotted against the random intercepts on a `per-sample' basis. A green ellipse is generated representing where 95\% of the data generated from the theoretical distribution $\Napprox$ lie using \tt{stat\_ellipse} \citep{R-ggplot2} and overlaid. We additionally present, as panel titles, the profile length for the subject, $m_i$, as well as the proportion of the scatter calculated to lie within the ellipse, $\psi_i$, using the method presented in Appendix \ref{sec:appendix-ellipsecheck}.
+% BINOMIAL
+\newgeometry{left=1.2cm, right = 1.2cm, bottom = 1.8cm}
+\thispagestyle{empty}
+\begin{landscape}
+\begin{figure}
+    \centering
+    \includegraphics{Figures_Justification/binomial.png}
+    \caption{Scatterplot of the sample $\postb$ with overlaid ellipse showing the theoretical distribution $\Napprox$ for $\Y|\b;\bOT\sim\mathrm{Bin}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-binomial}
+\end{figure}
+\vfill
+\lscapepageno
+\end{landscape}
+\clearpage
+% GAMMA
+\thispagestyle{empty}
+\begin{landscape}
+\begin{figure}
+    \centering
+    \includegraphics{Figures_Justification/Gamma.png}
+    \caption{Scatterplot of the sample $\postb$ with overlaid ellipse showing the theoretical distribution $\Napprox$ for $\Y|\b;\bOT\sim\mathrm{Ga}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-Gamma}
+\end{figure}
+\vfill
+\lscapepageno
+\end{landscape}
+\clearpage
+% GAUSSIAN
+\thispagestyle{empty}
+\begin{landscape}
+\begin{figure}
+    \centering
+    \includegraphics{Figures_Justification/gaussian.png}
+    \caption{Scatterplot of the sample $\postb$ with overlaid ellipse showing the theoretical distribution $\Napprox$ for $\Y|\b;\bOT\sim N\lb\cdot,\cdot\rb$.}
+    \label{fig:appendix-justification-gaussian}
+\end{figure}
+\vfill
+\lscapepageno
+\end{landscape}
+\clearpage
+% GENPOIS
+\thispagestyle{empty}
+\begin{landscape}
+\begin{figure}
+    \centering
+    \includegraphics{Figures_Justification/genpois.png}
+    \caption{Scatterplot of the sample $\postb$ with overlaid ellipse showing the theoretical distribution $\Napprox$ for $\Y|\b;\bOT\sim\mathrm{GP}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-genpois}
+\end{figure}
+\vfill
+\lscapepageno
+\end{landscape}
+\clearpage
+% NEGBIN
+\thispagestyle{empty}
+\begin{landscape}
+\begin{figure}
+    \centering
+    \includegraphics{Figures_Justification/negbin.png}
+    \caption{Scatterplot of the sample $\postb$ with overlaid ellipse showing the theoretical distribution $\Napprox$ for $\Y|\b;\bOT\sim\mathrm{NegBin}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-negbin}
+\end{figure}
+\vfill
+\lscapepageno
+\end{landscape}
+\clearpage
+% POISSON
+\thispagestyle{empty}
+\begin{landscape}
+\begin{figure}
+    \centering
+    \includegraphics{Figures_Justification/poisson.png}
+    \caption{Scatterplot of the sample $\postb$ with overlaid ellipse showing the theoretical distribution $\Napprox$ for $\Y|\b;\bOT\sim\mathrm{Po}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-poisson}
+\end{figure}
+\vfill
+\lscapepageno
+\end{landscape}
+\clearpage
+\restoregeometry
+
+\subsection{Effect of the survival density and profile length on \texorpdfstring{$\hb$}{hb} and the elliptical quantities \texorpdfstring{$r_x,\ r_y$}{rxry}}\label{sec:appendix-suppfigs-justification-ellipses}
+In Section \ref{sec:justification-include-surv-ellipse} we presented an investigation into the behaviour of the normal approximation under differing longitudinal profile lengths $m_i$ as well as with-and-without the inclusion of the survival density in the calculation of $\hb$ and $\hS$. Here we present the remaining families in alphabetical order in Figures \ref{fig:appendix-justification-ellipse-gamma}--\ref{fig:appendix-justification-ellipse-poisson}; discussion is given in Section \ref{sec:justification-include-surv-ellipse}.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/Gamma-ellipse-new.png}
+    \caption{Difference in the modal estimates $\hb-\tb$; semi-minor axis $\torm{r_y}{S}-\torm{r_y}{NS}$; and semi-major $\torm{r_x}{S}-\torm{r_x}{NS}$. The differences themselves arise from the \textit{removal} of the survival density from the complete data log-likelihood in the process to obtain the modal estimate and its covariance for $\Y|\b\sim\mathrm{Ga}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-ellipse-gamma}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/genpois-ellipse-new.png}
+    \caption{Difference in the modal estimates $\hb-\tb$; semi-minor axis $\torm{r_y}{S}-\torm{r_y}{NS}$; and semi-major $\torm{r_x}{S}-\torm{r_x}{NS}$. The differences themselves arise from the \textit{removal} of the survival density from the complete data log-likelihood in the process to obtain the modal estimate and its covariance for $\Y|\b\sim\mathrm{GP}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-ellipse-genpois}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/negbin-ellipse-new.png}
+    \caption{Difference in the modal estimates $\hb-\tb$; semi-minor axis $\torm{r_y}{S}-\torm{r_y}{NS}$; and semi-major $\torm{r_x}{S}-\torm{r_x}{NS}$. The differences themselves arise from the \textit{removal} of the survival density from the complete data log-likelihood in the process to obtain the modal estimate and its covariance for $\Y|\b\sim\mathrm{NegBin}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-ellipse-negbin}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/poisson-ellipse-new.png}
+    \caption{Difference in the modal estimates $\hb-\tb$; semi-minor axis $\torm{r_y}{S}-\torm{r_y}{NS}$; and semi-major $\torm{r_x}{S}-\torm{r_x}{NS}$. The differences themselves arise from the \textit{removal} of the survival density from the complete data log-likelihood in the process to obtain the modal estimate and its covariance for $\Y|\b\sim\mathrm{Po}\lb\cdot\rb$.}
+    \label{fig:appendix-justification-ellipse-poisson}
+\end{figure}
+
+\clearpage
+\subsection{Posterior density of \texorpdfstring{$g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\log\lb\bone+\exp\lbr\X_i\bb+\Z_i\b\rbr\rb$}{binomial}}\label{sec:appendix-suppfigs-justification-binomallogbit}
+\begin{figure}[ht]
+  \centering
+  \includegraphics{Figures_IntegrandShapes/BinomialLogBit.png}
+  \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\log\lb\bone+\exp\lbr\X_i\bb+\Z_i\b\rbr\rb$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate binomial simulated data.}
+  \label{fig:appendix-justification-integrands-binquantity}
+\end{figure}
+\clearpage
+\subsection{Posterior density of \texorpdfstring{$g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\log\lb\Y\bphi+\exp\lbr\X_i\bb+\Z_i\b\rbr\rb$}{genpois}}\label{sec:appendix-suppfigs-justification-GP1logbit}
+\begin{figure}[ht]
+  \centering
+  \includegraphics{Figures_IntegrandShapes/GeneralisedPoissonLogBit.png}
+  \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\log\lb\Y\bphi+\exp\lbr\X_i\bb+\Z_i\b\rbr\rb$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate generalised Poisson simulated data.}
+  \label{fig:appendix-justification-integrands-GP1quantity}
+\end{figure}
+\clearpage
+
+\subsection{Posterior density of \texorpdfstring{$g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\exp\lbr\X_i\bb+\Z_i\b\rbr$}{expeta} for other families}\label{sec:appendix-suppfigs-justification-Expetas}
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_IntegrandShapes/Gamma_ExpLinp.png}
+    \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\exp\lbr\X_i\bb+\Z_i\b\rbr$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate Gamma simulated data. The mean and median of the posterior distribution are denoted by the red and blue dashed lines, respectively.}
+    \label{fig:justification-integrands-Gamma-Expeta}
+\end{figure}
+\clearpage
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_IntegrandShapes/binomial_ExpLinp.png}
+    \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\exp\lbr\X_i\bb+\Z_i\b\rbr$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate binomial simulated data. The mean and median of the posterior distribution are denoted by the red and blue dashed lines, respectively.}
+    \label{fig:justification-integrands-binomial-Expeta}
+\end{figure}
+\clearpage
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_IntegrandShapes/negbin_ExpLinp.png}
+    \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\exp\lbr\X_i\bb+\Z_i\b\rbr$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate negative binomial simulated data. The mean and median of the posterior distribution are denoted by the red and blue dashed lines, respectively.}
+    \label{fig:justification-integrands-negbin-Expeta}
+\end{figure}
+\clearpage
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_IntegrandShapes/genpois_ExpLinp.png}
+    \caption{Posterior density for $g\lb\b\rb=\exp\lbr\X_i\bb+\Z_i\b\rbr|T_i,\Delta_i,\Y;\hbO$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate generalised Poisson simulated data. The mean and median of the posterior distribution are denoted by the red and blue dashed lines, respectively.}
+    \label{fig:justification-integrands-genpois-Expeta}
+\end{figure}
+\clearpage
+\subsection{Posterior density of \texorpdfstring{$g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\exp\lbr\X_i\bb+\Z_i\b\rbr$}{expeta} for the Poisson case, with modal value}\label{sec:appendix-suppfigs-integrands-mode}
+The mode of the log-normal quantity $\exp\lbr\X_i\bb+\Z_i\hb\rbr\appx LN\lb\hbmu,\Amat\rb$ is given by $\exp\lbr\hbmu-\btau^2\rbr$. We present this quantity in contention with the median and mean for the Poisson case only in Figure \ref{fig:justification-integrands-poisson-Expeta-withmode}.
+\begin{figure}[ht]
+      \centering
+      \includegraphics{Figures_IntegrandShapes/poisson_ExpLinp_with_mode.png}
+      \caption{Posterior density for $g\lb\b\rb|T_i,\Delta_i,\Y;\hbO=\exp\lbr\X_i\bb+\Z_i\b\rbr$ evaluated at the first (top pane), middle and final (bottom pane) follow-up time for univariate Poisson simulated data. The mean, median, and mode of the posterior distribution are denoted by the red, blue, and dark green dashed lines, respectively.}
+      \label{fig:justification-integrands-poisson-Expeta-withmode}
+\end{figure}
+\clearpage
+
+\subsection{Values for \texorpdfstring{$a$}{a} which achieve nominal coverage in \texorpdfstring{$\psi_i\big(\hb,a\hS\big)$}{psib}}\label{sec:appendix-suppfigs-justification-scalefactor}
+In Section \ref{sec:justification-scale-factor} we obtain values for $a$ which minimised the objective function \eqref{eq:justification-minimisation-problem}. Summaries of the one hundred values obtained for $a$ for each of the families we consider across Chapters \ref{cha:methods-classic}--\ref{cha:flexible} was presented in Table \ref{tab:justification-sfs}; here we provide supplementary figures displaying \textit{all} estimates $a$ in alphabetical order by family.
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/sf-binomial.png}
+    \caption{Values for $a$ which minimise $Q\lb a\rb$ in \eqref{eq:justification-minimisation-problem}; each point represents the value $a$ from \textit{one} set of Binomial simulated data. The median value is denoted by the blue dashed line and the orange dashed lines represent the interquartile range.}
+    \label{fig:justification-scalefactor-binomial}
+\end{figure}
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/sf-Gamma.png}
+    \caption{Values for $a$ which minimise $Q\lb a\rb$ in \eqref{eq:justification-minimisation-problem}; each point represents the value $a$ from \textit{one} set of Gamma simulated data. The median value is denoted by the blue dashed line and the orange dashed lines represent the interquartile range.}
+    \label{fig:justification-scalefactor-Gamma}
+\end{figure}
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/sf-genpois.png}
+    \caption{Values for $a$ which minimise $Q\lb a\rb$ in \eqref{eq:justification-minimisation-problem}; each point represents the value $a$ from \textit{one} set of generalised Poisson simulated data. The median value is denoted by the blue dashed line and the orange dashed lines represent the interquartile range.}
+    \label{fig:justification-scalefactor-genpois}
+\end{figure}
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/sf-negbin.png}
+    \caption{Values for $a$ which minimise $Q\lb a\rb$ in \eqref{eq:justification-minimisation-problem}; each point represents the value $a$ from \textit{one} set of negative binomial simulated data. The median value is denoted by the blue dashed line and the orange dashed lines represent the interquartile range.}
+    \label{fig:justification-scalefactor-negbin}
+\end{figure}
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_Justification/sf-poisson.png}
+    \caption{Values for $a$ which minimise $Q\lb a\rb$ in \eqref{eq:justification-minimisation-problem}; each point represents the value $a$ from \textit{one} set of Poisson simulated data. The median value is denoted by the blue dashed line and the orange dashed lines represent the interquartile range.}
+    \label{fig:justification-scalefactor-poisson}
+\end{figure}
+\clearpage
+\resettocappx
+\section{Additional results from Chapter \ref{cha:app-PBC}}\label{sec:appendix-suppfigs-PBC}
+% REMOVE FROM TOC
+\rmtoc
+\subsection{Prevalence of longitudinal biomarkers over time}\label{sec:appendix-suppfigs-binaryheatmap}
+In Section \ref{sec:pbc-eda} we presented the trajectories of continuous and count longitudinal biomarkers over follow-up. Here, we attempt to present the prevalence of the binary biomarkers (\ie $y_{ijk}=1$) for some time $j$ within a percentile of follow-up. This pseudo-heatmap is presented in Figure \ref{fig:appendix-suppfigs-PBC-binaryheatmap}, where we can fairly easily observe the relative absence of both spiders and ascites in comparison with hepatomegaly.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_PBCApplication/PBCBinaryHeatmap.png}
+    \caption{Heatmap presenting the prevalence (defined as the proportion of present cases to observed cases) in each of the time-windows presented along the $x$-axis.}
+    \label{fig:appendix-suppfigs-PBC-binaryheatmap}
+\end{figure}
+
+\subsection{Dispersion model selection}\label{sec:appendix-suppfigs-PBC-dispmodels}
+In Section \ref{sec:pbc-modelbuilding-longit} we arrived at the best-fitting longitudinal sub-model for each response we consider, here we present further consideration of all possible (univariate) dispersion models.
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_PBCApplication/allDispmodels.png}
+    \caption{BIC rankings for dispersion models for each longitudinal response. The $x$-axis presents the baseline covariate used in the dispersion model \tt{A}: \tt{age}; \tt{D}: \tt{drug} \tt{H}: \tt{histologic}; \tt{S}: \tt{sex}; and additionally \tt{T}: \tt{time}. Where the $x$-axis reads \tt{1} refers to the `intercept-only' dispersion model, which is fit by default \ie the BIC for the model found in Section \ref{sec:pbc-modelbuilding-longit}. A black square is drawn behind the model with the lowest BIC for each response for clarity's sake.}
+    \label{fig:appendix-suppfigs-PBC-dispmodels}
+\end{figure}
+
+\subsection{Pearson residuals for univariate joint models}\label{sec:appendix-suppfigs-univpearson}
+Each univariate joint model fit in Section \ref{sec:pbc-jointmodelling-univs} produces fitted values and corresponding Pearson residuals which we outlined in Section \ref{sec:posthoc-residuals-long}. We present these in Figure \ref{fig:appendix-suppfigs-univpearson} 
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_PBCApplication/UnivPearsonResiduals.png}
+    \caption{Pearson residuals plotted against fitted values from each univariate joint model fit to PBC data; the biomarker is shown in the panel title.}
+    \label{fig:appendix-suppfigs-univpearson}
+\end{figure}
+
+\subsection{Cox-Snell residuals for univariate joint models}\label{sec:appendix-suppfigs-univcoxsnell}
+Each univariate joint model fit in Section \ref{sec:pbc-jointmodelling-univs} produces Cox-Snell residuals outlined in Section \ref{sec:posthocs-residuals-surv}. We note broadly good agreement between the estimate of the survival function and the unit exponential we expect to see across \textit{all} biomarkers. We two examples only (due to there being little to distinguish visually): One where there is very good agreement (serum bilirubin) and another which exhibits far less overlap of the two curves (albumin); presented in Figure \ref{fig:appendix-suppfigs-univcoxsnell}.
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_PBCApplication/UnivCoxSnellExamples.png}
+    \caption{Survival function of the Cox-Snell residuals obtained from the series of univariate model fits. Only two biomarkers (\ie the residuals from two separate joint models) are shown as an example. The steel-blue overlaid curve represents the theoretical unit exponential distribution.}
+    \label{fig:appendix-suppfigs-univcoxsnell}
+\end{figure}
+
+\subsection{Pearson residuals from final model}\label{sec:appendix-suppfigs-finalpearson}
+Pearson residuals $\hat{r}_{ikj}^{(P)}$ against fitted values $\hat{Y}_{ikj}$ for each of the $k=1,\dots,K$ longitudinal sub-models are presented in Figure \ref{fig:appendix-suppfigs-finalpearson} for the final model in Section \ref{sec:pbc-finalmodel}.
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_PBCApplication/FinalPearsonResiduals.png}
+    \caption{Pearson residuals plotted against fitted values obtained for each longitudinal sub-model in the `final' joint model fit to the PBC data in Section \ref{sec:pbc-finalmodel}; the biomarker is shown in the panel title.}
+    \label{fig:appendix-suppfigs-finalpearson}
+\end{figure}
+
+\subsection{Cox-Snell residuals from final model}\label{sec:appendix-suppfigs-finalcoxsnell}
+Cox-Snell residuals for the multivariate joint model in Section \ref{sec:pbc-finalmodel} are presented in Figure \ref{fig:appendix-suppfigs-finalcoxsnell}. 
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_PBCApplication/FinalCoxSnellExamples.png}
+    \caption{Survival function of the Cox-Snell residuals obtained from the `final' joint model fit to the PBC data in Section \ref{sec:pbc-finalmodel}. The steel-blue overlaid curve represents the theoretical unit exponential distribution.}
+    \label{fig:appendix-suppfigs-finalcoxsnell}
+\end{figure}
+
+\subsection{Quantile-quantile plot of residuals from final model}\label{sec:appendix-suppfigs-finalQQresid}
+QQ plots for the Pearson residuals from the multivariate joint model in Section \ref{sec:pbc-finalmodel} across each biomarker are presented in Figure \ref{fig:appendix-suppfigs-finalQQresid}
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_PBCApplication/biv2-qqnorm-corrections.png}
+    \caption{Normal quantile-quantile plots for the Pearson residuals obtained for each longitudinal sub-model in the `final' joint model fit to the PBC data in Section \ref{sec:pbc-finalmodel}; the biomarker is shown in the panel title.}
+    \label{fig:appendix-suppfigs-finalQQresid}
+\end{figure}
+
+\subsection{Quantile-quantile plot of random effects from final model}\label{sec:appendix-suppfigs-finalQQ-REs}
+QQ plots for the estimated random effects from the multivariate joint model in Section \ref{sec:pbc-finalmodel}, specified in \eqref{eq:pbc-finalmodel}, are shown in Figure \ref{fig:appendix-suppfigs-finalQQ-REs}
+\begin{figure}[ht]
+    \centering
+    \includegraphics{Figures_PBCApplication/biv2-qqnorm-REs-corrections.png}
+    \caption{Normal quantile-quantile plots for the estimated random effects from the `final' joint model fit to the PBC data in Section \ref{sec:pbc-finalmodel}; the random effect is shown in the panel title and corresponds to \eqref{eq:pbc-finalmodel}.}
+    \label{fig:appendix-suppfigs-finalQQ-REs}
+\end{figure}
+
+\subsection{Posterior density of random effects from final model}\label{sec:appendix-suppfigs-finalpostREs}
+Samples from the posterior distribution $f\big(\b|\Y,T_i,\Delta_i;\hbO\big)$ are shown in Figure \ref{fig:appendix-suppfigs-finalpostREs}. 3500 samples are drawn post 500 samples of burn-in and the Metropolis-Hastings acceptance rate controlled to be $\approx20\%$, this then repeated across $i=1,\ldots,n$ subjects. The red dashed line is the theoretical normal density $N\big(0, \hat{\D}_{xx}\big)$ with $\hat{\D}_{xx}$ the corresponding estimated variance component.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[height=130mm]{Figures_PBCApplication/biv2-postb-corrections.png}
+    \caption{Posterior densities of the estimated random effects from the `final' joint model fit to the PBC data in Section \ref{sec:pbc-finalmodel}; the random effect is shown in the panel title and corresponds to \eqref{eq:pbc-finalmodel}.}
+    \label{fig:appendix-suppfigs-finalpostREs}
+\end{figure}
+
+
+% RESET TOC DEPTH BEFORE END
+\resettocappx
